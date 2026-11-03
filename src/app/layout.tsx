@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { PlayerBar } from "@/components/PlayerBar";
 import { PlayerProvider } from "@/components/PlayerProvider";
+import { RegisterSW } from "@/components/RegisterSW";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "الشيخ ياسر الدوسري", template: "%s | الشيخ ياسر الدوسري" },
   description: "محاضرات الشيخ ياسر الدوسري وتلاوات الصلوات المفروضة وصلاة التراويح.",
+  applicationName: "ياسر الدوسري",
+  appleWebApp: { capable: true, title: "ياسر الدوسري", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
@@ -34,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div aria-hidden className="ambient" />
+        <RegisterSW />
         <PlayerProvider>
           <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-30 focus:rounded-lg focus:bg-gold focus:px-4 focus:py-2 focus:text-gold-ink">
             تخطَّ إلى المحتوى
