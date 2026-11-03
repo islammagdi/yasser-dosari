@@ -1,14 +1,15 @@
-import type { ImamateSlot } from "@/types";
-import { makkahToday } from "@/lib/imamate";
+import type { ImamateWeek } from "@/types";
 
-/** جدول إمامة تجريبي: مواعيد بعد يومين وأربعة أيام من النهارده، عشان السكشن يبان دايمًا */
-function plusDays(n: number): string {
-  const [y, m, d] = makkahToday(new Date()).split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
-}
-
-export const MOCK_IMAMATE: ImamateSlot[] = [
-  { id: "imamate-1", date: plusDays(2), prayer: "isha" },
-  { id: "imamate-2", date: plusDays(4), prayer: "fajr" },
-  { id: "imamate-3", date: plusDays(4), prayer: "maghrib" },
+/**
+ * جدول إمامة الشيخ في المسجد الحرام.
+ * رئاسة الشؤون الدينية بتعلن الجدول كل أسبوع (من الأحد للسبت) على حسابها @PRAGOVSA وفي الصحف.
+ * أول ما الجدول ينزل: ضيف سطر بتاريخ أول يوم في الأسبوع بالهجري، والصلوات اللي فيها اسم الشيخ.
+ * لو الشيخ مش في جدول الأسبوع، متضيفش حاجة، والموقع هيقول إنه مفيش إمامة معلنة.
+ */
+export const IMAMATE_WEEKS: ImamateWeek[] = [
+  { from: "1448-04-02", prayers: ["fajr", "asr"] },
+  { from: "1448-04-16", prayers: ["maghrib"] },
+  { from: "1448-05-14", prayers: ["fajr", "asr"] },
+    
+   { from: "1448-05-28", prayers: ["fajr", "asr", "maghrib"] },  
 ];

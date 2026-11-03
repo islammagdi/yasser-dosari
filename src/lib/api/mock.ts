@@ -1,4 +1,7 @@
-import { MOCK_IMAMATE } from "@/data/imamate";
+import { IMAMATE_WEEKS } from "@/data/imamate";
+import { expandWeeks } from "@/lib/imamate";
+import { fetchImamateSheet, imamateSheetEnabled } from "./imamateSheet";
+import { makkahPrayerTimes } from "./prayerTimes";
 import { MOCK_RECORDINGS } from "@/data/mock";
 import { fetchMushaf } from "./mp3quran";
 import { fetchYoutube, youtubeEnabled } from "./youtube";
@@ -47,6 +50,23 @@ export const mockRepository: RecordingsRepository = {
       .slice(0, limit);
   },
   async imamate() {
-    return MOCK_IMAMATE;
+    // الجدول من Google Sheet لو متظبط، وإلا من src/data/imamate.ts
+    let weeks = IMAMATE_WEEKS;
+    if (imamateSheetEnabled()) {
+      try {
+        weeks = await fetchImamateSheet();
+      } catch (err) {
+        console.warn("imamate sheet: fallback to code", err);
+      }
+    }
+    const slots = expandWeeks(weeks);
+    // مواقيت الصلاة، عشان الموعد يعدّي بعد الصلاة نفسها مش بنهاية اليوم
+    try {
+      const times = await makkahPrayerTimes([...new Set(slots.map((s) => s.date))]);
+      return expandWeeks(weeks, times);
+    } catch (err) {
+      console.warn("aladhan: prayer times unavailable", err);
+      return slots;
+    }
   },
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ImamateSlot } from "@/types";
-import { IMAMATE_PRAYER_LABELS, hijriDayLabel, nextSlot, relativeDayLabel } from "@/lib/imamate";
+import { IMAMATE_PRAYER_LABELS, hijriDayLabel, nextSlot, prayersList, relativeDayLabel } from "@/lib/imamate";
 import { CategoryIcon } from "./icons";
 
 /** أقرب صلاة هيؤم فيها الشيخ المصلين، من الجدول الأسبوعي */
@@ -27,9 +27,14 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
         {now === null ? (
           <span aria-hidden className="my-1 h-4 w-52 max-w-full animate-pulse rounded bg-white/10" />
         ) : slot ? (
-          <span className="font-semibold leading-6">
-            صلاة {IMAMATE_PRAYER_LABELS[slot.prayer]}، {hijriDayLabel(slot.date)}
-          </span>
+          <>
+            <span className="font-semibold leading-6 sm:text-[17px]">
+              صلاة {IMAMATE_PRAYER_LABELS[slot.prayer]}، {hijriDayLabel(slot.date)}
+            </span>
+            {slot.weekPrayers && slot.weekPrayers.length > 1 && (
+              <span className="text-xs text-muted">يؤم هذا الأسبوع {slot.weekPrayers.length === 2 ? "صلاتي" : "صلوات"} {prayersList(slot.weekPrayers)}</span>
+            )}
+          </>
         ) : (
           <span className="text-sm leading-6">لا توجد إمامة معلنة حاليًا، ويُعلن الجدول أسبوعيًا.</span>
         )}

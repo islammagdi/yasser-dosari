@@ -1,4 +1,4 @@
-import type { ImamatePrayer, ImamateSlot } from "@/types";
+import type { ImamatePrayer, ImamateSlot, ImamateWeek } from "@/types";
 import { toArabicDigits } from "./format";
 
 /** كل المواعيد بتوقيت مكة */
@@ -51,4 +51,59 @@ export function relativeDayLabel(isoDate: string, now: Date): string {
   if (days === 1) return "غدًا";
   if (days === 2) return "بعد يومين";
   return `بعد ${toArabicDigits(days)} ${days <= 10 ? "أيام" : "يومًا"}`;
+}
+
+// ---------- تحويل الهجري للميلادي (أم القرى) ----------
+
+const umalqura = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
+  timeZone: "UTC",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+
+function hijriOf(d: Date) {
+  const p = Object.fromEntries(umalqura.formatToParts(d).map((x) => [x.type, x.value]));
+  return { y: parseInt(p.year, 10), m: Number(p.month), d: Number(p.day) };
+}
+
+/** "1448-05-14" هجري ← "2026-10-25" ميلادي. تقريب حسابي، وبعدين مطابقة دقيقة مع تقويم أم القرى */
+export function hijriToIso(y: number, m: number, d: number): string | null {
+  const jd = d + Math.ceil(29.5 * (m - 1)) + (y - 1) * 354 + Math.floor((3 + 11 * y) / 30) + 1948439.5 - 1;
+  const approx = (jd - 2440587.5) * 86_400_000;
+  for (let off = -5; off <= 5; off++) {
+    const t = new Date(approx + off * 86_400_000);
+    const h = hijriOf(t);
+    if (h.y === y && h.m === m && h.d === d) return t.toISOString().slice(0, 10);
+  }
+  return null;
+}
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+export type PrayerTimes = Record<string, Partial<Record<ImamatePrayer, string>>>;
+
+/** كل أسبوع ← ٧ أيام × صلوات الشيخ فيه */
+export function expandWeeks(weeks: ImamateWeek[], times: PrayerTimes = {}): ImamateSlot[] {
+  const slots: ImamateSlot[] = [];
+  for (const w of weeks) {
+    const [y, m, d] = w.from.split("-").map(Number);
+    const start = hijriToIso(y, m, d);
+    if (!start) continue;
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(start, i);
+      for (const prayer of w.prayers) {
+        slots.push({ id: `${date}-${prayer}`, date, prayer, time: times[date]?.[prayer], weekPrayers: w.prayers });
+      }
+    }
+  }
+  return slots;
+}
+
+export function prayersList(list: ImamatePrayer[]): string {
+  return list.map((p) => IMAMATE_PRAYER_LABELS[p]).join(" و");
 }
