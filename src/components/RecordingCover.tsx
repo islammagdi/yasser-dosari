@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { Recording } from "@/types";
 import { CATEGORY_COVERS } from "@/lib/categories";
-import { CategoryIcon } from "./icons";
+import { CategoryIcon, PrayerIcon } from "./icons";
 
 interface Props {
   recording: Recording;
@@ -41,7 +41,11 @@ export function RecordingCover({ recording, className = "", sizes = "64px", labe
             {label ? (
               <span className={`font-display font-bold leading-none ${lg ? "text-6xl" : "text-2xl"}`}>{label}</span>
             ) : (
-              <CategoryIcon category={recording.category} className={lg ? "h-1/3 w-1/3" : "h-1/2 w-1/2"} />
+              recording.prayer ? (
+                <PrayerIcon prayer={recording.prayer} className={lg ? "h-1/3 w-1/3" : "h-3/5 w-3/5"} />
+              ) : (
+                <CategoryIcon category={recording.category} className={lg ? "h-1/3 w-1/3" : "h-1/2 w-1/2"} />
+              )
             )}
           </span>
         </>

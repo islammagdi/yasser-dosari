@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+
 import type { ImamateSlot, Recording } from "@/types";
 import { getCategory } from "@/lib/categories";
 import { NextImamate } from "./NextImamate";
@@ -16,10 +16,9 @@ const delay = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 /** الهيرو بعرض الشاشة كله، ومدموج فيه "تمت إضافته حديثًا" */
 export function Hero({ recent, imamate }: { recent: Recording[]; imamate: ImamateSlot[] }) {
   const { current, isPlaying, playQueue } = usePlayer();
-  const [index, setIndex] = useState(0);
-  const featured = recent[index] ?? recent[0];
+  const featured = recent[0];
   const featuredPlaying = !!featured && current?.id === featured.id && isPlaying;
-  const others = recent.map((r, i) => ({ r, i })).filter((x) => x.i !== index).slice(0, 3);
+
   const meta = featured
     ? [getCategory(featured.category)?.title, featured.subtitle].filter(Boolean)
     : [];
@@ -95,7 +94,7 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
                 </div>
                 <button
                   type="button"
-                  onClick={() => playQueue(recent, index)}
+onClick={() => playQueue(recent, 0)}
                   disabled={!featured.audioUrl}
                   aria-label={`${featuredPlaying ? "إيقاف" : "تشغيل"} ${featured.title}`}
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
@@ -104,25 +103,7 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
                 </button>
               </div>
 
-              {others.length > 0 && (
-                <ul className="-mx-4 mt-4 flex gap-1 overflow-x-auto border-t border-white/10 px-4 pt-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
-                  {others.map(({ r, i }) => (
-                    <li key={r.id} className="min-w-[200px] shrink-0 sm:min-w-0 sm:shrink">
-                      <button
-                        type="button"
-                        onClick={() => setIndex(i)}
-                        className="flex w-full items-center gap-3 rounded-2xl p-2 text-start transition-colors hover:bg-white/5"
-                      >
-                        <RecordingCover recording={r} sizes="44px" className="h-11 w-11 shrink-0 rounded-xl" />
-                        <span className="flex min-w-0 flex-col">
-                          <span className="truncate text-sm font-semibold">{r.title}</span>
-                          <span className="truncate text-xs text-muted">{getCategory(r.category)?.label}</span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+
             </div>
           )}
         </div>

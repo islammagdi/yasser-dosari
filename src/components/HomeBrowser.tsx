@@ -6,7 +6,6 @@ import type { Category, Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
 import { RecordingList } from "./RecordingList";
 
-
 export interface HomeSection {
   slug: Category;
   title: string;
@@ -15,7 +14,7 @@ export interface HomeSection {
   latest: Recording[];
 }
 
-/** الأقسام تابات فوق، وتحتها أحدث تسجيلات القسم المختار ككروت */
+/** تابات نصية بخط تحت القسم المختار، و"عرض الكل" في نفس السطر */
 export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
   const [active, setActive] = useState<Category | undefined>(sections[0]?.slug);
   const id = useId();
@@ -29,7 +28,7 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
   const onKeyDown = (e: React.KeyboardEvent) => {
     const i = sections.findIndex((s) => s.slug === current.slug);
     const map: Record<string, number> = {
-      ArrowLeft: i + 1, ArrowDown: i + 1, ArrowRight: i - 1, ArrowUp: i - 1, Home: 0, End: sections.length - 1,
+      ArrowLeft: i + 1, ArrowRight: i - 1, Home: 0, End: sections.length - 1,
     };
     if (!(e.key in map)) return;
     e.preventDefault();
@@ -40,45 +39,52 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
 
   return (
     <section id="sections" aria-label="الأقسام" className="flex scroll-mt-24 flex-col gap-6">
-      <div
-        role="tablist"
-        aria-label="الأقسام"
-        onKeyDown={onKeyDown}
-        className="glass-card grid grid-cols-2 gap-1 rounded-[1.75rem] p-1.5 lg:grid-cols-4"
-      >
-        {sections.map((s) => {
-          const selected = s.slug === current.slug;
-          return (
-            <button
-              key={s.slug}
-              id={tabId(s.slug)}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={panelId}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => setActive(s.slug)}
-              className={`flex min-w-0 flex-col items-center justify-center rounded-3xl px-3 py-2 text-center transition-colors ${
-                selected ? "bg-gold text-gold-ink shadow-glow" : "text-text hover:bg-white/5"
-              }`}
-            >
-              <span className="truncate font-display text-xl font-bold leading-tight sm:text-2xl">{s.title}</span>
-            </button>
-          );
-        })}
+      <div className="flex items-end justify-between gap-4 border-b border-white/10">
+        <div role="tablist" aria-label="الأقسام" onKeyDown={onKeyDown} className="-mb-px flex min-w-0 gap-1 overflow-x-auto sm:gap-4">
+          {sections.map((s) => {
+            const selected = s.slug === current.slug;
+            return (
+              <button
+                key={s.slug}
+                id={tabId(s.slug)}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                aria-controls={panelId}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setActive(s.slug)}
+                className={`flex min-h-12 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-2 text-base font-semibold transition-colors sm:text-[17px] ${
+                  selected ? "border-gold text-text" : "border-transparent text-muted hover:text-text"
+                }`}
+              >
+                {s.title}
+                <span
+                  className={`rounded-full px-2 text-xs font-medium leading-5 ${
+                    selected ? "bg-gold/15 text-gold-soft" : "bg-white/5 text-muted"
+                  }`}
+                >
+                  {toArabicDigits(s.total)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <Link
+          href={`/${current.slug}`}
+          className="mb-2 hidden min-h-10 shrink-0 items-center rounded-full px-3 text-[15px] text-gold-soft transition-colors hover:bg-white/5 sm:flex"
+        >
+          عرض الكل
+        </Link>
       </div>
 
       <div role="tabpanel" id={panelId} aria-labelledby={tabId(current.slug)} className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-          <p className="text-[15px] text-muted">{current.description}</p>
-          <Link
-            href={`/${current.slug}`}
-            className="flex min-h-11 items-center rounded-full border border-line-strong px-5 text-[15px] text-text transition-colors hover:border-gold/60 hover:text-gold-soft"
-          >
-            عرض الكل
-          </Link>
-        </div>
         <RecordingList key={current.slug} items={current.latest} />
+        <Link
+          href={`/${current.slug}`}
+          className="glass-card flex min-h-12 items-center justify-center rounded-full text-[15px] text-gold-soft sm:hidden"
+        >
+          عرض كل {current.title}
+        </Link>
       </div>
     </section>
   );

@@ -90,3 +90,25 @@ export const VolumeIcon = ({ className, muted }: P & { muted?: boolean }) => (
     )}
   </svg>
 );
+
+export const ClockIcon = ({ className }: P) => (
+  <svg {...stroke} className={className}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2" /></svg>
+);
+
+/** أيقونة لكل صلاة: شروق للفجر، غروب للمغرب، هلال ونجمة للعشاء */
+export function PrayerIcon({ prayer, className }: P & { prayer: "fajr" | "maghrib" | "isha" }) {
+  if (prayer === "isha") {
+    return (
+      <svg {...stroke} className={className}><path d="M15.5 16.5A6.5 6.5 0 1 1 9 7a5 5 0 0 0 6.5 9.5Z" /><path d="M18 4.5v3M16.5 6h3" /></svg>
+    );
+  }
+  const up = prayer === "fajr";
+  return (
+    <svg {...stroke} className={className}>
+      <path d="M3 18h18" />
+      <path d="M7 18a5 5 0 0 1 10 0" />
+      <path d="M4.8 14.2 6.2 15M19.2 14.2l-1.4.8" />
+      {up ? <path d="M12 10V4.5M9.8 6.7 12 4.5l2.2 2.2" /> : <path d="M12 4.5V10M9.8 7.8 12 10l2.2-2.2" />}
+    </svg>
+  );
+}
