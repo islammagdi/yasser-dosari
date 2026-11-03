@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { formatDuration, toArabicDigits } from "@/lib/format";
 import { getCategory } from "@/lib/categories";
@@ -88,7 +89,9 @@ export function PlayerBar() {
         <div className="flex min-w-0 flex-1 items-center gap-1 md:w-64 md:flex-none lg:w-80">
           <RecordingCover recording={p.current} sizes="48px" className="me-2 h-12 w-12 shrink-0 rounded-xl border border-gold/30" />
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-[15px] font-semibold">{p.current.title}</span>
+            <Link href={`/${p.current.category}/${p.current.id}`} className="truncate text-[15px] font-semibold hover:text-gold-soft">
+              {p.current.title}
+            </Link>
             <span className={`truncate text-xs ${p.error ? "text-gold-soft" : "text-muted"}`}>{p.error ?? section}</span>
           </span>
           <button

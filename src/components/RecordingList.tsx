@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { LectureType, Recording } from "@/types";
 import { LECTURE_TYPE_LABELS, hijriMonthName } from "@/lib/categories";
 import { normalizeArabic, toArabicDigits } from "@/lib/format";
+import { matchesSearch, searchTerms } from "@/lib/search";
 import { useFavorites } from "@/lib/useFavorites";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCard } from "./RecordingCard";
@@ -109,7 +110,7 @@ export function RecordingList({
       if (activeYear != null && r.hijriYear !== activeYear) return false;
       if (activeVersion != null && versionOf(r) !== activeVersion) return false;
       if (type !== "all" && r.lectureType !== type) return false;
-      if (q && !normalizeArabic(`${r.title} ${r.subtitle ?? ""} ${r.searchText ?? ""}`).includes(q)) return false;
+      if (q && !matchesSearch(r, searchTerms(query))) return false;
       return true;
     });
 

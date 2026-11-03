@@ -1,0 +1,23 @@
+import { NextResponse } from "next/server";
+import { recordings } from "@/lib/api";
+import { CATEGORIES } from "@/lib/categories";
+import { matchesSearch, searchTerms } from "@/lib/search";
+
+/** أقصى عدد نتايج بيرجع من كل قسم (الباقي بيتعرض في صفحة القسم نفسه) */
+const PER_CATEGORY = 60;
+
+/** GET /api/search?q=الزخرف ← النتايج من كل الأقسام، مجمّعة بالقسم */
+export async function GET(req: Request) {
+  const q = new URL(req.url).searchParams.get("q") ?? "";
+  const terms = searchTerms(q);
+  if (terms.join("").length < 2) return NextResponse.json({ groups: [] });
+
+  const groups = await Promise.all(
+    CATEGORIES.map(async (c) => {
+      const hits = (await recordings.list({ category: c.slug })).filter((r) => matchesSearch(r, terms));
+      return { slug: c.slug, title: c.title, total: hits.length, items: hits.slice(0, PER_CATEGORY) };
+    }),
+  );
+
+  return NextResponse.json({ groups: groups.filter((g) => g.total > 0) });
+}

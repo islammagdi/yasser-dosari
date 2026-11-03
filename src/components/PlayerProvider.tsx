@@ -15,7 +15,7 @@ interface PlayerContextValue {
   duration: number;
   rate: number;
   error: string | null;
-  playQueue: (items: Recording[], startIndex: number) => void;
+  playQueue: (items: Recording[], startIndex: number, startAt?: number) => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
@@ -313,7 +313,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume, muted, isLoading]);
 
-  const playQueue = useCallback((items: Recording[], startIndex: number) => {
+  const playQueue = useCallback((items: Recording[], startIndex: number, startAt = 0) => {
     const target = items[startIndex];
     if (!target) return;
     // نفس التسجيل؟ يبقى toggle
@@ -324,7 +324,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     autoplay.current = true;
-    resumeAt.current = 0;
+    resumeAt.current = startAt;
     setQueue(items);
     setIndex(startIndex);
   }, [current, media]);

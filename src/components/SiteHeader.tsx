@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
 import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
-import { HeartIcon } from "./icons";
+import { HeartIcon, SearchIcon } from "./icons";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -48,22 +48,33 @@ export function SiteHeader() {
             })}
           </div>
         </nav>
-
-        <Link
-          href="/favorites"
-          aria-label={`المفضلة${ids.length ? ` (${ids.length})` : ""}`}
-          aria-current={onFavorites ? "page" : undefined}
-          className={`glass-card relative order-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:order-3 md:h-[52px] md:w-[52px] ${
-            onFavorites ? "text-[#E5636B]" : "text-muted hover:text-text"
-          }`}
-        >
-          <HeartIcon filled={onFavorites} className="h-5 w-5" />
-          {ids.length > 0 && (
-            <span className="absolute -top-1 end-0 min-w-5 rounded-full bg-gold px-1.5 text-center text-[11px] font-bold leading-5 text-gold-ink">
-              {toArabicDigits(ids.length)}
-            </span>
-          )}
-        </Link>
+        <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-3">
+          <Link
+            href="/search"
+            aria-label="البحث"
+            aria-current={pathname === "/search" ? "page" : undefined}
+            className={`glass-card flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-[52px] md:w-[52px] ${
+              pathname === "/search" ? "text-gold" : "text-muted hover:text-text"
+            }`}
+          >
+            <SearchIcon className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/favorites"
+            aria-label={`المفضلة${ids.length ? ` (${ids.length})` : ""}`}
+            aria-current={onFavorites ? "page" : undefined}
+            className={`glass-card relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-[52px] md:w-[52px] ${
+              onFavorites ? "text-[#E5636B]" : "text-muted hover:text-text"
+            }`}
+          >
+            <HeartIcon filled={onFavorites} className="h-5 w-5" />
+            {ids.length > 0 && (
+              <span className="absolute -top-1 end-0 min-w-5 rounded-full bg-gold px-1.5 text-center text-[11px] font-bold leading-5 text-gold-ink">
+                {toArabicDigits(ids.length)}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
     </header>
   );

@@ -2,10 +2,14 @@ import type { Metadata, Viewport } from "next";
 import { PlayerBar } from "@/components/PlayerBar";
 import { PlayerProvider } from "@/components/PlayerProvider";
 import { RegisterSW } from "@/components/RegisterSW";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+// رابط الموقع الأساسي: مهم عشان صور المشاركة على واتساب تبقى روابط كاملة
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 
 export const metadata: Metadata = {
   // مهم: من غيره صور المشاركة بتطلع على localhost
@@ -46,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 <main id="main" className="mx-auto w-full max-w-page px-4 pb-32 pt-6 sm:px-6 sm:pt-10">
             {children}
           </main>
+          <SiteFooter />
           <PlayerBar />
         </PlayerProvider>
       </body>
