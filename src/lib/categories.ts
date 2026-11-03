@@ -71,5 +71,5 @@ export function hijriMonthName(month: number): string {
 /** غلاف افتراضي لكل قسم (اختياري) — بيظهر لأي تسجيل في القسم ملوش imageUrl خاص بيه */
 export const CATEGORY_COVERS: Partial<Record<Category, string>> = {
   // fard: "/images/covers/fard.jpg",
-  // mushaf: "/images/covers/mushaf.jpg",
+   mushaf: "/images/covers/mushaf.jpg",
 };
