@@ -1,4 +1,4 @@
-import type { ImamateWeek } from "@/types";
+import type { ImamateWeek, RamadanNight } from "@/types";
 
 /**
  * جدول إمامة الشيخ في المسجد الحرام.
@@ -13,3 +13,9 @@ export const IMAMATE_WEEKS: ImamateWeek[] = [
     
    { from: "1448-05-28", prayers: ["fajr", "asr", "maghrib"] },  
 ];
+
+/**
+ * جدول رمضان (احتياطي لو شيت رمضان مش متظبط): كل سطر = جزء بيؤمه الشيخ في ليلة.
+ * مثال: { year: 1448, night: 1, prayer: "taraweeh", part: "last" } = التسليمات الأخيرة والوتر ليلة ١ رمضان
+ */
+export const RAMADAN_NIGHTS: RamadanNight[] = [];

@@ -112,3 +112,16 @@ export function PrayerIcon({ prayer, className }: P & { prayer: "fajr" | "maghri
     </svg>
   );
 }
+
+
+
+/** مسجد بقبة ومئذنتين */
+export const MosqueIcon = ({ className }: P) => (
+  <svg {...stroke} className={className}>
+    <path d="M3 21h18" />
+    <path d="M7 21v-6.5a5 5 0 0 1 10 0V21" />
+    <path d="M12 9.5V7M12 7a1.2 1.2 0 0 0 1.2-1.2" />
+    <path d="M10.5 21v-2.5a1.5 1.5 0 0 1 3 0V21" />
+    <path d="M3.5 21V10l1-2 1 2v11M18.5 21V10l1-2 1 2v11" />
+  </svg>
+);

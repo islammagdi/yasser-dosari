@@ -3,20 +3,13 @@ import type { PrayerTimes } from "@/lib/imamate";
 
 /**
  * مواقيت الصلاة في مكة من Aladhan (API مجاني)، بطريقة أم القرى (method=4).
- * بنضيف ٤٠ دقيقة على الأذان (الإقامة + الصلاة)، عشان "الإمامة القادمة" تفضل ظاهرة لحد ما الصلاة تخلص.
+ * بترجّع وقت الأذان لكل صلاة، والإضافات (الإقامة، التراويح، التهجد) بتتحسب في expandWeeks.
  */
-const AFTER_ADHAN_MIN = 40;
 const NAMES: Record<string, ImamatePrayer> = { Fajr: "fajr", Dhuhr: "dhuhr", Asr: "asr", Maghrib: "maghrib", Isha: "isha" };
 
 interface AladhanDay {
   timings: Record<string, string>;
   date: { gregorian: { date: string } }; // "01-11-2026"
-}
-
-function plusMinutes(hhmm: string, mins: number): string {
-  const [h, m] = hhmm.split(":").map(Number);
-  const t = Math.min(h * 60 + m + mins, 23 * 60 + 59);
-  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 }
 
 export async function makkahPrayerTimes(dates: string[]): Promise<PrayerTimes> {
@@ -37,7 +30,7 @@ export async function makkahPrayerTimes(dates: string[]): Promise<PrayerTimes> {
         out[iso] = {};
         for (const [name, key] of Object.entries(NAMES)) {
           const hhmm = day.timings[name]?.slice(0, 5); // "04:58 (+03)" ← "04:58"
-          if (hhmm) out[iso][key] = plusMinutes(hhmm, AFTER_ADHAN_MIN);
+          if (hhmm) out[iso][key] = hhmm; // وقت الأذان؛ الإضافات بتتحسب في expandWeeks
         }
       }
     }),

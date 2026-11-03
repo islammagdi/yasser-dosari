@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { isRamadan } from "@/lib/imamate";
 import type { Category, Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
 import { RecordingList } from "./RecordingList";
@@ -18,6 +19,12 @@ export interface HomeSection {
 export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
   const [active, setActive] = useState<Category | undefined>(sections[0]?.slug);
   const id = useId();
+  // في رمضان التراويح هي اللي بتتفتح الأول
+  useEffect(() => {
+    if (isRamadan(new Date())) {
+      if (sections.some((s) => s.slug === "taraweeh")) setActive("taraweeh");
+    }
+  }, [sections]);
   const current = sections.find((s) => s.slug === active) ?? sections[0];
   if (!current) return null;
 

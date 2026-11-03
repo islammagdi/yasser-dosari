@@ -5,7 +5,7 @@ export type Prayer = "fajr" | "maghrib" | "isha";
 export type LectureType = "khutbah" | "lesson";
 
 /** جدول الإمامة بيشمل الصلوات الخمس */
-export type ImamatePrayer = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
+export type ImamatePrayer = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha" | "taraweeh" | "tahajjud";
 
 /** موعد إمامة واحد من الجدول الأسبوعي */
 export interface ImamateSlot {
@@ -15,8 +15,29 @@ export interface ImamateSlot {
   prayer: ImamatePrayer;
   /** اختياري: وقت الصلاة بتوقيت مكة "20:30"، عشان الموعد يعدّي بعد الصلاة مش بنهاية اليوم */
   time?: string;
+  /** وقت بداية الصلاة التقريبي بتوقيت مكة (للتقويم) */
+  start?: string;
+  /** لصلوات الليل (التراويح والتهجد): التاريخ اللي الليلة منسوبة له، "ليلة ١١" ← يوم ١١ */
+  nightOf?: string;
+  /** التراويح والتهجد بيتقسموا بين إمامين: التسليمات الأولى، أو الأخيرة مع الوتر */
+  part?: NightPart;
+  /** لجدول رمضان: رقم الليلة والسنة الهجرية */
+  ramadanNight?: number;
+  ramadanYear?: number;
   /** صلوات الشيخ في الأسبوع ده كله، عشان تتعرض تحت الموعد */
   weekPrayers?: ImamatePrayer[];
+}
+
+export type NightPart = "first" | "last";
+
+/** ليلة من جدول رمضان: الشيخ بيؤم جزء من التراويح أو التهجد في ليلة معيّنة */
+export interface RamadanNight {
+  /** السنة الهجرية: 1448 */
+  year: number;
+  /** رقم الليلة في رمضان: ليلة ١١ = مساء يوم ١٠ */
+  night: number;
+  prayer: "taraweeh" | "tahajjud";
+  part: NightPart;
 }
 
 /** أسبوع من جدول الإمامة، زي ما رئاسة الشؤون الدينية بتعلنه: من الأحد للسبت، وكل إمام على صلوات ثابتة */

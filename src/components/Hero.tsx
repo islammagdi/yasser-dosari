@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import type { ImamateSlot, Recording } from "@/types";
 import { getCategory } from "@/lib/categories";
@@ -47,7 +48,7 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
           <div className="mx-auto flex max-w-page flex-col px-4 pb-4 sm:px-6 lg:min-h-[620px] lg:justify-center lg:pb-10 lg:pt-16">
              <div className="-mt-28 flex flex-col gap-8 sm:-mt-32 lg:mt-0 lg:max-w-[620px]">
           <div className="flex flex-col gap-4">
-            <p className="rise flex items-center gap-3 text-[15px] font-medium text-gold">
+            <p className="rise relative flex items-center gap-4 rounded-3xl border border-gold/30 bg-ink/45 p-4 backdrop-blur-md transition-colors hover:border-gold/50 sm:gap-5 sm:p-5">
               <span aria-hidden className="h-px w-10 bg-gold/60" />
               إمام وخطيب المسجد الحرام
             </p>
@@ -98,10 +99,12 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
 onClick={() => playQueue(recent, 0)}
                   disabled={!isPlayable(featured)}
                   aria-label={`${featuredPlaying ? "إيقاف" : "تشغيل"} ${featured.title}`}
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
+                                 className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
                 >
-                  {featuredPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
-                </button>
+                {featuredPlaying ? <PauseIcon className="h-7 w-7" /> : <PlayIcon className="h-7 w-7" />}
+              </button>
+              {/* الضغط على باقي الكارت بيفتح صفحة التلاوة */}
+              <Link href={`/${featured.category}/${featured.id}`} aria-label={featured.title} className="absolute inset-0 rounded-3xl" />
               </div>
 
 

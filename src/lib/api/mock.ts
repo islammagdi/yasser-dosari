@@ -1,6 +1,6 @@
-import { IMAMATE_WEEKS } from "@/data/imamate";
-import { expandWeeks } from "@/lib/imamate";
-import { fetchImamateSheet, imamateSheetEnabled } from "./imamateSheet";
+import { IMAMATE_WEEKS, RAMADAN_NIGHTS } from "@/data/imamate";
+import { expandRamadan, expandWeeks } from "@/lib/imamate";
+import { fetchImamateSheet, fetchRamadanSheet, imamateSheetEnabled, ramadanSheetEnabled } from "./imamateSheet";
 import { makkahPrayerTimes } from "./prayerTimes";
 import { MOCK_RECORDINGS } from "@/data/mock";
 import { fetchMushaf } from "./mp3quran";
@@ -67,11 +67,20 @@ export const mockRepository: RecordingsRepository = {
         console.warn("imamate sheet: fallback to code", err);
       }
     }
-    const slots = expandWeeks(weeks);
+    let nights = RAMADAN_NIGHTS;
+    if (ramadanSheetEnabled()) {
+      try {
+        nights = await fetchRamadanSheet();
+      } catch (err) {
+        console.warn("ramadan sheet: fallback to code", err);
+      }
+    }
+    const build = (times?: Parameters<typeof expandWeeks>[1]) => [...expandWeeks(weeks, times), ...expandRamadan(nights, times)];
+    const slots = build();
     // مواقيت الصلاة، عشان الموعد يعدّي بعد الصلاة نفسها مش بنهاية اليوم
     try {
       const times = await makkahPrayerTimes([...new Set(slots.map((s) => s.date))]);
-      return expandWeeks(weeks, times);
+      return build(times);
     } catch (err) {
       console.warn("aladhan: prayer times unavailable", err);
       return slots;

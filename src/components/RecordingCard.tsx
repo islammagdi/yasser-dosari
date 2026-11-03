@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Recording } from "@/types";
 import { formatDate, formatDuration, toArabicDigits } from "@/lib/format";
 import { isPlayable } from "@/lib/labels";
@@ -18,70 +19,76 @@ interface Props {
   onToggleFavorite?: () => void;
 }
 
-/** كارت مربع: الغلاف فوق والعنوان تحت، والكارت كله زرار تشغيل */
+/**
+ * الضغط على الكارت بيفتح صفحة التلاوة، وزرار التشغيل بيشغّلها مكانها.
+ * الرابط ممدود على الكارت كله، والمحتوى فوقه مش بيستقبل ضغطات (pointer-events-none)
+ * إلا زرار التشغيل والقلب.
+ */
 export function RecordingCard({ recording, position, badge, isCurrent, isPlaying, onPlay, favorite = false, onToggleFavorite }: Props) {
   const unavailable = !isPlayable(recording);
   const playingNow = isCurrent && isPlaying;
   const meta = [recording.subtitle, formatDate(recording.date), formatDuration(recording.durationSec)].filter(Boolean);
 
   return (
-    <li className="relative min-w-0">
-      <button
-        type="button"
-        onClick={onPlay}
-        disabled={unavailable}
-        aria-label={unavailable ? `${recording.title}: غير متاح بعد` : `${playingNow ? "إيقاف" : "تشغيل"} ${recording.title}`}
-        className={`group flex w-full flex-col gap-3 rounded-3xl p-2 text-start transition-colors disabled:cursor-not-allowed ${
-          isCurrent ? "bg-white/[0.07] ring-1 ring-inset ring-gold/40" : "hover:bg-white/5"
-        }`}
-      >
-        <span className="relative block aspect-square w-full overflow-hidden rounded-2xl">
-          <RecordingCover
-            recording={recording}
-            size="lg"
-            label={position != null ? toArabicDigits(position) : undefined}
-            sizes="(min-width: 1024px) 260px, (min-width: 640px) 30vw, 45vw"
-            className="h-full w-full"
-          />
-          {badge && (
-            <span className="absolute start-2 top-2 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-medium text-gold-soft">
-              {badge}
-            </span>
-          )}
-          {playingNow && (
-            <span className="absolute inset-0 flex items-center justify-center bg-ink/50">
-              <EqualizerIcon className="h-9 w-9 text-gold" />
-            </span>
-          )}
-          <span
-            className={`absolute bottom-2 end-2 flex h-11 w-11 items-center justify-center rounded-full shadow-float transition-colors group-disabled:opacity-40 ${
-              isCurrent ? "bg-gold text-gold-ink" : "bg-ink/75 text-text group-hover:bg-gold group-hover:text-gold-ink"
-            }`}
-          >
-            {playingNow ? <PauseIcon className="h-[18px] w-[18px]" /> : <PlayIcon className="h-[18px] w-[18px]" />}
+    <li
+      className={`group relative flex min-w-0 flex-col gap-3 rounded-3xl p-2 transition-colors ${
+        isCurrent ? "bg-white/[0.07] ring-1 ring-inset ring-gold/40" : "hover:bg-white/5"
+      }`}
+    >
+      <Link href={`/${recording.category}/${recording.id}`} aria-label={recording.title} className="absolute inset-0 rounded-3xl" />
+
+      <span className="pointer-events-none relative block aspect-square w-full overflow-hidden rounded-2xl">
+        <RecordingCover
+          recording={recording}
+          size="lg"
+          label={position != null ? toArabicDigits(position) : undefined}
+          sizes="(min-width: 1024px) 260px, (min-width: 640px) 30vw, 45vw"
+          className="h-full w-full"
+        />
+        {badge && (
+          <span className="absolute start-2 top-2 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-medium text-gold-soft">
+            {badge}
           </span>
-        </span>
-        <span className="flex min-w-0 flex-col gap-1 px-1 pb-1">
-          <span className={`line-clamp-2 text-[15px] font-semibold leading-6 ${isCurrent ? "text-gold-soft" : ""}`}>
-            {recording.title}
+        )}
+        {playingNow && (
+          <span className="absolute inset-0 flex items-center justify-center bg-ink/50">
+            <EqualizerIcon className="h-9 w-9 text-gold" />
           </span>
-          {meta.length > 0 && <span className="truncate text-xs text-muted">{meta.join("، ")}</span>}
-        </span>
-      </button>
-      {/* زرار المفضلة: برّه زرار التشغيل (مينفعش زرار جوه زرار) ومتحط فوق الغلاف */}
-      {onToggleFavorite && (
+        )}
+
         <button
           type="button"
-          onClick={onToggleFavorite}
-          aria-pressed={favorite}
-          aria-label={`${favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}: ${recording.title}`}
-          className={`absolute end-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-ink/75 transition-colors hover:bg-ink ${
-            favorite ? "text-[#E5636B]" : "text-text/80 hover:text-text"
+          onClick={onPlay}
+          disabled={unavailable}
+          aria-label={unavailable ? `${recording.title}: غير متاح بعد` : `${playingNow ? "إيقاف" : "تشغيل"} ${recording.title}`}
+          className={`pointer-events-auto absolute bottom-2 end-2 flex h-12 w-12 items-center justify-center rounded-full shadow-float transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            isCurrent ? "bg-gold text-gold-ink" : "bg-ink/80 text-text hover:bg-gold hover:text-gold-ink"
           }`}
         >
-          <HeartIcon filled={favorite} className="h-[18px] w-[18px]" />
+          {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
         </button>
-      )}
+
+        {onToggleFavorite && (
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-pressed={favorite}
+            aria-label={`${favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}: ${recording.title}`}
+            className={`pointer-events-auto absolute end-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-ink/75 transition-colors hover:bg-ink ${
+              favorite ? "text-[#E5636B]" : "text-text/80 hover:text-text"
+            }`}
+          >
+            <HeartIcon filled={favorite} className="h-[18px] w-[18px]" />
+          </button>
+        )}
+      </span>
+
+      <span className="pointer-events-none relative flex min-w-0 flex-col gap-1 px-1 pb-1">
+        <span className={`line-clamp-2 text-[15px] font-semibold leading-6 ${isCurrent ? "text-gold-soft" : "group-hover:text-gold-soft"}`}>
+          {recording.title}
+        </span>
+        {meta.length > 0 && <span className="truncate text-xs text-muted">{meta.join("، ")}</span>}
+      </span>
     </li>
   );
 }
