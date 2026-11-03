@@ -33,6 +33,7 @@ export default async function CategoryPage({ params }: Props) {
         groupByMonth={category.slug === "fard"}
         numbered={category.slug === "taraweeh" || category.slug === "mushaf"}
         typeFilter={category.slug === "lectures"}
+        versionTabs={category.slug === "mushaf"}
       />
     </>
   );

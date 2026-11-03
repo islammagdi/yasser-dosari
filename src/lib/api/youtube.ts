@@ -1,5 +1,7 @@
 import type { Category, LectureType, Prayer, Recording } from "@/types";
 import { hijriDateLabel } from "@/lib/labels";
+import { normalizeArabic } from "@/lib/format";
+import { SURAH_NAMES, surahName } from "@/lib/quran";
 
 /**
  * الفروض والتراويح والخطب من قناة يوتيوب (YouTube Data API v3).
@@ -8,6 +10,8 @@ import { hijriDateLabel } from "@/lib/labels";
 const API = "https://www.googleapis.com/youtube/v3";
 const KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID ?? "UClncV9OLPto_MinRzGfjr2g";
+/** المصحف المرتل من إنتاج المركز السعودي للتلاوات القرآنية (قناة المركز على يوتيوب) */
+const MUSHAF_PLAYLIST = process.env.YOUTUBE_MUSHAF_PLAYLIST ?? "PLbi9UdPlMRS635t0pMgYJARJGYu4BAhe8";
 /** البيانات بتتحدّث كل ٦ ساعات */
 const REVALIDATE = 60 * 60 * 6;
 
@@ -25,7 +29,8 @@ interface YtItem {
   snippet: {
     title: string;
     publishedAt: string;
-    resourceId: { videoId: string };
+        resourceId: { videoId: string };
+    position?: number;
     thumbnails?: Record<string, { url: string }>;
   };
 }
@@ -154,6 +159,8 @@ function toRecording(item: YtItem, playlistTitle: string, cls: { category: Categ
     audioUrl: "",
     imageUrl: (th.high ?? th.medium ?? th.default)?.url,
     addedAt: item.snippet.publishedAt,
+    // العنوان الأصلي كامل للبحث، عشان أي كلمة فيه تتلاقي حتى لو مش ظاهرة في الكارت
+    searchText: t,
   };
 
   if (cls.category === "fard") {
@@ -211,4 +218,44 @@ export async function fetchYoutube(category: Category): Promise<Recording[]> {
     seen.add(r.id);
     return true;
   });
+}
+
+// ---------- المصحف المرتل (فيديو) ----------
+
+/** أسماء السور مرتبة من الأطول للأقصر، عشان "سورة ق" متتلخبطش مع "سورة قريش" */
+const SURAH_PATTERNS = SURAH_NAMES.map((name, i) => ({ n: i + 1, key: normalizeArabic(name) })).sort(
+  (a, b) => b.key.length - a.key.length,
+);
+
+function surahFrom(title: string): number | undefined {
+  const t = normalizeArabic(title);
+  return SURAH_PATTERNS.find(({ key }) => new RegExp(`سوره\\s*${key}(?![\\u0600-\\u06FF])`).test(t))?.n;
+}
+
+export async function fetchYoutubeMushaf(): Promise<Recording[]> {
+  const items = await fetchAll<YtItem>(`playlistItems?part=snippet&playlistId=${MUSHAF_PLAYLIST}`);
+  const seen = new Set<number>();
+  const out: Recording[] = [];
+  for (const it of items) {
+    if (/^(Private|Deleted) video$/i.test(it.snippet.title)) continue;
+    const t = clean(it.snippet.title);
+    // رقم السورة من العنوان، ولو مش واضح نعتمد على ترتيب الفيديو في القايمة
+    const n = surahFrom(t) ?? (it.snippet.position ?? -1) + 1;
+    if (n < 1 || n > 114 || seen.has(n)) continue;
+    seen.add(n);
+    const th = it.snippet.thumbnails ?? {};
+    out.push({
+      id: `yt-mushaf-${it.snippet.resourceId.videoId}`,
+      category: "mushaf",
+      surah: n,
+      title: `سورة ${surahName(n)}`,
+      subtitle: "إنتاج المركز السعودي للتلاوات القرآنية",
+      versionLabel: "المركز السعودي (فيديو)",
+      youtubeId: it.snippet.resourceId.videoId,
+      audioUrl: "",
+      imageUrl: (th.high ?? th.medium ?? th.default)?.url,
+      searchText: t,
+    });
+  }
+  return out.sort((a, b) => (a.surah ?? 0) - (b.surah ?? 0));
 }

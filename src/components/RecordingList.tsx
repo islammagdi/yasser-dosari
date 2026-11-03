@@ -22,6 +22,8 @@ interface Props {
   typeFilter?: boolean;
   /** عنوان الصفحة: لو موجود بيظهر h1 والبحث جنبه في نفس الصف */
   title?: string;
+  /** تابات بالنسخ لو القسم فيه أكتر من تسجيل (المصحف) */
+  versionTabs?: boolean;
 }
 
 type TypeValue = LectureType | "all";
@@ -81,12 +83,17 @@ export function RecordingList({
   numbered = false,
   typeFilter = false,
   title,
+  versionTabs = false,
 }: Props) {
   const { current, isPlaying, playQueue } = usePlayer();
   const fav = useFavorites();
   const [query, setQuery] = useState("");
   const [type, setType] = useState<TypeValue>("all");
   const [year, setYear] = useState<number | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
+  const versionOf = (r: Recording) => r.versionLabel ?? "المصحف المرتل";
+  const versions = useMemo(() => (versionTabs ? Array.from(new Set(items.map(versionOf))) : []), [items, versionTabs]);
+  const activeVersion = versions.length > 1 ? version ?? versions[0] : null;
 
   const years = useMemo(
     () =>
@@ -100,8 +107,9 @@ export function RecordingList({
     const q = normalizeArabic(query);
     let list = items.filter((r) => {
       if (activeYear != null && r.hijriYear !== activeYear) return false;
+      if (activeVersion != null && versionOf(r) !== activeVersion) return false;
       if (type !== "all" && r.lectureType !== type) return false;
-      if (q && !normalizeArabic(`${r.title} ${r.subtitle ?? ""}`).includes(q)) return false;
+      if (q && !normalizeArabic(`${r.title} ${r.subtitle ?? ""} ${r.searchText ?? ""}`).includes(q)) return false;
       return true;
     });
 
@@ -114,7 +122,8 @@ export function RecordingList({
       );
     }
 
-    if (!groupByMonth) return list.length ? [{ key: "all", items: list }] : [];
+    // وقت البحث: النتايج كلها في شبكة واحدة من غير تقسيم الشهور، عشان متتفرقش
+    if (!groupByMonth || q) return list.length ? [{ key: "all", items: list }] : [];
 
     const byMonth = new Map<number, Recording[]>();
     for (const r of list) {
@@ -124,12 +133,12 @@ export function RecordingList({
     return Array.from(byMonth.entries())
       .sort(([a], [b]) => a - b)
       .map(([m, recs]) => ({ key: `m-${m}`, title: hijriMonthName(m) || "شهر غير محدد", items: recs }));
-  }, [items, query, type, activeYear, numbered, groupByMonth]);
+}, [items, query, type, activeYear, activeVersion, numbered, groupByMonth]);
 
   // قايمة التشغيل = كل اللي ظاهر بنفس ترتيب العرض
   const queue = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const filtered = !!query || type !== "all";
-  const hasFilters = typeFilter || (yearTabs && years.length > 0 && activeYear != null);
+  const hasFilters = typeFilter || (yearTabs && years.length > 0 && activeYear != null) || activeVersion != null;
 
   const filters = hasFilters && (
     <div className="flex min-w-0 flex-wrap gap-3">
@@ -142,6 +151,9 @@ export function RecordingList({
         />
       )}
       {typeFilter && <Segmented label="نوع المحاضرة" value={type} onChange={setType} options={TYPE_OPTIONS} />}
+      {activeVersion != null && (
+        <Segmented label="النسخة" value={activeVersion} onChange={setVersion} options={versions.map((v) => ({ value: v, label: v }))} />
+      )}
     </div>
   );
 
@@ -184,6 +196,7 @@ export function RecordingList({
         </p>
       ) : (
         <div className="flex flex-col gap-10">
+          {filtered && <p className="-mb-6 px-1 text-sm text-muted">عدد النتائج: {toArabicDigits(queue.length)}</p>}
           {groups.map((g) => (
             <section key={g.key} aria-label={g.title} className="flex flex-col gap-4">
               {g.title && (

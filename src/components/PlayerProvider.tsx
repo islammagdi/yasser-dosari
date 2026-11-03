@@ -127,13 +127,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const current = index >= 0 ? queue[index] ?? null : null;
   const isYouTube = Boolean(current?.youtubeId);
+  // لوحة الفيديو: مقفولة يعني الفيديو واقف (يوتيوب مش بيسمح بتشغيل فيديو مستخبي)
+  const [videoClosed, setVideoClosed] = useState(true);
+  const videoOpen = isYouTube && !videoClosed;
 
   const media = useCallback((): Media | null => {
     if (current?.youtubeId) {
       const p = ytRef.current;
       if (!p) return null;
       return {
-        play: () => p.playVideo(),
+        play: () => {
+          setVideoClosed(false);
+          p.playVideo();
+        },
         pause: () => p.pauseVideo(),
         paused: () => ![YT_PLAYING, YT_BUFFERING].includes(p.getPlayerState()),
         time: () => p.getCurrentTime(),
@@ -214,6 +220,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     // ---- يوتيوب ----
     if (current.youtubeId) {
+      // اللوحة تفتح لما المستخدم يشغّل، ومش لما الصفحة تسترجع آخر تلاوة
+      setVideoClosed(!autoplay.current);
       if (audio) {
         audio.pause();
         audio.removeAttribute("src");
@@ -358,6 +366,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const setRate = useCallback((r: number) => setRateState(r), []);
 
+  /** إغلاق لوحة الفيديو = إيقاف التلاوة */
+  const closeVideo = useCallback(() => {
+    ytRef.current?.pauseVideo();
+    setVideoClosed(true);
+  }, []);
+
+  // احتياط: لو الفيديو اشتغل واللوحة مقفولة، نوقّفه
+  useEffect(() => {
+    if (isYouTube && videoClosed && isPlaying) ytRef.current?.pauseVideo();
+  }, [isYouTube, videoClosed, isPlaying]);
+
   const setVolume = useCallback((v: number) => {
     setVolumeState(Math.max(0, Math.min(1, v)));
     if (v > 0) setMuted(false);
@@ -408,18 +427,42 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     <PlayerContext.Provider value={value}>
       {children}
 
-      {/* مشغّل يوتيوب: ظاهر وبالحجم المسموح (٢٠٠px على الأقل) طول ما تسجيل يوتيوب شغّال */}
-      <div
-        aria-label="مشغّل يوتيوب"
+      {/* لوحة "يُشغَّل الآن" لتسجيلات يوتيوب: الفيديو لازم يفضل ظاهر (٢٠٠px على الأقل) طول ما هو شغّال */}
+      <section
+        aria-label="فيديو التلاوة"
+        aria-hidden={!videoOpen}
         className={
-          isYouTube
-            ? "fixed left-3 z-40 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-float"
-            : "pointer-events-none fixed -left-[9999px] top-0 h-px w-px overflow-hidden"
+          videoOpen
+            ? "glass fixed inset-x-0 z-40 border-t border-white/10 shadow-float md:inset-x-auto md:start-6 md:w-[420px] md:rounded-t-3xl md:border md:border-b-0"
+            : "pointer-events-none fixed -left-[9999px] top-0 w-[420px]"
         }
-        style={isYouTube ? { width: "min(356px, calc(100vw - 24px))", height: 200, bottom: "calc(84px + env(safe-area-inset-bottom))" } : undefined}
+        style={videoOpen ? { bottom: "calc(4.25rem + env(safe-area-inset-bottom))" } : undefined}
       >
-        <div ref={ytMountRef} />
-      </div>
+        <div className="flex items-center justify-between gap-2 px-4 pb-2 pt-3">
+          <span className="flex min-w-0 items-center gap-2 text-xs text-muted">
+            <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+            يُشغَّل الآن من يوتيوب
+          </span>
+          <button
+            type="button"
+            onClick={closeVideo}
+            tabIndex={videoOpen ? 0 : -1}
+            aria-label="إغلاق الفيديو وإيقاف التلاوة"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-text"
+          >
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div className="mx-4 h-[200px] overflow-hidden rounded-2xl bg-black md:aspect-video md:h-auto">
+          <div ref={ytMountRef} />
+        </div>
+        <div className="flex flex-col gap-0.5 px-4 pb-4 pt-3">
+          <p className="truncate font-semibold">{current?.title}</p>
+          {current?.subtitle && <p className="truncate text-sm text-muted">{current.subtitle}</p>}
+        </div>
+      </section>
 
       <audio
         ref={audioRef}

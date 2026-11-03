@@ -4,7 +4,7 @@ import { fetchImamateSheet, imamateSheetEnabled } from "./imamateSheet";
 import { makkahPrayerTimes } from "./prayerTimes";
 import { MOCK_RECORDINGS } from "@/data/mock";
 import { fetchMushaf } from "./mp3quran";
-import { fetchYoutube, youtubeEnabled } from "./youtube";
+import { fetchYoutube, fetchYoutubeMushaf, youtubeEnabled } from "./youtube";
 import type { RecordingsRepository } from "./repository";
 
 export const mockRepository: RecordingsRepository = {
@@ -17,6 +17,14 @@ export const mockRepository: RecordingsRepository = {
         if (real.length) items = real;
       } catch (err) {
         console.warn("mp3quran: fallback to mock mushaf", err);
+      }
+      // نسخة تانية: المصحف المرتل من إنتاج المركز السعودي (فيديو يوتيوب)
+      if (youtubeEnabled()) {
+        try {
+          items = [...items, ...(await fetchYoutubeMushaf())];
+        } catch (err) {
+          console.warn("youtube: mushaf playlist unavailable", err);
+        }
       }
     }
     // الفروض والتراويح والخطب من يوتيوب لو فيه YOUTUBE_API_KEY

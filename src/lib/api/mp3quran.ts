@@ -62,6 +62,7 @@ export async function fetchMushaf(): Promise<Recording[]> {
         surah: n,
         title: `سورة ${surahName(n)}`,
         subtitle: moshaf.name,
+        versionLabel: "المصحف المرتل",
         audioUrl: `${server}${file}.mp3`,
       };
     });
