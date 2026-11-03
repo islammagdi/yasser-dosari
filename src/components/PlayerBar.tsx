@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDuration, toArabicDigits } from "@/lib/format";
 import { getCategory } from "@/lib/categories";
+import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
 import { PLAYBACK_RATES, usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
@@ -141,7 +142,7 @@ export function PlayerBar() {
           <button
             type="button"
             onClick={p.toggle}
-            disabled={!p.current.audioUrl}
+            disabled={!isPlayable(p.current)}
             aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
             className="mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
           >

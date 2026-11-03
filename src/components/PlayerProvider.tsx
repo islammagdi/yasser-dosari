@@ -33,6 +33,65 @@ interface PlayerContextValue {
 /** تايمر الإيقاف: بعد عدد دقايق، أو مع نهاية التلاوة الحالية */
 export type SleepTimer = { kind: "minutes"; until: number } | { kind: "end" } | null;
 
+// ---------- مشغّل يوتيوب (IFrame Player API) ----------
+interface YTPlayer {
+  playVideo(): void;
+  pauseVideo(): void;
+  stopVideo(): void;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getCurrentTime(): number;
+  getDuration(): number;
+  getPlayerState(): number;
+  setPlaybackRate(rate: number): void;
+  setVolume(volume: number): void;
+  mute(): void;
+  unMute(): void;
+  loadVideoById(o: { videoId: string; startSeconds?: number }): void;
+  cueVideoById(o: { videoId: string; startSeconds?: number }): void;
+}
+interface YTPlayerOptions {
+  width: string;
+  height: string;
+  videoId: string;
+  playerVars: Record<string, number>;
+  events: { onReady: () => void; onStateChange: (e: { data: number }) => void };
+}
+declare global {
+  interface Window {
+    YT?: { Player: new (el: HTMLElement, opts: YTPlayerOptions) => YTPlayer };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+const YT_PLAYING = 1;
+const YT_BUFFERING = 3;
+const YT_ENDED = 0;
+
+let ytApi: Promise<void> | null = null;
+function loadYouTubeApi(): Promise<void> {
+  if (window.YT?.Player) return Promise.resolve();
+  ytApi ??= new Promise((resolve) => {
+    const prevReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      prevReady?.();
+      resolve();
+    };
+    const s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(s);
+  });
+  return ytApi;
+}
+
+/** واجهة موحّدة للتحكم، سواء الصوت أو يوتيوب */
+interface Media {
+  play(): void;
+  pause(): void;
+  paused(): boolean;
+  time(): number;
+  duration(): number;
+  seek(sec: number): void;
+}
+
 const PlayerContext = createContext<PlayerContextValue | null>(null);
 
 export function usePlayer() {
@@ -50,6 +109,8 @@ interface Saved {
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const ytMountRef = useRef<HTMLDivElement>(null);
+  const ytRef = useRef<YTPlayer | null>(null);
   const [queue, setQueue] = useState<Recording[]>([]);
   const [index, setIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -65,6 +126,34 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const autoplay = useRef(false);
 
   const current = index >= 0 ? queue[index] ?? null : null;
+  const isYouTube = Boolean(current?.youtubeId);
+
+  const media = useCallback((): Media | null => {
+    if (current?.youtubeId) {
+      const p = ytRef.current;
+      if (!p) return null;
+      return {
+        play: () => p.playVideo(),
+        pause: () => p.pauseVideo(),
+        paused: () => ![YT_PLAYING, YT_BUFFERING].includes(p.getPlayerState()),
+        time: () => p.getCurrentTime(),
+        duration: () => p.getDuration(),
+        seek: (s) => p.seekTo(s, true),
+      };
+    }
+    const a = audioRef.current;
+    if (!a || !current?.audioUrl) return null;
+    return {
+      play: () => void a.play().catch(() => setIsPlaying(false)),
+      pause: () => a.pause(),
+      paused: () => a.paused,
+      time: () => a.currentTime,
+      duration: () => a.duration || 0,
+      seek: (s) => {
+        a.currentTime = s;
+      },
+    };
+  }, [current]);
 
   // استرجاع آخر تلاوة ووقتها (من غير تشغيل تلقائي)
   useEffect(() => {
@@ -96,18 +185,83 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(t);
   }, [queue, index, currentTime, rate, current]);
 
+  // نهاية التسجيل (مشتركة بين الصوت ويوتيوب). في ref عشان يوتيوب يشوف آخر نسخة منها
+  const next = useCallback(() => {
+    if (index + 1 >= queue.length) return;
+    autoplay.current = true;
+    resumeAt.current = 0;
+    setIndex(index + 1);
+  }, [index, queue.length]);
+  const handleEnded = () => {
+    // تايمر "نهاية التلاوة": نقف هنا ومنكمّلش على اللي بعدها
+    if (sleep?.kind === "end") {
+      setSleep(null);
+      setIsPlaying(false);
+    } else if (index < queue.length - 1) next();
+    else setIsPlaying(false);
+  };
+  const endedRef = useRef(handleEnded);
+  endedRef.current = handleEnded;
+
   // تحميل التسجيل لما يتغيّر
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !current) return;
+    if (!current) return;
     setError(null);
-    setCurrentTime(resumeAt.current ?? 0);
+    const start = resumeAt.current ?? 0;
+    setCurrentTime(start);
     setDuration(current.durationSec ?? 0);
+
+    // ---- يوتيوب ----
+    if (current.youtubeId) {
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
+      const videoId = current.youtubeId;
+      let cancelled = false;
+      setIsLoading(true);
+      loadYouTubeApi().then(() => {
+        if (cancelled || !window.YT || !ytMountRef.current) return;
+        resumeAt.current = null;
+        if (ytRef.current) {
+          const opts = { videoId, startSeconds: start };
+          if (autoplay.current) ytRef.current.loadVideoById(opts);
+          else ytRef.current.cueVideoById(opts);
+          return;
+        }
+        ytRef.current = new window.YT.Player(ytMountRef.current, {
+          width: "100%",
+          height: "100%",
+          videoId,
+          playerVars: { autoplay: autoplay.current ? 1 : 0, start: Math.floor(start), playsinline: 1, rel: 0 },
+          events: {
+            onReady: () => setIsLoading(false),
+            onStateChange: (e) => {
+              if (e.data === YT_PLAYING) {
+                setIsPlaying(true);
+                setIsLoading(false);
+              } else if (e.data === YT_BUFFERING) setIsLoading(true);
+              else if (e.data === YT_ENDED) endedRef.current();
+              else setIsPlaying(false);
+            },
+          },
+        });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // ---- صوت ----
+    ytRef.current?.stopVideo();
+    if (!audio) return;
     if (!current.audioUrl) {
       audio.removeAttribute("src");
       audio.load();
       setIsPlaying(false);
-setError("هذا التسجيل غير متاح بعد.");
+      setError("هذا التسجيل غير متاح بعد.");
       return;
     }
     audio.src = current.audioUrl;
@@ -116,75 +270,93 @@ setError("هذا التسجيل غير متاح بعد.");
       audio.play().catch(() => setIsPlaying(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, current?.audioUrl]);
+  }, [current?.id]);
 
+  // يوتيوب مش بيبعت تحديث للوقت، فبنسأله كل نص ثانية وهو شغّال
+  useEffect(() => {
+    if (!isYouTube || !isPlaying) return;
+    const t = window.setInterval(() => {
+      const p = ytRef.current;
+      if (!p) return;
+      setCurrentTime(p.getCurrentTime());
+      const d = p.getDuration();
+      if (d) setDuration(d);
+    }, 500);
+    return () => window.clearInterval(t);
+  }, [isYouTube, isPlaying]);
+
+  // السرعة والصوت للاتنين
   useEffect(() => {
     if (audioRef.current) audioRef.current.playbackRate = rate;
-  }, [rate]);
+    ytRef.current?.setPlaybackRate(rate);
+  }, [rate, isLoading]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = volume;
+      audio.muted = muted;
+    }
+    const p = ytRef.current;
+    if (p) {
+      p.setVolume(Math.round(volume * 100));
+      if (muted) p.mute();
+      else p.unMute();
+    }
+  }, [volume, muted, isLoading]);
 
   const playQueue = useCallback((items: Recording[], startIndex: number) => {
     const target = items[startIndex];
     if (!target) return;
-    const audio = audioRef.current;
     // نفس التسجيل؟ يبقى toggle
-    if (current && target.id === current.id && audio) {
-      if (audio.paused) audio.play().catch(() => setIsPlaying(false));
-      else audio.pause();
+    const m = media();
+    if (current && target.id === current.id && m) {
+      if (m.paused()) m.play();
+      else m.pause();
       return;
     }
     autoplay.current = true;
     resumeAt.current = 0;
     setQueue(items);
     setIndex(startIndex);
-  }, [current]);
+  }, [current, media]);
 
   const toggle = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || !current?.audioUrl) return;
+    const m = media();
+    if (!m) return;
     autoplay.current = true;
-    if (audio.paused) audio.play().catch(() => setIsPlaying(false));
-    else audio.pause();
-  }, [current]);
+    if (m.paused()) m.play();
+    else m.pause();
+  }, [media]);
 
-  const goTo = useCallback((i: number) => {
-    if (i < 0 || i >= queue.length) return;
-    autoplay.current = true;
-    resumeAt.current = 0;
-    setIndex(i);
-  }, [queue.length]);
-
-  const next = useCallback(() => goTo(index + 1), [goTo, index]);
   const prev = useCallback(() => {
-    const audio = audioRef.current;
+    const m = media();
     // زي أي مشغّل: لو عدّى ٥ ثواني، "السابق" بيرجع لأول التسجيل
-    if (audio && audio.currentTime > 5) {
-      audio.currentTime = 0;
+    if (m && m.time() > 5) {
+      m.seek(0);
+      setCurrentTime(0);
       return;
     }
-    goTo(index - 1);
-  }, [goTo, index]);
+    if (index <= 0) return;
+    autoplay.current = true;
+    resumeAt.current = 0;
+    setIndex(index - 1);
+  }, [media, index]);
 
   const seek = useCallback((sec: number) => {
-    const audio = audioRef.current;
-    if (!audio || !Number.isFinite(sec)) return;
-    audio.currentTime = Math.max(0, Math.min(sec, audio.duration || sec));
-    setCurrentTime(audio.currentTime);
-  }, []);
+    const m = media();
+    if (!m || !Number.isFinite(sec)) return;
+    const s = Math.max(0, Math.min(sec, m.duration() || sec));
+    m.seek(s);
+    setCurrentTime(s);
+  }, [media]);
 
   const skip = useCallback((delta: number) => {
-    const audio = audioRef.current;
-    if (audio) seek(audio.currentTime + delta);
-  }, [seek]);
+    const m = media();
+    if (m) seek(m.time() + delta);
+  }, [media, seek]);
 
   const setRate = useCallback((r: number) => setRateState(r), []);
-
-  // الصوت
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = volume;
-    audio.muted = muted;
-  }, [volume, muted]);
 
   const setVolume = useCallback((v: number) => {
     setVolumeState(Math.max(0, Math.min(1, v)));
@@ -203,12 +375,13 @@ setError("هذا التسجيل غير متاح بعد.");
     if (sleep?.kind !== "minutes") return;
     const t = window.setTimeout(() => {
       audioRef.current?.pause();
+      ytRef.current?.pauseVideo();
       setSleep(null);
     }, Math.max(0, sleep.until - Date.now()));
     return () => window.clearTimeout(t);
   }, [sleep]);
 
-  // التحكم من شاشة القفل وسماعات البلوتوث
+  // التحكم من شاشة القفل وسماعات البلوتوث (للصوت؛ يوتيوب له تحكمه الخاص)
   useEffect(() => {
     if (!("mediaSession" in navigator) || !current) return;
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -234,6 +407,20 @@ setError("هذا التسجيل غير متاح بعد.");
   return (
     <PlayerContext.Provider value={value}>
       {children}
+
+      {/* مشغّل يوتيوب: ظاهر وبالحجم المسموح (٢٠٠px على الأقل) طول ما تسجيل يوتيوب شغّال */}
+      <div
+        aria-label="مشغّل يوتيوب"
+        className={
+          isYouTube
+            ? "fixed left-3 z-40 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-float"
+            : "pointer-events-none fixed -left-[9999px] top-0 h-px w-px overflow-hidden"
+        }
+        style={isYouTube ? { width: "min(356px, calc(100vw - 24px))", height: 200, bottom: "calc(84px + env(safe-area-inset-bottom))" } : undefined}
+      >
+        <div ref={ytMountRef} />
+      </div>
+
       <audio
         ref={audioRef}
         preload="metadata"
@@ -250,19 +437,12 @@ setError("هذا التسجيل غير متاح بعد.");
           }
         }}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-        onEnded={() => {
-          // تايمر "نهاية التلاوة": نقف هنا ومنكمّلش على اللي بعدها
-          if (sleep?.kind === "end") {
-            setSleep(null);
-            setIsPlaying(false);
-          } else if (index < queue.length - 1) next();
-          else setIsPlaying(false);
-        }}
+        onEnded={() => endedRef.current()}
         onError={() => {
           if (current?.audioUrl) {
             setIsLoading(false);
             setIsPlaying(false);
-setError("تعذّر تحميل التسجيل. تحقّق من الاتصال وحاول مرة أخرى.");
+            setError("تعذّر تحميل التسجيل. تحقّق من الاتصال وحاول مرة أخرى.");
           }
         }}
       />

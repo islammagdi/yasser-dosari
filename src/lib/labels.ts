@@ -17,9 +17,10 @@ export function hijriDateLabel(day?: number, month?: number, year?: number): str
  * باقي الأقسام بتفضل بالعنوان اللي جاي من البيانات.
  */
 export function normalizeRecording(r: Recording): Recording {
-  if (r.category === "fard" && r.prayer) {
+  if (r.category === "fard" && (r.prayerLabel || r.prayer)) {
     const date = hijriDateLabel(r.hijriDay, r.hijriMonth, r.hijriYear);
-    return { ...r, title: `صلاة ${PRAYER_LABELS[r.prayer]}${date ? `، ${date}` : ""}` };
+    const label = r.prayerLabel ?? `صلاة ${PRAYER_LABELS[r.prayer!]}`;
+    return { ...r, title: `${label}${date ? `، ${date}` : ""}` };
   }
   if (r.category === "taraweeh" && r.night) {
     const year = r.hijriYear ? ` ${toArabicDigits(r.hijriYear)} هـ` : "";
@@ -30,4 +31,9 @@ export function normalizeRecording(r: Recording): Recording {
     return { ...r, title: `خطبة الجمعة${date ? `، ${date}` : ""}` };
   }
   return r;
+}
+
+/** التسجيل يتشغّل؟ صوت مباشر أو فيديو يوتيوب */
+export function isPlayable(r: Recording): boolean {
+  return Boolean(r.audioUrl || r.youtubeId);
 }

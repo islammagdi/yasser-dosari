@@ -4,6 +4,7 @@ import Image from "next/image";
 
 import type { ImamateSlot, Recording } from "@/types";
 import { getCategory } from "@/lib/categories";
+import { isPlayable } from "@/lib/labels";
 import { NextImamate } from "./NextImamate";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
@@ -95,7 +96,7 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
                 <button
                   type="button"
 onClick={() => playQueue(recent, 0)}
-                  disabled={!featured.audioUrl}
+                  disabled={!isPlayable(featured)}
                   aria-label={`${featuredPlaying ? "إيقاف" : "تشغيل"} ${featured.title}`}
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
                 >

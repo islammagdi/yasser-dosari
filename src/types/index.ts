@@ -28,6 +28,10 @@ export interface Recording {
   date?: string;
   durationSec?: number;
   audioUrl: string;
+  /** لو التسجيل من يوتيوب: بيتشغّل في مشغّل يوتيوب الصغير بدل الصوت */
+  youtubeId?: string;
+  /** اسم الصلاة كما يظهر، للفروض اللي فيها أكتر من صلاة: "صلاتا المغرب والعشاء" */
+  prayerLabel?: string;
   /** صورة الكارت (اختيارية) — من غيرها بيظهر غلاف مولّد بلون القسم */
   imageUrl?: string;
   /** ISO date لتاريخ الإضافة على الموقع — بيتستخدم في "تمت إضافته حديثًا" */

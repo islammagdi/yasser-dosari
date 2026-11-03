@@ -2,6 +2,7 @@
 
 import type { Recording } from "@/types";
 import { formatDate, formatDuration, toArabicDigits } from "@/lib/format";
+import { isPlayable } from "@/lib/labels";
 import { RecordingCover } from "./RecordingCover";
 import { EqualizerIcon, HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
@@ -19,7 +20,7 @@ interface Props {
 
 /** كارت مربع: الغلاف فوق والعنوان تحت، والكارت كله زرار تشغيل */
 export function RecordingCard({ recording, position, badge, isCurrent, isPlaying, onPlay, favorite = false, onToggleFavorite }: Props) {
-  const unavailable = !recording.audioUrl;
+  const unavailable = !isPlayable(recording);
   const playingNow = isCurrent && isPlaying;
   const meta = [recording.subtitle, formatDate(recording.date), formatDuration(recording.durationSec)].filter(Boolean);
 
