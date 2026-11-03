@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { background-color: theme("colors.ink"); color: theme("colors.text"); color-scheme: dark; }
+  body {
+    @apply font-sans antialiased;
+    min-height: 100vh;
+    overflow-x: clip;
+  }
+  ::selection { background: theme("colors.gold.DEFAULT"); color: theme("colors.gold.ink"); }
+  :focus-visible { outline: 2px solid theme("colors.gold.DEFAULT"); outline-offset: 2px; border-radius: 12px; }
+  input:focus { outline: none; }
+}
+
+@layer components {
+  .glass {
+    background-color: rgb(16 27 23 / 0.72);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+  /* نقشة النجمة الثمانية */
+  .pattern-stars {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none' stroke='%23CDAA62' stroke-width='0.7'%3E%3Cpath d='M20 20h40v40H20z'/%3E%3Cpath d='M40 11.7 68.3 40 40 68.3 11.7 40z'/%3E%3Cpath d='M0 0l20 20M80 0 60 20M0 80l20-20M80 80 60 60'/%3E%3C/svg%3E");
+    background-size: 80px 80px;
+    background-position: center;
+  }
+  /* زجاج للكروت والحاويات: شفاف + blur + لمعة خفيفة في الحافة اللي فوق */
+  .glass-card {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 12px 32px -18px rgb(0 0 0 / 0.6);
+  }
+  /* خلفية ثابتة ورا الموقع كله: هي اللي بتخلي الزجاج يبان */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(900px 600px at 85% -10%, rgb(30 74 60 / 0.6), transparent 65%),
+      radial-gradient(700px 520px at 5% 55%, rgb(30 74 60 / 0.4), transparent 70%),
+      radial-gradient(640px 420px at 75% 105%, rgb(205 170 98 / 0.12), transparent 70%);
+  }
+  /* يكسر حدود الـ container ويبقى بعرض الشاشة كلها */
+  .full-bleed {
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+  }
+  /* صورة الهيرو بتختفي تدريجيًا ناحية النص */
+  .hero-photo {
+    -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent);
+    mask-image: linear-gradient(to bottom, #000 50%, transparent);
+  }
+  @media (min-width: 1024px) {
+    .hero-photo {
+      -webkit-mask-image:
+        linear-gradient(to right, #000 40%, transparent 95%),
+        linear-gradient(to bottom, #000 55%, transparent);
+      -webkit-mask-composite: source-in;
+      mask-image:
+        linear-gradient(to right, #000 40%, transparent 95%),
+        linear-gradient(to bottom, #000 55%, transparent);
+      mask-composite: intersect;
+    }
+  }
+  /* نقشة الصفحات الداخلية: بتبدأ من أول الشاشة فوق وشمال وبتختفي تدريجيًا */
+  .page-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 480px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.22;
+    -webkit-mask-image:
+      linear-gradient(to right, #000, transparent 75%),
+      linear-gradient(to bottom, #000 30%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, #000, transparent 75%),
+      linear-gradient(to bottom, #000 30%, transparent);
+    mask-composite: intersect;
+  }
+  .fade-mask {
+    -webkit-mask-image: radial-gradient(ellipse 70% 80% at 25% 50%, #000 15%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 80% at 25% 50%, #000 15%, transparent 75%);
+  }
+}
+
+/* شريط التقدّم */
+.progress {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, theme("colors.gold.DEFAULT") var(--pct, 0%), rgb(255 255 255 / 0.1) var(--pct, 0%));
+  cursor: pointer;
+}
+.progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: theme("colors.gold.soft");
+  box-shadow: 0 0 0 4px rgb(205 170 98 / 0.2);
+}
+.progress::-moz-range-thumb {
+  width: 14px; height: 14px; border: 0; border-radius: 50%;
+  background: theme("colors.gold.soft");
+}
+.progress:disabled { cursor: default; opacity: .5; }
+
+/* مؤشر "شغّال دلوقتي" */
+.eq-bar { transform-origin: center bottom; animation: eq 0.9s ease-in-out infinite alternate; }
+.eq-bar:nth-child(2) { animation-delay: -0.3s; }
+.eq-bar:nth-child(3) { animation-delay: -0.6s; }
+@keyframes eq { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
+
+/* حركة الدخول — في الـ hero بس */
+.rise { animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .eq-bar, .rise { animation: none; }
+}
