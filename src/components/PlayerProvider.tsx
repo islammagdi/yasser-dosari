@@ -107,7 +107,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       audio.removeAttribute("src");
       audio.load();
       setIsPlaying(false);
-      setError("التسجيل ده لسه مش متاح.");
+setError("هذا التسجيل غير متاح بعد.");
       return;
     }
     audio.src = current.audioUrl;
@@ -262,7 +262,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           if (current?.audioUrl) {
             setIsLoading(false);
             setIsPlaying(false);
-            setError("تعذّر تحميل التسجيل. اتأكد من الاتصال وجرّب تاني.");
+setError("تعذّر تحميل التسجيل. تحقّق من الاتصال وحاول مرة أخرى.");
           }
         }}
       />

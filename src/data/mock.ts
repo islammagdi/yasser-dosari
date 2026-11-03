@@ -1,4 +1,4 @@
-import type { LectureType, Prayer, Recording } from "@/types";
+import type { Prayer, Recording } from "@/types";
 import { SURAH_NAMES } from "@/lib/quran";
 
 /**
@@ -10,14 +10,23 @@ const demoAudio = process.env.NEXT_PUBLIC_DEMO_AUDIO_URL ?? "";
 const ar = new Intl.NumberFormat("ar-EG", { useGrouping: false });
 const DEMO_YEARS = [1446, 1445]; // الأحدث الأول
 
-// المحاضرات: خطب جمعة ودروس دينية
-const lectureTypes: LectureType[] = ["khutbah", "lesson", "khutbah", "lesson", "khutbah", "lesson"];
-const lectures: Recording[] = lectureTypes.map((type, i) => ({
+// المحاضرات: خطب الجمعة بتاريخها الهجري (العنوان بيتولّد تلقائيًا لو سبته فاضي).
+// الدروس الدينية ليها عناوين خاصة، فضيفها بعناوينها الحقيقية مع lectureType: "lesson".
+const khutbahDates: [year: number, month: number, day: number][] = [
+  [1446, 9, 28],
+  [1446, 9, 21],
+  [1446, 9, 14],
+  [1446, 9, 7],
+];
+const lectures: Recording[] = khutbahDates.map(([year, month, day], i) => ({
   id: `lecture-${i + 1}`,
   category: "lectures",
-  lectureType: type,
-  title: type === "khutbah" ? `[عنوان الخطبة ${ar.format(i + 1)}]` : `[عنوان الدرس ${ar.format(i + 1)}]`,
-  subtitle: type === "khutbah" ? "المسجد الحرام" : "[المكان]",
+  lectureType: "khutbah",
+  hijriYear: year,
+  hijriMonth: month,
+  hijriDay: day,
+  title: "",
+  subtitle: "المسجد الحرام",
   audioUrl: demoAudio,
 }));
 
@@ -36,7 +45,7 @@ const fard: Recording[] = DEMO_YEARS.flatMap((year) =>
         hijriMonth: month,
         hijriDay: day,
         title: "",
-        subtitle: "[السورة والآيات]",
+
         audioUrl: demoAudio,
       })),
     ),
@@ -51,7 +60,7 @@ const taraweeh: Recording[] = DEMO_YEARS.flatMap((year) =>
     hijriYear: year,
     night: i + 1,
     title: `الليلة ${ar.format(i + 1)}`,
-    subtitle: "[السور المقروءة]",
+
     audioUrl: demoAudio,
   })),
 );

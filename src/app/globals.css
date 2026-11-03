@@ -9,6 +9,7 @@
     min-height: 100vh;
     overflow-x: clip;
   }
+   * { -webkit-tap-highlight-color: transparent; }
   ::selection { background: theme("colors.gold.DEFAULT"); color: theme("colors.gold.ink"); }
   :focus-visible { outline: 2px solid theme("colors.gold.DEFAULT"); outline-offset: 2px; border-radius: 12px; }
   input:focus { outline: none; }

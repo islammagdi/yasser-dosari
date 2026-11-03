@@ -25,5 +25,9 @@ export function normalizeRecording(r: Recording): Recording {
     const year = r.hijriYear ? ` ${toArabicDigits(r.hijriYear)} هـ` : "";
     return { ...r, title: `ليلة ${toArabicDigits(r.night)} رمضان${year}` };
   }
+  if (r.category === "lectures" && r.lectureType === "khutbah" && !r.title) {
+    const date = hijriDateLabel(r.hijriDay, r.hijriMonth, r.hijriYear);
+    return { ...r, title: `خطبة الجمعة${date ? `، ${date}` : ""}` };
+  }
   return r;
 }

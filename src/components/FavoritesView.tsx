@@ -7,7 +7,7 @@ import { useFavorites } from "@/lib/useFavorites";
 import { RecordingList } from "./RecordingList";
 import { HeartIcon } from "./icons";
 
-const titleClass = "font-display text-5xl font-bold leading-tight sm:text-6xl";
+const titleClass = "font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl";
 
 /** بيطابق الـ ids المحفوظة في المتصفح مع التسجيلات، والأحدث إضافة الأول */
 export function FavoritesView({ all, title }: { all: Recording[]; title: string }) {

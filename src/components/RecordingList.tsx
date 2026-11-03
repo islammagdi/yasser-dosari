@@ -154,7 +154,7 @@ export function RecordingList({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="ابحث بالسورة أو العنوان"
-        className="glass-card min-h-12 w-full rounded-full pe-5 ps-11 text-[15px] text-text transition-colors placeholder:text-muted/70 focus:border-gold/60"
+        className="glass-card min-h-12 w-full rounded-full pe-5 ps-11 text-base text-text transition-colors placeholder:text-muted/70 focus:border-gold/60"
       />
     </label>
   );
@@ -165,7 +165,7 @@ export function RecordingList({
         <>
           {/* العنوان والبحث في صف واحد، والفلاتر تحتهم */}
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="font-display text-5xl font-bold leading-tight sm:text-6xl">{title}</h1>
+<h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">{title}</h1>
             {search}
           </div>
           {filters}
@@ -180,7 +180,7 @@ export function RecordingList({
       )}
       {queue.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-line-strong px-6 py-12 text-center text-muted">
-          {filtered ? "مفيش نتايج. جرّب كلمة تانية أو غيّر الفلتر." : "مفيش تسجيلات هنا لسه."}
+{filtered ? "لا توجد نتائج. جرّب كلمة أخرى أو غيّر التصفية." : "لا توجد تسجيلات هنا بعد."}
         </p>
       ) : (
         <div className="flex flex-col gap-10">

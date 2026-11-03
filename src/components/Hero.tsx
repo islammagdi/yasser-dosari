@@ -33,7 +33,7 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
       />
 
       {/* صورة الشيخ: فوق على الموبايل، وعلى الشمال بطول الهيرو في الشاشات الكبيرة */}
-      <div className="hero-photo relative -z-10 h-[380px] w-full sm:h-[460px] lg:absolute lg:inset-y-0 lg:left-0 lg:h-auto lg:w-[48%]">
+      <div className="hero-photo relative -z-10 h-[340px] w-full sm:h-[460px] lg:absolute lg:inset-y-0 lg:left-0 lg:h-auto lg:w-[48%]">
         <Image
           src={HERO_IMAGE}
           alt="الشيخ ياسر الدوسري"
@@ -105,9 +105,9 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
               </div>
 
               {others.length > 0 && (
-                <ul className="mt-4 grid gap-1 border-t border-white/10 pt-3 sm:grid-cols-3">
+                <ul className="-mx-4 mt-4 flex gap-1 overflow-x-auto border-t border-white/10 px-4 pt-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
                   {others.map(({ r, i }) => (
-                    <li key={r.id} className="min-w-0">
+                    <li key={r.id} className="min-w-[200px] shrink-0 sm:min-w-0 sm:shrink">
                       <button
                         type="button"
                         onClick={() => setIndex(i)}

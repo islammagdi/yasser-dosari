@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             تخطَّ إلى المحتوى
           </a>
           <SiteHeader />
-          <main id="main" className="mx-auto w-full max-w-page px-4 pb-44 pt-8 sm:px-6 sm:pt-10">
+<main id="main" className="mx-auto w-full max-w-page px-4 pb-32 pt-6 sm:px-6 sm:pt-10">
             {children}
           </main>
           <PlayerBar />

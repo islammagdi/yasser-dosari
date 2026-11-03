@@ -135,7 +135,7 @@ export function PlayerBar() {
           <button type="button" onClick={() => p.skip(-10)} disabled={!max} aria-label="رجوع ١٠ ثواني" className={`${iconBtn} hidden sm:flex`}>
             <Replay10Icon className="h-5 w-5" />
           </button>
-          <button type="button" onClick={p.prev} aria-label="السابق" className={`${iconBtn} text-gold`}>
+<button type="button" onClick={p.prev} aria-label="السابق" className={`${iconBtn} hidden text-gold sm:flex`}>
             <PrevIcon className="h-5 w-5" />
           </button>
           <button
