@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Recording } from "@/types";
 
 import { markSurahListened } from "@/lib/useKhatma";
+import { getProgressTime, saveProgress } from "@/lib/useProgress";
 const STORAGE_KEY = "yd-player-v1";
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 
@@ -185,20 +186,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       try {
         const data: Saved = { queue, index, time: currentTime, rate };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // مكان كل تلاوة لوحدها، عشان "أكمل الاستماع"
+        saveProgress(current, currentTime, duration);
       } catch {
         /* تجاهل */
       }
     }, 800);
     return () => window.clearTimeout(t);
-  }, [queue, index, currentTime, rate, current]);
+  }, [queue, index, currentTime, duration, rate, current]);
 
   // نهاية التسجيل (مشتركة بين الصوت ويوتيوب). في ref عشان يوتيوب يشوف آخر نسخة منها
   const next = useCallback(() => {
     if (index + 1 >= queue.length) return;
     autoplay.current = true;
-    resumeAt.current = 0;
+    resumeAt.current = getProgressTime(queue[index + 1].id);
     setIndex(index + 1);
-  }, [index, queue.length]);
+  }, [index, queue]);
   const handleEnded = () => {
     // تايمر "نهاية التلاوة": نقف هنا ومنكمّلش على اللي بعدها
     if (sleep?.kind === "end") {
@@ -321,7 +324,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume, muted, isLoading]);
 
-  const playQueue = useCallback((items: Recording[], startIndex: number, startAt = 0) => {
+  /** startAt: ثانية معيّنة (رابط مشاركة أو آية). من غيرها بنكمّل من آخر مكان وقف عنده */
+  const playQueue = useCallback((items: Recording[], startIndex: number, startAt?: number) => {
     const target = items[startIndex];
     if (!target) return;
     // نفس التسجيل؟ يبقى toggle
@@ -332,7 +336,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     autoplay.current = true;
-    resumeAt.current = startAt;
+    resumeAt.current = startAt ?? getProgressTime(target.id);
     setQueue(items);
     setIndex(startIndex);
   }, [current, media]);
@@ -355,9 +359,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     if (index <= 0) return;
     autoplay.current = true;
-    resumeAt.current = 0;
+    resumeAt.current = getProgressTime(queue[index - 1].id);
     setIndex(index - 1);
-  }, [media, index]);
+  }, [media, index, queue]);
 
   const seek = useCallback((sec: number) => {
     const m = media();
@@ -441,13 +445,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         aria-hidden={!videoOpen}
         className={
           videoOpen
-            ? "glass fixed inset-x-0 z-40 border-t border-white/10 shadow-float md:inset-x-auto md:start-6 md:w-[420px] md:rounded-t-3xl md:border md:border-b-0"
+            ? "glass fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] start-3 z-40 rounded-2xl border border-white/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
             : "pointer-events-none fixed -left-[9999px] top-0 w-[420px]"
         }
-        style={videoOpen ? { bottom: "calc(4.25rem + env(safe-area-inset-bottom))" } : undefined}
       >
-        <div className="flex items-center justify-between gap-2 px-4 pb-2 pt-3">
-          <span className="flex min-w-0 items-center gap-2 text-xs text-muted">
+        {/* الموبايل: مربع صغير في الركن بأقل مقاس يوتيوب بيسمح بيه، والعنوان موجود أصلًا في المشغّل تحت */}
+        <div className="flex items-center justify-end gap-2 md:justify-between md:px-4 md:pb-2 md:pt-3">
+          <span className="hidden min-w-0 items-center gap-2 text-xs text-muted md:flex">
             <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
             يُشغَّل الآن من يوتيوب
           </span>
@@ -456,17 +460,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             onClick={closeVideo}
             tabIndex={videoOpen ? 0 : -1}
             aria-label="إغلاق الفيديو وإيقاف التلاوة"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-text"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-text md:h-10 md:w-10"
           >
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
           </button>
         </div>
-        <div className="mx-4 h-[200px] overflow-hidden rounded-2xl bg-black md:aspect-video md:h-auto">
+        {/* يوتيوب بيشترط إن المشغّل ميقلش عن ٢٠٠×٢٠٠، فسايبين هامش بسيط فوقه */}
+        <div className="h-[224px] w-[224px] overflow-hidden rounded-xl bg-black md:mx-4 md:aspect-video md:h-auto md:w-auto md:rounded-2xl">
           <div ref={ytMountRef} />
         </div>
-        <div className="flex flex-col gap-0.5 px-4 pb-4 pt-3">
+        <div className="hidden flex-col gap-0.5 px-4 pb-4 pt-3 md:flex">
           <p className="truncate font-semibold">{current?.title}</p>
           {current?.subtitle && <p className="truncate text-sm text-muted">{current.subtitle}</p>}
         </div>

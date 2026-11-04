@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { ImamateSlot } from "@/types";
-import { IMAMATE_PRAYER_LABELS, NIGHT_PART_LABELS, addDays, hijriDayLabel, nextSlot, prayersList, relativeDayLabel } from "@/lib/imamate";
+import { IMAMATE_PRAYER_LABELS, NIGHT_PART_LABELS, addDays, hijriDayLabel, isNowLive, nextSlot, prayersList, relativeDayLabel } from "@/lib/imamate";
+import { MAKKAH_LIVE_URL } from "@/lib/site";
 import { ImamateReminder } from "./ImamateReminder";
 import { ClockIcon, MosqueIcon } from "./icons";
 
@@ -29,6 +30,36 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
   }, []);
 
   const slot = now ? nextSlot(slots, now) : null;
+  const live = !!(now && slot && isNowLive(slot, now));
+
+  // وقت الصلاة نفسه: الخانة بتتحول لـ "الآن"، وزرار التذكير بيتبدل برابط البث المباشر
+  if (live && slot) {
+    return (
+      <div className="flex min-w-0 flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-4" aria-live="polite">
+        <div className="flex min-w-0 flex-1 items-center gap-3 lg:gap-4">
+          <span aria-hidden className="relative flex h-8 w-8 shrink-0 items-center justify-center lg:h-9 lg:w-9">
+            <span className="absolute h-3 w-3 animate-ping rounded-full bg-gold/60 motion-reduce:animate-none" />
+            <span className="relative h-3 w-3 rounded-full bg-gold" />
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5 lg:gap-1">
+            <span className="text-xs font-semibold text-gold lg:text-[13px]">الآن في المسجد الحرام</span>
+            <span className="font-semibold leading-6 lg:text-[17px]">صلاة {IMAMATE_PRAYER_LABELS[slot.prayer]} بإمامة الشيخ</span>
+            {slot.part && <span className="text-sm text-gold-soft">{NIGHT_PART_LABELS[slot.part]}</span>}
+          </span>
+        </div>
+        {MAKKAH_LIVE_URL && (
+          <a
+            href={MAKKAH_LIVE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative z-10 inline-flex min-h-11 shrink-0 items-center justify-center self-end rounded-full bg-gold px-5 text-sm font-semibold text-gold-ink transition-colors hover:bg-gold-soft lg:self-auto"
+          >
+            شاهد البث المباشر
+          </a>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-4" aria-live="polite">

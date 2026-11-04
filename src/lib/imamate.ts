@@ -36,6 +36,13 @@ export function nextSlot(slots: ImamateSlot[], now: Date): ImamateSlot | null {
   return upcoming[0] ?? null;
 }
 
+/** الصلاة قايمة دلوقتي: من وقت الأذان (start) لحد نهاية الموعد (time)، بتوقيت مكة */
+export function isNowLive(slot: ImamateSlot, now: Date): boolean {
+  if (!slot.start || slot.date !== makkahToday(now)) return false;
+  const t = makkahTime(now);
+  return t >= slot.start && (!slot.time || t < slot.time);
+}
+
 /** "الثلاثاء، ٢٥ جمادى الأولى ١٤٤٨ هـ" بالتقويم الهجري (أم القرى) */
 export function hijriDayLabel(isoDate: string): string {
   const d = new Date(`${isoDate}T12:00:00+03:00`);

@@ -1,3 +1,4 @@
+import { ContinueListening } from "@/components/ContinueListening";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
 import { RamadanCard } from "@/components/RamadanCard";
@@ -45,6 +46,7 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} />
+      <ContinueListening />
       <RamadanCard slots={imamate} recordings={taraweeh} />
       <FridayKahf kahf={kahf} />
       <HomeBrowser sections={sections} />

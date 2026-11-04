@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Recording } from "@/types";
 import { formatDate, formatDuration, toArabicDigits } from "@/lib/format";
 import { isPlayable } from "@/lib/labels";
+import { useProgressRatio } from "@/lib/useProgress";
 import { RecordingCover } from "./RecordingCover";
 import { EqualizerIcon, HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
@@ -42,6 +43,7 @@ export function RecordingCard({
 }: Props) {
   const unavailable = !isPlayable(recording);
   const playingNow = isCurrent && isPlaying;
+  const progress = useProgressRatio(recording.id);
   const details = [formatDate(recording.date), formatDuration(recording.durationSec)].filter(Boolean);
   // صور يوتيوب 16:9 (شرايطها السودا بتتقص مع object-cover)، والأغلفة المولّدة تفضل مربعة
   const wide = !!recording.imageUrl;
@@ -77,6 +79,12 @@ export function RecordingCard({
         {listened && (
           <span className={`absolute start-2 top-2 items-center gap-1 rounded-full bg-ink/80 px-2.5 py-1 text-xs font-medium text-gold-soft ${row ? "hidden sm:flex" : "flex"}`}>
             ✓ سمعتها
+          </span>
+        )}
+          {/* شريط التقدّم لو بدأها ومكمّلهاش */}
+        {progress > 0 && (
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/15">
+            <span className="block h-full bg-gold" style={{ width: `${Math.round(progress * 100)}%` }} />
           </span>
         )}
         {playingNow && (

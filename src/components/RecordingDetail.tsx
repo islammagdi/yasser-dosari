@@ -6,6 +6,7 @@ import { getCategory } from "@/lib/categories";
 import { formatDuration, toArabicDigits } from "@/lib/format";
 import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
+import { useProgressTime } from "@/lib/useProgress";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { ShareBox } from "./ShareBox";
@@ -14,6 +15,8 @@ import { HeartIcon, PauseIcon, PlayIcon } from "./icons";
 /** رأس صفحة التلاوة: الغلاف والعنوان والتشغيل والمفضلة والمشاركة */
 export function RecordingDetail({ recording: r, queue, startAt }: { recording: Recording; queue: Recording[]; startAt: number }) {
   const p = usePlayer();
+  // لو بدأها قبل كده: الزرار بيقول "أكمل من" وبيكمّل من مكانه
+  const resumeSec = useProgressTime(r.id);
   const fav = useFavorites();
   const category = getCategory(r.category);
   const isCurrent = p.current?.id === r.id;
@@ -45,14 +48,20 @@ export function RecordingDetail({ recording: r, queue, startAt }: { recording: R
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => (isCurrent ? p.toggle() : p.playQueue(queue, 0, startAt))}
+            onClick={() => (isCurrent ? p.toggle() : p.playQueue(queue, 0, startAt || undefined))}
             disabled={!isPlayable(r)}
             className="flex min-h-14 items-center gap-3 rounded-full bg-gold pe-7 ps-2 text-lg font-semibold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gold-ink text-gold">
               {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
             </span>
-            {playingNow ? "إيقاف مؤقت" : startAt && !isCurrent ? `استمع من ${formatDuration(startAt)}` : "استمع"}
+            {playingNow
+              ? "إيقاف مؤقت"
+              : startAt && !isCurrent
+                ? `استمع من ${formatDuration(startAt)}`
+                : resumeSec && !isCurrent
+                  ? `أكمل من ${formatDuration(resumeSec)}`
+                  : "استمع"}
           </button>
           <button
             type="button"
