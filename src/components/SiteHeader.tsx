@@ -78,8 +78,8 @@ export function SiteHeader() {
             <Link
               href="/quran"
               aria-current={onQuran ? "page" : undefined}
-              className={`flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-[15px] transition-colors md:flex-none md:px-5 ${
-                onQuran ? "bg-gold font-semibold text-gold-ink" : "text-muted hover:bg-white/5 hover:text-text"
+              className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
+                onQuran ? "font-semibold text-text after:bg-gold" : "text-muted after:bg-transparent hover:text-text"
               }`}
             >
               قراءة
@@ -146,6 +146,18 @@ export function SiteHeader() {
                 </li>
               );
             })}
+            <li>
+              <Link
+                href="/quran"
+                aria-current={onQuran ? "page" : undefined}
+                className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
+                  onQuran ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-white/5"
+                }`}
+              >
+                قراءة القرآن
+                {onQuran && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
+              </Link>
+            </li>
             <li aria-hidden className="my-2 h-px bg-white/10" />
             <li>
               <Link href="/about" className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-white/5 hover:text-text">
