@@ -48,21 +48,26 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
           <div className="mx-auto flex max-w-page flex-col px-4 pb-4 sm:px-6 lg:min-h-[620px] lg:justify-center lg:pb-10 lg:pt-16">
              <div className="-mt-28 flex flex-col gap-8 sm:-mt-32 lg:mt-0 lg:max-w-[620px]">
           <div className="flex flex-col gap-4">
-            <p className="rise relative flex items-center gap-4 rounded-3xl border border-gold/30 bg-ink/45 p-4 backdrop-blur-md transition-colors hover:border-gold/50 sm:gap-5 sm:p-5">
-              <span aria-hidden className="h-px w-10 bg-gold/60" />
-              إمام وخطيب المسجد الحرام
-            </p>
-            <h1 id="hero-title" className="rise" style={delay(80)}>
-              <Image
-                src="/images/logo.png"
-                alt="الشيخ ياسر الدوسري"
-                width={0}
-                height={0}
-                sizes="(min-width: 1024px) 440px, (min-width: 640px) 360px, 280px"
-                priority
-                className="h-auto w-[280px] sm:w-[360px] lg:w-[440px]"
-              />
-            </h1>
+          <p className="rise flex items-center gap-4 text-[15px] font-medium text-gold sm:text-base">
+            <span aria-hidden className="h-px w-10 shrink-0 bg-gold/50 sm:w-16" />
+            إمام وخطيب المسجد الحرام
+            <span aria-hidden className="h-px max-w-[200px] flex-1 bg-gradient-to-l from-gold/50 to-transparent" />
+          </p>
+
+          <h1 id="hero-title" className="rise mb-2 flex items-end gap-3 sm:gap-4" style={delay(80)}>
+            <span className="shrink-0 pb-[0.12em] font-ruqaa text-[2.6rem] font-bold leading-none text-[#F6F1E6] sm:text-[3.4rem] lg:text-[4.4rem]">
+              الشيخ
+            </span>
+            <Image
+              src="/images/logo.png"
+              alt="ياسر الدوسري"
+              width={0}
+              height={0}
+              sizes="(min-width: 1024px) 520px, (min-width: 640px) 400px, 300px"
+              priority
+              className="h-auto w-[230px] min-w-0 sm:w-[340px] lg:w-[460px]"
+            />
+          </h1>
 
           </div>
 

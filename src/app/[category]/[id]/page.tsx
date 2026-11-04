@@ -10,7 +10,7 @@ import { CATEGORY_COVERS, getCategory } from "@/lib/categories";
 
 interface Props {
   params: { category: string; id: string };
-  searchParams: { t?: string };
+  searchParams: { t?: string; from?: string; to?: string };
 }
 
 /** الصفحة بتتبني أول ما حد يفتحها، وبتتخزن ٦ ساعات */
@@ -74,7 +74,16 @@ export default async function RecordingPage({ params, searchParams }: Props) {
       <div aria-hidden className="pattern-stars page-pattern" />
       <div className="flex flex-col gap-14">
         <RecordingDetail recording={recording} queue={[recording, ...more]} startAt={startAt} />
-        {text && <AyahFollow recording={recording} ayahs={text.ayahs} basmala={text.basmala} timings={timings} />}
+        {text && (
+          <AyahFollow
+            recording={recording}
+            ayahs={text.ayahs}
+            basmala={text.basmala}
+            timings={timings}
+            initialFrom={Number(searchParams.from) || undefined}
+            initialTo={Number(searchParams.to) || undefined}
+          />
+        )}
         {more.length > 0 && (
           <section aria-labelledby="more-title" className="flex flex-col gap-4">
             <div className="flex items-center gap-4 px-1">

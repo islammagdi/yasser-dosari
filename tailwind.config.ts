@@ -19,6 +19,7 @@ const config: Config = {
       fontFamily: {
         display: ["Amiri", "serif"],
         quran: ['"Amiri Quran"', "Amiri", "serif"],
+        ruqaa: ['"Aref Ruqaa"', "Amiri", "serif"],
         sans: ['"IBM Plex Sans Arabic"', "Tahoma", "system-ui", "sans-serif"],
       },
         maxWidth: { page: "1400px" },

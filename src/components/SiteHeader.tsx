@@ -3,21 +3,49 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
 import { HeartIcon, SearchIcon } from "./icons";
 
+/**
+ * ديسكتوب: الأقسام على اليمين | اللوجو في النص بالظبط | البحث والمفضلة على الشمال
+ * موبايل: اللوجو، والبحث والمفضلة وزرار القايمة. والأقسام جوه القايمة
+ */
 export function SiteHeader() {
   const pathname = usePathname();
   const { ids } = useFavorites();
+  const [open, setOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const onFavorites = pathname === "/favorites";
+  const onQuran = pathname === "/quran" || pathname.startsWith("/quran/");
+  const onSearch = pathname === "/search";
+  const isActive = (slug: string) => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`);
+
+  // القايمة بتتقفل لما تروح صفحة تانية، أو تضغط برّه، أو تدوس Escape
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!headerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const iconBtn = "glass-card relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-12 md:w-12";
 
   return (
-    <header className="glass sticky top-0 z-30 border-b border-white/5">
-      {/* موبايل: اللوجو والمفضلة في صف، والأقسام بعرض الشاشة تحتهم. من md: كله في صف واحد */}
-      <div className="mx-auto flex max-w-page flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6 md:py-3">
-        <Link href="/" className="order-1 flex min-h-11 items-center">
+    <header ref={headerRef} className="glass sticky top-0 z-30 border-b border-gold/25">
+      <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:grid-cols-[1fr_auto_1fr] md:py-3">
+        {/* اللوجو */}
+        <Link href="/" className="col-start-1 row-start-1 flex min-h-11 items-center justify-self-start md:col-start-2 md:justify-self-center">
           <Image
             src="/images/logo.png"
             alt="الشيخ ياسر الدوسري"
@@ -29,33 +57,43 @@ export function SiteHeader() {
           />
         </Link>
 
-        <nav aria-label="الأقسام" className="order-3 w-full overflow-x-auto md:order-2 md:w-auto">
-          <div className="glass-card flex min-w-full gap-1 rounded-full p-1 md:min-w-0">
+        {/* الأقسام: ديسكتوب بس */}
+        <nav aria-label="الأقسام" className="hidden md:col-start-1 md:row-start-1 md:block md:justify-self-start">
+          <div className="glass-card flex gap-1 rounded-full px-2 py-1">
             {CATEGORIES.map((c) => {
-              const active = pathname === `/${c.slug}`;
+              const active = isActive(c.slug);
               return (
                 <Link
                   key={c.slug}
                   href={`/${c.slug}`}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-[15px] transition-colors md:flex-none md:px-5 ${
-                    active ? "bg-gold font-semibold text-gold-ink" : "text-muted hover:bg-white/5 hover:text-text"
+                  className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
+                    active ? "font-semibold text-text after:bg-gold" : "text-muted after:bg-transparent hover:text-text"
                   }`}
                 >
                   {c.label}
                 </Link>
               );
             })}
+            <Link
+              href="/quran"
+              aria-current={onQuran ? "page" : undefined}
+              className={`flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-[15px] transition-colors md:flex-none md:px-5 ${
+                onQuran ? "bg-gold font-semibold text-gold-ink" : "text-muted hover:bg-white/5 hover:text-text"
+              }`}
+            >
+              قراءة
+            </Link>
           </div>
         </nav>
+
+        {/* البحث والمفضلة (وزرار القايمة على الموبايل) */}
         <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-3">
           <Link
             href="/search"
             aria-label="البحث"
-            aria-current={pathname === "/search" ? "page" : undefined}
-            className={`glass-card flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-[52px] md:w-[52px] ${
-              pathname === "/search" ? "text-gold" : "text-muted hover:text-text"
-            }`}
+            aria-current={onSearch ? "page" : undefined}
+            className={`${iconBtn} ${onSearch ? "text-gold" : "text-muted hover:text-text"}`}
           >
             <SearchIcon className="h-5 w-5" />
           </Link>
@@ -63,9 +101,7 @@ export function SiteHeader() {
             href="/favorites"
             aria-label={`المفضلة${ids.length ? ` (${ids.length})` : ""}`}
             aria-current={onFavorites ? "page" : undefined}
-            className={`glass-card relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-[52px] md:w-[52px] ${
-              onFavorites ? "text-[#E5636B]" : "text-muted hover:text-text"
-            }`}
+            className={`${iconBtn} ${onFavorites ? "text-[#E5636B]" : "text-muted hover:text-text"}`}
           >
             <HeartIcon filled={onFavorites} className="h-5 w-5" />
             {ids.length > 0 && (
@@ -74,8 +110,51 @@ export function SiteHeader() {
               </span>
             )}
           </Link>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            aria-label={open ? "إغلاق القائمة" : "القائمة"}
+            className={`${iconBtn} md:hidden ${open ? "text-gold" : "text-text"}`}
+          >
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* قايمة الموبايل */}
+      {open && (
+        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-white/5 md:hidden">
+          <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 py-3">
+            {CATEGORIES.map((c) => {
+              const active = isActive(c.slug);
+              return (
+                <li key={c.slug}>
+                  <Link
+                    href={`/${c.slug}`}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
+                      active ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-white/5"
+                    }`}
+                  >
+                    {c.title}
+                    {active && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
+                  </Link>
+                </li>
+              );
+            })}
+            <li aria-hidden className="my-2 h-px bg-white/10" />
+            <li>
+              <Link href="/about" className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-white/5 hover:text-text">
+                عن الموقع
+              </Link>
+            </li>
+          </ul>
+        </nav>
+      )}
     </header>
   );
 }

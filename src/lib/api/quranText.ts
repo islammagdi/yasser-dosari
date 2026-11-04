@@ -2,6 +2,8 @@
  * نص السورة (الرسم العثماني) من alquran.cloud، وتوقيت كل آية في تسجيل الشيخ من mp3quran.
  * النص والتوقيتات مش بيتغيّروا، فبيتخزنوا شهر.
  */
+import { SURAH_NAMES } from "@/lib/quran";
+
 const MONTH = 60 * 60 * 24 * 30;
 const READ_ID = process.env.MP3QURAN_RECITER_ID ?? "92";
 
@@ -38,6 +40,33 @@ export async function surahText(surah: number): Promise<SurahText> {
     basmala = true;
   }
   return { basmala, ayahs };
+}
+
+export interface SurahInfo {
+  n: number;
+  name: string;
+  /** عدد الآيات (0 لو الـ API مش متاح) */
+  ayahs: number;
+  type?: "مكية" | "مدنية";
+}
+
+/** فهرس السور: الاسم وعدد الآيات ومكية ولا مدنية. لو الـ API وقع، الأسماء بس */
+export async function surahIndex(): Promise<SurahInfo[]> {
+  const fallback = SURAH_NAMES.map((name, i) => ({ n: i + 1, name, ayahs: 0 }));
+  try {
+    const res = await fetch("https://api.alquran.cloud/v1/surah", { next: { revalidate: MONTH } });
+    if (!res.ok) return fallback;
+    const { data } = (await res.json()) as { data: { number: number; numberOfAyahs: number; revelationType: string }[] };
+    const byN = new Map(data.map((s) => [s.number, s]));
+    return fallback.map((s) => {
+      const d = byN.get(s.n);
+      return d
+        ? { ...s, ayahs: d.numberOfAyahs, type: d.revelationType === "Medinan" ? ("مدنية" as const) : ("مكية" as const) }
+        : s;
+    });
+  } catch {
+    return fallback;
+  }
 }
 
 export async function surahTimings(surah: number): Promise<AyahTiming[]> {

@@ -1,25 +1,50 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ImamateSlot } from "@/types";
 import { googleCalendarUrl, icsFile, imamateEvent } from "@/lib/calendar";
+
+const MENU_W = 224; // w-56
+const MENU_H = 110; // تقريبًا: عنصرين × 44 + padding
+const GAP = 8;
 
 /** "ذكّرني": يضيف موعد الإمامة لتقويم Google أو تقويم الجهاز (آيفون وغيره) */
 export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // مكان القايمة: محاذية لطرف الزرار اليمين (RTL)، وتفتح لفوق لو مفيش مساحة تحت
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const left = Math.min(Math.max(GAP, r.right - MENU_W), vw - MENU_W - GAP);
+    const below = r.bottom + GAP;
+    const top = below + MENU_H > vh ? Math.max(GAP, r.top - GAP - MENU_H) : below;
+    setPos({ top, left });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
+    const close = () => setOpen(false);
     const onDown = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!btnRef.current?.contains(t) && !menuRef.current?.contains(t)) close();
     };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", close, { passive: true, capture: true });
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close, { capture: true });
+      window.removeEventListener("resize", close);
     };
   }, [open]);
 
@@ -38,8 +63,9 @@ export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
   const item = "flex min-h-11 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-white/5";
 
   return (
-    <div ref={ref} className="relative self-start">
+    <div className="self-start">
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
@@ -52,22 +78,30 @@ export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
         </svg>
         ذكّرني بالموعد
       </button>
-      {open && (
-        <div className="glass-card absolute top-full z-20 mt-2 w-56 rounded-2xl p-1.5 shadow-float">
-          <a
-            href={googleCalendarUrl(event())}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
-            className={item}
+      {open &&
+        pos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            dir="rtl"
+            style={{ position: "fixed", top: pos.top, left: pos.left, width: MENU_W }}
+            className="glass-card z-[100] rounded-2xl p-1.5 shadow-float"
           >
-            تقويم Google
-          </a>
-          <button type="button" onClick={downloadIcs} className={item}>
-            تقويم الجهاز (آيفون وغيره)
-          </button>
-        </div>
-      )}
+            <a
+              href={googleCalendarUrl(event())}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className={item}
+            >
+              تقويم Google
+            </a>
+            <button type="button" onClick={downloadIcs} className={item}>
+              تقويم الجهاز (آيفون وغيره)
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
