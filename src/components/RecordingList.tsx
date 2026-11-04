@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { LectureType, Recording } from "@/types";
 import { LECTURE_TYPE_LABELS, hijriMonthName } from "@/lib/categories";
@@ -28,6 +29,10 @@ interface Props {
   versionTabs?: boolean;
   /** حاجة إضافية تحت العنوان والفلاتر، زي متابعة الختمة */
   extra?: React.ReactNode;
+  /** خانة "عرض الكل" في آخر الشبكة (الرئيسية) — بتظهر من sm وطالع */
+  more?: { href: string; label: string; remaining: number };
+  /** الكروت على الموبايل صفوف أفقية بدل شبكة عمودين (الرئيسية) */
+  mobileRows?: boolean;
 }
 type TypeValue = LectureType | "all";
 
@@ -88,6 +93,8 @@ export function RecordingList({
   title,
   versionTabs = false,
   extra,
+  more,
+  mobileRows = false,
 }: Props) {
   const { current, isPlaying, playQueue } = usePlayer();
   const fav = useFavorites();
@@ -203,7 +210,7 @@ export function RecordingList({
       ) : (
         <div className="flex flex-col gap-10">
           {filtered && <p className="-mb-6 px-1 text-sm text-muted">عدد النتائج: {toArabicDigits(queue.length)}</p>}
-          {groups.map((g) => (
+          {groups.map((g, gi) => (
             <section key={g.key} aria-label={g.title} className="flex flex-col gap-4">
               {g.title && (
                 <div className="flex items-center gap-4 px-1">
@@ -211,7 +218,7 @@ export function RecordingList({
                   <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-gold/30 to-transparent" />
                 </div>
               )}
-              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+              <ul className={`grid sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 ${mobileRows ? "grid-cols-1 gap-1" : "grid-cols-2 gap-2"}`}>
                 {g.items.map((r) => {
                   const i = queue.indexOf(r);
                   return (
@@ -226,9 +233,30 @@ export function RecordingList({
                       favorite={fav.isFavorite(r.id)}
                       listened={r.category === "mushaf" && !!r.surah && khatma.isDone(r.surah)}
                       onToggleFavorite={() => fav.toggle(r.id)}
+                      row={mobileRows}
                     />
                   );
                 })}
+                {more && gi === groups.length - 1 && (
+                  <li className="hidden p-2 sm:block">
+                    <Link
+                      href={more.href}
+                      className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-2xl border border-line-strong p-4 text-center transition-colors hover:border-gold/50 hover:bg-white/[0.03]"
+                    >
+                      {more.remaining > 0 && (
+                        <span dir="ltr" className="font-display text-3xl font-bold leading-tight text-text">
+                          +{toArabicDigits(more.remaining)}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-gold">
+                        {more.label}
+                        <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+                          <path d="M19 12H5M11 18l-6-6 6-6" />
+                        </svg>
+                      </span>
+                    </Link>
+                  </li>
+                )}
               </ul>
             </section>
           ))}

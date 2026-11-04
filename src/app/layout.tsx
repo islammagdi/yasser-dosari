@@ -7,10 +7,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
 // رابط الموقع الأساسي: مهم عشان صور المشاركة على واتساب تبقى روابط كاملة
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
-
+import { siteUrl } from "@/lib/site";
 export const metadata: Metadata = {
   // مهم: من غيره صور المشاركة بتطلع على localhost
   metadataBase: new URL(siteUrl),

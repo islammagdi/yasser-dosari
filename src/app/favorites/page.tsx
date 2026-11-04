@@ -3,7 +3,7 @@ import { FavoritesView } from "@/components/FavoritesView";
 import { recordings } from "@/lib/api";
 import { CATEGORIES } from "@/lib/categories";
 
-export const metadata: Metadata = { title: "المفضلة" };
+export const metadata: Metadata = { title: "المفضلة", robots: { index: false, follow: true } };
 
 export default async function FavoritesPage() {
   // المفضلة محفوظة في المتصفح، فبنبعت كل التسجيلات والفلترة بتحصل هناك
