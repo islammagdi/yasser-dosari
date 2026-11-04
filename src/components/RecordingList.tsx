@@ -6,6 +6,7 @@ import { LECTURE_TYPE_LABELS, hijriMonthName } from "@/lib/categories";
 import { normalizeArabic, toArabicDigits } from "@/lib/format";
 import { matchesSearch, searchTerms } from "@/lib/search";
 import { useFavorites } from "@/lib/useFavorites";
+import { useKhatma } from "@/lib/useKhatma";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCard } from "./RecordingCard";
 import { SearchIcon } from "./icons";
@@ -25,8 +26,9 @@ interface Props {
   title?: string;
   /** تابات بالنسخ لو القسم فيه أكتر من تسجيل (المصحف) */
   versionTabs?: boolean;
+  /** حاجة إضافية تحت العنوان والفلاتر، زي متابعة الختمة */
+  extra?: React.ReactNode;
 }
-
 type TypeValue = LectureType | "all";
 
 const TYPE_OPTIONS: { value: TypeValue; label: string }[] = [
@@ -85,9 +87,11 @@ export function RecordingList({
   typeFilter = false,
   title,
   versionTabs = false,
+  extra,
 }: Props) {
   const { current, isPlaying, playQueue } = usePlayer();
   const fav = useFavorites();
+  const khatma = useKhatma();
   const [query, setQuery] = useState("");
   const [type, setType] = useState<TypeValue>("all");
   const [year, setYear] = useState<number | null>(null);
@@ -182,6 +186,7 @@ export function RecordingList({
             {search}
           </div>
           {filters}
+          {extra}
         </>
       ) : (
         (filters || search) && (
@@ -219,6 +224,7 @@ export function RecordingList({
                       isPlaying={isPlaying}
                       onPlay={() => playQueue(queue, i)}
                       favorite={fav.isFavorite(r.id)}
+                      listened={r.category === "mushaf" && !!r.surah && khatma.isDone(r.surah)}
                       onToggleFavorite={() => fav.toggle(r.id)}
                     />
                   );

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Recording } from "@/types";
 
+import { markSurahListened } from "@/lib/useKhatma";
 const STORAGE_KEY = "yd-player-v1";
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 
@@ -280,7 +281,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
-  // يوتيوب مش بيبعت تحديث للوقت، فبنسأله كل نص ثانية وهو شغّال
+   // متابعة الختمة: السورة بتتحسب لما المستمع يوصل لـ ٩٠٪ منها
+  useEffect(() => {
+    if (current?.category === "mushaf" && current.surah && duration > 0 && currentTime / duration >= 0.9) {
+      markSurahListened(current.surah);
+    }
+  }, [current, currentTime, duration]);
+
+  // يوتيوب مش بيبعت تحديث للوقت فبنسأله كل نص ثانية وهو شغّال
   useEffect(() => {
     if (!isYouTube || !isPlaying) return;
     const t = window.setInterval(() => {

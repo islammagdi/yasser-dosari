@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { KhatmaProgress } from "@/components/KhatmaProgress";
 import { RecordingList } from "@/components/RecordingList";
 import { recordings } from "@/lib/api";
 import { CATEGORIES, getCategory } from "@/lib/categories";
@@ -34,6 +35,7 @@ export default async function CategoryPage({ params }: Props) {
         numbered={category.slug === "taraweeh" || category.slug === "mushaf"}
         typeFilter={category.slug === "lectures"}
         versionTabs={category.slug === "mushaf"}
+        extra={category.slug === "mushaf" ? <KhatmaProgress items={items} /> : undefined}
       />
     </>
   );

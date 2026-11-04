@@ -17,6 +17,8 @@ interface Props {
   onPlay: () => void;
   favorite?: boolean;
   onToggleFavorite?: () => void;
+  /** المصحف: السورة اتسمعت في الختمة */
+  listened?: boolean;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  * الرابط ممدود على الكارت كله، والمحتوى فوقه مش بيستقبل ضغطات (pointer-events-none)
  * إلا زرار التشغيل والقلب.
  */
-export function RecordingCard({ recording, position, badge, isCurrent, isPlaying, onPlay, favorite = false, onToggleFavorite }: Props) {
+export function RecordingCard({ recording, position, badge, isCurrent, isPlaying, onPlay, favorite = false, onToggleFavorite, listened = false }: Props) {
   const unavailable = !isPlayable(recording);
   const playingNow = isCurrent && isPlaying;
   const meta = [recording.subtitle, formatDate(recording.date), formatDuration(recording.durationSec)].filter(Boolean);
@@ -48,6 +50,11 @@ export function RecordingCard({ recording, position, badge, isCurrent, isPlaying
         {badge && (
           <span className="absolute start-2 top-2 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-medium text-gold-soft">
             {badge}
+          </span>
+        )}
+        {listened && (
+          <span className="absolute start-2 top-2 flex items-center gap-1 rounded-full bg-ink/80 px-2.5 py-1 text-xs font-medium text-gold-soft">
+            ✓ سمعتها
           </span>
         )}
         {playingNow && (

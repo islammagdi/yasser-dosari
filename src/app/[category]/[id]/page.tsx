@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Recording } from "@/types";
+import { AyahFollow } from "@/components/AyahFollow";
 import { RecordingDetail } from "@/components/RecordingDetail";
+import { surahText, surahTimings, type AyahTiming, type SurahText } from "@/lib/api/quranText";
 import { RecordingList } from "@/components/RecordingList";
 import { recordings } from "@/lib/api";
 import { CATEGORY_COVERS, getCategory } from "@/lib/categories";
@@ -55,11 +57,24 @@ export default async function RecordingPage({ params, searchParams }: Props) {
   const more = related(recording, all);
   const startAt = Math.max(0, Number(searchParams.t) || 0);
 
+  // نص السورة وتوقيت الآيات: للمصحف الصوتي من mp3quran بس (التوقيت مربوط بالتسجيل ده)
+  let text: SurahText | null = null;
+  let timings: AyahTiming[] = [];
+  if (recording.category === "mushaf" && recording.surah) {
+    const [t, tm] = await Promise.allSettled([
+      surahText(recording.surah),
+      recording.audioUrl.includes("mp3quran") ? surahTimings(recording.surah) : Promise.resolve([]),
+    ]);
+    if (t.status === "fulfilled") text = t.value;
+    if (tm.status === "fulfilled") timings = tm.value;
+  }
+
   return (
     <>
       <div aria-hidden className="pattern-stars page-pattern" />
       <div className="flex flex-col gap-14">
         <RecordingDetail recording={recording} queue={[recording, ...more]} startAt={startAt} />
+        {text && <AyahFollow recording={recording} ayahs={text.ayahs} basmala={text.basmala} timings={timings} />}
         {more.length > 0 && (
           <section aria-labelledby="more-title" className="flex flex-col gap-4">
             <div className="flex items-center gap-4 px-1">
