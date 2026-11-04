@@ -10,7 +10,9 @@ import "./globals.css";
 import { siteUrl } from "@/lib/site";
 export const metadata: Metadata = {
   // مهم: من غيره صور المشاركة بتطلع على localhost
-  metadataBase: new URL(siteUrl),
+     metadataBase: new URL(siteUrl),
+     // إثبات ملكية الموقع في Google Search Console
+     verification: { google: "v3IbwRUUCDYnfZeFGobAaK9OaY84KwW2vUGszuFRF2E" },
   title: { default: "الشيخ ياسر الدوسري", template: "%s | الشيخ ياسر الدوسري" },
   description: "محاضرات الشيخ ياسر الدوسري وتلاوات الصلوات المفروضة وصلاة التراويح.",
   applicationName: "ياسر الدوسري",
