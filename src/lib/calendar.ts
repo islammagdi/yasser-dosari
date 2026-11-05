@@ -45,21 +45,36 @@ export function googleCalendarUrl(e: CalendarEvent): string {
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
-/** ملف .ics بيفتح في تقويم الآيفون وأغلب تطبيقات التقويم، وفيه تنبيه قبل الموعد بنص ساعة */
-export function icsFile(e: CalendarEvent, uid: string): Blob {
-  const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/[,;]/g, (c) => `\\${c}`);
+const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/[,;]/g, (c) => `\\${c}`);
+
+/** معيار iCalendar: السطر ميزيدش عن ٧٥ بايت، والزيادة بتنزل سطر جديد أوله مسافة (من غير ما نقطع حرف عربي) */
+function fold(line: string): string {
+  const enc = new TextEncoder();
+  const out: string[] = [];
+  let cur = "";
+  let bytes = 0;
+  for (const ch of line) {
+    const b = enc.encode(ch).length;
+    if (bytes + b > (out.length ? 74 : 75)) {
+      out.push(cur);
+      cur = "";
+      bytes = 0;
+    }
+    cur += ch;
+    bytes += b;
+  }
+  out.push(cur);
+  return out.join("\r\n ");
+}
+
+function veventLines(e: CalendarEvent, uid: string): string[] {
   const when = e.allDay
     ? [`DTSTART;VALUE=DATE:${e.start}`, `DTEND;VALUE=DATE:${e.end}`]
     : [`DTSTART:${e.start}`, `DTEND:${e.end}`];
   const alarm = e.allDay
     ? []
     : ["BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", `DESCRIPTION:${esc(e.title)}`, "END:VALARM"];
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//yasser-dosari//imamate//AR",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
+  return [
     "BEGIN:VEVENT",
     `UID:${uid}@yasser-dosari`,
     `DTSTAMP:${stamp(new Date())}`,
@@ -69,7 +84,24 @@ export function icsFile(e: CalendarEvent, uid: string): Blob {
     `DESCRIPTION:${esc(e.details)}`,
     ...alarm,
     "END:VEVENT",
-    "END:VCALENDAR",
   ];
-  return new Blob([lines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+}
+
+/**
+ * تقويم كامل فيه أكتر من موعد. لو فيه name، بيبقى تقويم اشتراك:
+ * التطبيق بيعرضه باسمه وبيحدّثه لوحده كل refreshHours ساعة.
+ */
+export function icsCalendar(items: { event: CalendarEvent; uid: string }[], opts: { name?: string; refreshHours?: number } = {}): string {
+  const header = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//yasser-dosari//imamate//AR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+  if (opts.name) header.push(`X-WR-CALNAME:${esc(opts.name)}`, "X-WR-TIMEZONE:Asia/Riyadh");
+  if (opts.refreshHours) {
+    header.push(`REFRESH-INTERVAL;VALUE=DURATION:PT${opts.refreshHours}H`, `X-PUBLISHED-TTL:PT${opts.refreshHours}H`);
+  }
+  const lines = [...header, ...items.flatMap((i) => veventLines(i.event, i.uid)), "END:VCALENDAR"];
+  return lines.map(fold).join("\r\n");
+}
+
+/** ملف .ics بيفتح في تقويم الآيفون وأغلب تطبيقات التقويم، وفيه تنبيه قبل الموعد بنص ساعة */
+export function icsFile(e: CalendarEvent, uid: string): Blob {
+  return new Blob([icsCalendar([{ event: e, uid }])], { type: "text/calendar;charset=utf-8" });
 }

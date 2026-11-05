@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ImamateSlot } from "@/types";
 import { IMAMATE_PRAYER_LABELS, NIGHT_PART_LABELS, addDays, hijriDayLabel, isNowLive, nextSlot, prayersList, relativeDayLabel } from "@/lib/imamate";
@@ -87,6 +88,11 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
             </>
           ) : (
             <span className="text-sm leading-6">لا توجد إمامة معلنة حاليًا، ويُعلن الجدول أسبوعيًا.</span>
+          )}
+          {now !== null && (
+            <Link href="/imamate" className="relative z-10 self-start text-[13px] font-semibold text-gold underline-offset-4 hover:underline">
+              الجدول كاملًا والاشتراك في التقويم
+            </Link>
           )}
         </span>
       </div>

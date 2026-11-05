@@ -20,6 +20,7 @@ export function SiteHeader() {
   const headerRef = useRef<HTMLElement>(null);
   const onFavorites = pathname === "/favorites";
   const onQuran = pathname === "/quran" || pathname.startsWith("/quran/");
+  const onSurah = pathname === "/surah" || pathname.startsWith("/surah/");
   const onSearch = pathname === "/search";
   const isActive = (slug: string) => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`);
 
@@ -45,7 +46,7 @@ export function SiteHeader() {
     <header ref={headerRef} className="glass sticky top-0 z-30 border-b border-gold/25">
       <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:grid-cols-[1fr_auto_1fr] md:py-3">
         {/* اللوجو */}
-        <Link href="/" className="col-start-1 row-start-1 flex min-h-11 items-center justify-self-start md:col-start-2 md:justify-self-center">
+               <Link href="/" className="col-start-1 row-start-1 flex min-h-11 items-center justify-self-start">
           <Image
             src="/images/logo.png"
             alt="الشيخ ياسر الدوسري"
@@ -58,7 +59,7 @@ export function SiteHeader() {
         </Link>
 
         {/* الأقسام: ديسكتوب بس */}
-        <nav aria-label="الأقسام" className="hidden md:col-start-1 md:row-start-1 md:block md:justify-self-start">
+        <nav aria-label="الأقسام" className="hidden md:col-start-2 md:row-start-1 md:block md:justify-self-center">
           <div className="glass-card flex gap-1 rounded-full px-2 py-1">
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
@@ -83,6 +84,15 @@ export function SiteHeader() {
               }`}
             >
               قراءة
+            </Link>
+            <Link
+              href="/surah"
+              aria-current={onSurah ? "page" : undefined}
+              className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
+                onSurah ? "font-semibold text-text after:bg-gold" : "text-muted after:bg-transparent hover:text-text"
+              }`}
+            >
+              السور
             </Link>
           </div>
         </nav>
@@ -156,6 +166,18 @@ export function SiteHeader() {
               >
                 قراءة القرآن
                 {onQuran && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/surah"
+                aria-current={onSurah ? "page" : undefined}
+                className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
+                  onSurah ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-white/5"
+                }`}
+              >
+                التلاوات بالسور
+                {onSurah && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
               </Link>
             </li>
             <li aria-hidden className="my-2 h-px bg-white/10" />

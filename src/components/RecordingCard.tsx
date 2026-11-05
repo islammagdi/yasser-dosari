@@ -5,6 +5,7 @@ import type { Recording } from "@/types";
 import { formatDate, formatDuration, toArabicDigits } from "@/lib/format";
 import { isPlayable } from "@/lib/labels";
 import { useProgressRatio } from "@/lib/useProgress";
+import { isNewSince, useLastVisit } from "@/lib/useVisit";
 import { RecordingCover } from "./RecordingCover";
 import { EqualizerIcon, HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
@@ -44,6 +45,8 @@ export function RecordingCard({
   const unavailable = !isPlayable(recording);
   const playingNow = isCurrent && isPlaying;
   const progress = useProgressRatio(recording.id);
+  const lastVisit = useLastVisit();
+  const isNew = isNewSince(recording, lastVisit);
   const details = [formatDate(recording.date), formatDuration(recording.durationSec)].filter(Boolean);
   // صور يوتيوب 16:9 (شرايطها السودا بتتقص مع object-cover)، والأغلفة المولّدة تفضل مربعة
   const wide = !!recording.imageUrl;
@@ -81,7 +84,13 @@ export function RecordingCard({
             ✓ سمعتها
           </span>
         )}
-          {/* شريط التقدّم لو بدأها ومكمّلهاش */}
+        {/* اتضاف بعد آخر زيارة */}
+        {isNew && (
+          <span className="absolute bottom-2 start-2 rounded-full bg-gold px-2 py-0.5 text-[11px] font-bold text-gold-ink sm:text-xs">
+            جديد
+          </span>
+        )}
+        {/* شريط التقدّم لو بدأها ومكمّلهاش */}
         {progress > 0 && (
           <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/15">
             <span className="block h-full bg-gold" style={{ width: `${Math.round(progress * 100)}%` }} />

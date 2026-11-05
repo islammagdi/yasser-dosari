@@ -14,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${siteUrl}/quran`, changeFrequency: "yearly", priority: 0.7 },
     { url: `${siteUrl}/about`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${siteUrl}/imamate`, changeFrequency: "daily", priority: 0.8 },
   ];
 
   // لو مصدر من المصادر وقع، الخريطة تطلع بالباقي بدل ما تفشل كلها
@@ -47,5 +48,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticPages, ...categoryPages, ...recordingPages, ...surahPages];
+  // صفحات السور (فهرس + ١١٤ صفحة): كل سورة بتلاواتها
+  const surahListening: MetadataRoute.Sitemap = [
+    { url: `${siteUrl}/surah`, changeFrequency: "weekly", priority: 0.8 },
+    ...Array.from({ length: 114 }, (_, i) => ({
+      url: `${siteUrl}/surah/${i + 1}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+  ];
+
+  return [...staticPages, ...categoryPages, ...surahListening, ...recordingPages, ...surahPages];
 }

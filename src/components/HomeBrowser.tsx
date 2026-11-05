@@ -5,6 +5,7 @@ import { useEffect, useId, useState } from "react";
 import { isRamadan } from "@/lib/imamate";
 import type { Category, Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
+import { useLastVisit } from "@/lib/useVisit";
 import { RecordingList } from "./RecordingList";
 
 export interface HomeSection {
@@ -13,6 +14,8 @@ export interface HomeSection {
   description: string;
   total: number;
   latest: Recording[];
+  /** تواريخ إضافة أحدث التسجيلات (لعلامة "جديد") */
+  recentAdded?: string[];
 }
 
 /** عدد الكروت في الرئيسية؛ الخانة الخامسة بقت "عرض الكل" */
@@ -25,6 +28,8 @@ const HOME_LIMIT = 4;
 export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
   const [active, setActive] = useState<Category | undefined>(sections[0]?.slug);
   const id = useId();
+  const lastVisit = useLastVisit();
+  const newCount = (s: HomeSection) => (lastVisit ? (s.recentAdded ?? []).filter((d) => d > lastVisit).length : 0);
   // في رمضان التراويح هي اللي بتتفتح الأول
   useEffect(() => {
     if (isRamadan(new Date())) {
@@ -61,6 +66,7 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
       >
         {sections.map((s) => {
           const selected = s.slug === current.slug;
+          const fresh = newCount(s);
           return (
             <button
               key={s.slug}
@@ -78,6 +84,11 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
               }`}
             >
               {s.title}
+              {fresh > 0 && (
+                <span className="h-2 w-2 shrink-0 rounded-full bg-gold" title={`${toArabicDigits(fresh)} جديد منذ زيارتك الأخيرة`}>
+                  <span className="sr-only">({toArabicDigits(fresh)} جديد)</span>
+                </span>
+              )}
               <span
                 className={`rounded-full px-2 text-xs font-medium leading-5 ${
                   selected ? "bg-gold-ink/10 text-gold-ink sm:bg-gold/15 sm:text-gold-soft" : "bg-white/5 text-muted"

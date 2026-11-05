@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { Recording } from "@/types";
 import { getCategory } from "@/lib/categories";
 import { formatDuration, toArabicDigits } from "@/lib/format";
+import { surahName } from "@/lib/quran";
+import { surahsMentioned } from "@/lib/surahIndex";
 import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
 import { useProgressTime } from "@/lib/useProgress";
@@ -23,6 +25,7 @@ export function RecordingDetail({ recording: r, queue, startAt }: { recording: R
   const playingNow = isCurrent && p.isPlaying;
   const favorite = fav.isFavorite(r.id);
   const number = r.surah ?? r.night;
+  const surahs = surahsMentioned(r);
 
   return (
     <article className="grid items-start gap-8 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-12">
@@ -42,6 +45,21 @@ export function RecordingDetail({ recording: r, queue, startAt }: { recording: R
           )}
           <h1 className="font-display text-3xl font-bold leading-snug sm:text-4xl lg:text-5xl">{r.title}</h1>
           {r.subtitle && <p className="text-lg leading-8 text-muted">{r.subtitle}</p>}
+          {/* السور اللي في التلاوة: كل واحدة بتودّي لصفحتها بباقي تلاواتها */}
+          {surahs.length > 0 && (
+            <ul aria-label="السور في هذه التلاوة" className="flex flex-wrap gap-2">
+              {surahs.map((n) => (
+                <li key={n}>
+                  <Link
+                    href={`/surah/${n}`}
+                    className="inline-flex min-h-9 items-center rounded-full border border-line-strong px-3.5 text-sm text-gold-soft transition-colors hover:border-gold/50"
+                  >
+                    كل تلاوات سورة {surahName(n)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
           {r.durationSec ? <p className="text-sm text-muted">المدة: {formatDuration(r.durationSec)}</p> : null}
         </div>
 

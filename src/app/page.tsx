@@ -1,4 +1,5 @@
 import { ContinueListening } from "@/components/ContinueListening";
+import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
 import { RamadanCard } from "@/components/RamadanCard";
@@ -31,7 +32,9 @@ export default async function HomePage() {
         const all = await recordings.list({ category: c.slug });
         // المصحف بيفضل بترتيب السور، والباقي الأحدث الأول
         const ordered = c.slug === "mushaf" ? all : newestFirst(all);
-        return { slug: c.slug, title: c.title, description: c.description, total: all.length, latest: ordered.slice(0, 5) };
+        // تواريخ آخر ٥٠ تسجيل، عشان التابات تعرف فيه جديد من آخر زيارة ولا لأ
+        const recentAdded = all.flatMap((r) => (r.addedAt ? [r.addedAt] : [])).sort().slice(-50);
+        return { slug: c.slug, title: c.title, description: c.description, total: all.length, latest: ordered.slice(0, 5), recentAdded };
       }),
     ),
     recordings.recent(4),
@@ -41,12 +44,15 @@ export default async function HomePage() {
   ]);
 
   // سورة الكهف: الصوت أولًا، ولو مش موجود نسخة الفيديو
+  // الورد: النسخة الصوتية بس لو موجودة، عشان منبعتش قايمة المصحف مرتين للمتصفح
+  const wirdItems = mushaf.some((r) => !r.youtubeId) ? mushaf.filter((r) => !r.youtubeId) : mushaf;
   const kahf = mushaf.find((r) => r.surah === 18 && !r.youtubeId) ?? mushaf.find((r) => r.surah === 18) ?? null;
 
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} />
       <ContinueListening />
+      <WirdCard items={wirdItems} dismissible />
       <RamadanCard slots={imamate} recordings={taraweeh} />
       <FridayKahf kahf={kahf} />
       <HomeBrowser sections={sections} />

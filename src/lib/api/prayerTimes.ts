@@ -19,7 +19,8 @@ export async function makkahPrayerTimes(dates: string[]): Promise<PrayerTimes> {
     months.map(async (ym) => {
       const [y, m] = ym.split("-");
       const res = await fetch(
-        `https://api.aladhan.com/v1/calendarByCity/${y}/${Number(m)}?city=Makkah&country=Saudi%20Arabia&method=4`,
+        // إحداثيات المسجد الحرام نفسه بدل اسم المدينة، بطريقة أم القرى وبتوقيت مكة
+        `https://api.aladhan.com/v1/calendar/${y}/${Number(m)}?latitude=21.4225&longitude=39.8262&method=4&timezonestring=Asia/Riyadh`,
         { next: { revalidate: 60 * 60 * 24 } },
       );
       if (!res.ok) throw new Error(`aladhan ${res.status}`);
