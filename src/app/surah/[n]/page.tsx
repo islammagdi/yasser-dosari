@@ -41,7 +41,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     alternates: { canonical: `/surah/${n}` },
-    openGraph: { title, description, url: `${siteUrl}/surah/${n}` },
+       // لازم الصورة هنا كمان: openGraph في الصفحة بيستبدل بتاع الـ layout كله
+    openGraph: { title, description, url: `${siteUrl}/surah/${n}`, images: [{ url: "/og.jpg", width: 1200, height: 630 }] },
   };
 }
 

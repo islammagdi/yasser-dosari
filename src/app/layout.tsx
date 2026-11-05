@@ -14,9 +14,17 @@ export const metadata: Metadata = {
      // إثبات ملكية الموقع في Google Search Console
      verification: { google: "v3IbwRUUCDYnfZeFGobAaK9OaY84KwW2vUGszuFRF2E" },
   title: { default: "الشيخ ياسر الدوسري", template: "%s | الشيخ ياسر الدوسري" },
-  description: "محاضرات الشيخ ياسر الدوسري وتلاوات الصلوات المفروضة وصلاة التراويح.",
+  description: "تلاوات الشيخ ياسر الدوسري من المسجد الحرام أولًا بأول، والمصحف كاملًا بصوته، مع ورد يومي وجدول الإمامة.",
   applicationName: "ياسر الدوسري",
   appleWebApp: { capable: true, title: "ياسر الدوسري", statusBarStyle: "black-translucent" },
+  // صورة المشاركة الافتراضية (واتساب وغيره) لأي صفحة ملهاش صورة خاصة
+  openGraph: {
+    siteName: "تلاوات الشيخ ياسر الدوسري",
+    locale: "ar_SA",
+    type: "website",
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "الشيخ ياسر الدوسري، إمام وخطيب المسجد الحرام" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og.jpg"] },
 };
 
 export const viewport: Viewport = {
