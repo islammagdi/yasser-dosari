@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
+import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 import { HeartIcon, SearchIcon } from "./icons";
 
 /**
@@ -185,6 +186,15 @@ export function SiteHeader() {
               <Link href="/about" className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-white/5 hover:text-text">
                 عن الموقع
               </Link>
+            </li>
+            <li>
+              <a
+                href={feedbackHref}
+                {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] font-semibold text-gold-soft transition-colors hover:bg-white/5"
+              >
+                اقترح تحسينًا
+              </a>
             </li>
           </ul>
         </nav>

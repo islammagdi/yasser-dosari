@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 
 export function SiteFooter() {
   return (
@@ -11,6 +12,13 @@ export function SiteFooter() {
           </a>
         </p>
         <nav aria-label="روابط الموقع" className="flex flex-wrap gap-x-5 gap-y-2">
+          <a
+            href={feedbackHref}
+            {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            className="flex min-h-11 items-center font-semibold text-gold-soft hover:text-gold"
+          >
+            اقترح تحسينًا
+          </a>
           <Link href="/about" className="flex min-h-11 items-center hover:text-text">
             عن الموقع
           </Link>

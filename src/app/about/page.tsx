@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CONTACT_EMAIL, FEEDBACK_URL, feedbackHref } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "عن الموقع",
   description: "موقع تطوعي غير رسمي لتلاوات الشيخ ياسر الدوسري: المصادر وسياسة الخصوصية.",
 };
 
-/** بريد التواصل اللي يظهر في الصفحة */
-const CONTACT_EMAIL = "imagdi.swe@gmail.com";
+
 
 const SOURCES = [
   {
@@ -130,15 +130,25 @@ export default function AboutPage() {
           <p className="text-[15px] text-muted">آخر تحديث: نوفمبر ٢٠٢٦</p>
         </Section>
 
-        <Section id="contact" title="التواصل">
+        <Section id="contact" title="التواصل والاقتراحات">
           <p>
-            لأي ملاحظة أو اقتراح أو طلب تعديل: <span className="text-gold-soft">{CONTACT_EMAIL}</span>
+            الموقع ما زال يُطوَّر، وأي اقتراح أو ملاحظة أو خطأ تلاحظه يفيدنا كثيرًا.
+          </p>
+          <a
+            href={feedbackHref}
+            {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            className="self-start rounded-full bg-gold px-6 py-3 font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+          >
+            أرسل اقتراحك
+          </a>
+          <p className="text-[15px] text-muted">
+            أو راسلنا على: <span dir="ltr" className="text-gold-soft">{CONTACT_EMAIL}</span>
           </p>
         </Section>
 
         <Link
           href="/"
-          className="self-start rounded-full bg-gold px-6 py-3 font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+          className="self-start rounded-full border border-line-strong px-6 py-3 font-semibold text-gold-soft transition-colors hover:border-gold/50"
         >
           العودة إلى الرئيسية
         </Link>

@@ -12,3 +12,15 @@ export const siteUrl = (
  * حط هنا الرابط الرسمي اللي اخترته؛ لو فاضي، الزرار مش بيظهر.
  */
 export const MAKKAH_LIVE_URL = "";
+
+/** بريد التواصل: بيظهر في صفحة "عن الموقع"، وبيتستخدم للاقتراحات لو مفيش نموذج */
+export const CONTACT_EMAIL = "imagdi.swe@gmail.com";
+
+/**
+ * رابط نموذج الاقتراحات (Google Form مثلًا). لو فاضي، زرار "اقترح تحسينًا" بيفتح إيميل جاهز بعنوان.
+ */
+export const FEEDBACK_URL = "https://forms.gle/LhuNCer8U3yyCmcV9";
+
+export const feedbackHref =
+  FEEDBACK_URL ||
+  `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("اقتراح لموقع تلاوات الشيخ ياسر الدوسري")}`;
