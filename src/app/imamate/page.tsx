@@ -45,7 +45,7 @@ export default async function ImamatePage() {
         <header className="flex flex-col gap-2">
           <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">جدول إمامة الشيخ</h1>
           <p className="max-w-2xl text-lg leading-8 text-muted">
-            مواعيد إمامة الشيخ ياسر الدوسري في المسجد الحرام حسب الجدول الأسبوعي المعلن. الأوقات بتوقيت مكة المكرمة وتقريبية من وقت الأذان.
+            مواعيد إمامة الشيخ ياسر الدوسري في المسجد الحرام حسب الجدول الأسبوعي المعلن. الأوقات المذكورة هي وقت الأذان بتوقيت مكة المكرمة، وتُقام الصلاة بعده بدقائق.
           </p>
         </header>
 
@@ -108,7 +108,7 @@ export default async function ImamatePage() {
                       <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-sm">
                         <span className="font-semibold text-gold-soft">{IMAMATE_PRAYER_LABELS[s.prayer]}</span>
                         {s.part && <span className="text-muted">({NIGHT_PART_LABELS[s.part]})</span>}
-                        {s.start && <span className="text-muted">{clock(s.start)}</span>}
+{s.start && <span className="text-muted">الأذان {clock(s.start)}</span>}
                       </span>
                     ))}
                   </span>

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { renderAyahImage, type ImageFormat } from "@/lib/ayahImage";
+import type { Ayah } from "@/lib/api/quranText";
+import { renderAyahImage, selectionText, wordsOf, type ImageFormat } from "@/lib/ayahImage";
 import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
 
@@ -26,13 +27,15 @@ interface Props {
   surah: number;
   ayah: number;
   text: string;
+  /** آيات السورة كلها: عشان الصورة تقدر تاخد أكتر من آية */
+  ayahs: Ayah[];
   bookmarked: boolean;
   onToggleBookmark: () => void;
   onClose: () => void;
 }
 
 /** قايمة الآية: التفسير الميسر، العلامة، النسخ، صورة للمشاركة، والاستماع مع التكرار */
-export function AyahSheet({ surah, ayah, text, bookmarked, onToggleBookmark, onClose }: Props) {
+export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookmark, onClose }: Props) {
   const [view, setView] = useState<"main" | "image">("main");
   const [tafsir, setTafsir] = useState<string | null | "error">(null);
   const [copied, setCopied] = useState(false);
@@ -131,7 +134,7 @@ export function AyahSheet({ surah, ayah, text, bookmarked, onToggleBookmark, onC
             </section>
           </>
         ) : (
-          <AyahImagePanel surah={surah} ayah={ayah} text={text} onBack={() => setView("main")} />
+          <AyahImagePanel surah={surah} ayah={ayah} ayahs={ayahs} onBack={() => setView("main")} />
         )}
       </div>
     </div>,
@@ -139,32 +142,63 @@ export function AyahSheet({ surah, ayah, text, bookmarked, onToggleBookmark, onC
   );
 }
 
-function AyahImagePanel({ surah, ayah, text, onBack }: { surah: number; ayah: number; text: string; onBack: () => void }) {
+/** أقصى عدد آيات في الصورة الواحدة؛ أكتر من كده الخط بيصغر لدرجة صعب تتقري */
+const MAX_AYAHS = 10;
+
+function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: number; ayahs: Ayah[]; onBack: () => void }) {
   const [format, setFormat] = useState<ImageFormat>("square");
+  const [from, setFrom] = useState(ayah);
+  const [to, setTo] = useState(ayah);
+  // تحديد جزء: أول ضغطة = بداية، تاني ضغطة = نهاية
+  const [pick, setPick] = useState<{ start: number; end: number | null } | null>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [truncated, setTruncated] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  const total = ayahs.length;
+  const words = useMemo(() => wordsOf(ayahs.filter((a) => a.n >= from && a.n <= to)), [ayahs, from, to]);
+  const start = pick?.start ?? 0;
+  const end = pick ? pick.end ?? pick.start : words.length - 1;
+  const sel = words.length ? selectionText(words, Math.min(start, end), Math.max(start, end), surah) : null;
+
+  const changeFrom = (n: number) => {
+    setFrom(n);
+    if (to < n) setTo(n);
+    if (to > n + MAX_AYAHS - 1) setTo(n + MAX_AYAHS - 1);
+    setPick(null);
+  };
+  const changeTo = (n: number) => {
+    setTo(n);
+    setPick(null);
+  };
+  const tapWord = (i: number) => {
+    if (!pick || pick.end !== null) setPick({ start: i, end: null });
+    else setPick({ start: pick.start, end: i });
+  };
+
   useEffect(() => {
+    if (!sel) return;
     let alive = true;
     let made: string | null = null;
     setBlob(null);
     setFailed(false);
-    renderAyahImage({ surah, ayah, text, format, site: window.location.host })
-      .then((b) => {
+    renderAyahImage({ body: sel.body, ref: sel.ref, format, site: window.location.host })
+      .then((r) => {
         if (!alive) return;
-        made = URL.createObjectURL(b);
-        setBlob(b);
+        made = URL.createObjectURL(r.blob);
+        setBlob(r.blob);
         setUrl(made);
+        setTruncated(r.truncated);
       })
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
       if (made) URL.revokeObjectURL(made);
     };
-  }, [surah, ayah, text, format]);
+  }, [sel?.body, sel?.ref, format]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fileName = `ayah-${surah}-${ayah}${format === "story" ? "-story" : ""}.png`;
+  const fileName = `ayah-${surah}-${sel?.first ?? ayah}${sel && sel.last !== sel.first ? `-${sel.last}` : ""}${format === "story" ? "-story" : ""}.png`;
   const file = blob ? new File([blob], fileName, { type: "image/png" }) : null;
   const canShare = !!file && typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [file] });
 
@@ -177,9 +211,9 @@ function AyahImagePanel({ surah, ayah, text, onBack }: { surah: number; ayah: nu
   };
 
   const share = async () => {
-    if (!file) return;
+    if (!file || !sel) return;
     try {
-      await navigator.share({ files: [file], title: `سورة ${surahName(surah)}، الآية ${toArabicDigits(ayah)}` });
+      await navigator.share({ files: [file], title: sel.ref });
     } catch {
       /* المستخدم لغى */
     }
@@ -196,6 +230,10 @@ function AyahImagePanel({ surah, ayah, text, onBack }: { surah: number; ayah: nu
     </button>
   );
 
+  const select = "min-h-11 rounded-xl border border-white/10 bg-ink px-3 text-text";
+  const lo = Math.min(start, end);
+  const hi = Math.max(start, end);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-1 rounded-full border border-white/10 p-1">
@@ -203,16 +241,75 @@ function AyahImagePanel({ surah, ayah, text, onBack }: { surah: number; ayah: nu
         {tab("story", "طولي (ستوري)")}
       </div>
 
+      {/* الآيات: من … إلى … */}
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <label className="flex items-center gap-2">
+          من الآية
+          <select value={from} onChange={(e) => changeFrom(Number(e.target.value))} className={select}>
+            {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {toArabicDigits(n)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2">
+          إلى
+          <select value={to} onChange={(e) => changeTo(Number(e.target.value))} className={select}>
+            {Array.from({ length: Math.min(MAX_AYAHS, total - from + 1) }, (_, i) => from + i).map((n) => (
+              <option key={n} value={n}>
+                {toArabicDigits(n)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {/* جزء من الآيات: اضغط أول كلمة وآخر كلمة */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2 text-xs text-muted">
+          <span>{pick?.end === null ? "اضغط آخر كلمة" : "لجزء من الآية: اضغط أول كلمة ثم آخر كلمة"}</span>
+          {pick && (
+            <button type="button" onClick={() => setPick(null)} className="min-h-9 px-2 text-gold-soft hover:underline">
+              الكل
+            </button>
+          )}
+        </div>
+        <p className="max-h-40 overflow-y-auto rounded-2xl border border-white/10 p-3 font-quran text-xl leading-[2.2]">
+          {words.map((w, i) => {
+            const on = i >= lo && i <= hi;
+            return (
+              <span key={i}>
+                <button
+                  type="button"
+                  onClick={() => tapWord(i)}
+                  aria-pressed={on}
+                  className={`rounded-md px-0.5 transition-colors ${on ? "text-text" : "text-muted/50"} ${
+                    pick && (i === lo || i === hi) ? "bg-gold/20" : "hover:bg-white/5"
+                  }`}
+                >
+                  {w.text}
+                </button>
+                {w.last && <span className="text-gold/70"> ﴿{toArabicDigits(w.ayah)}﴾</span>}{" "}
+              </span>
+            );
+          })}
+        </p>
+      </div>
+
       <div className="flex min-h-[240px] items-center justify-center rounded-2xl bg-black/30 p-3">
         {failed ? (
           <p className="text-sm text-muted">تعذّر تجهيز الصورة.</p>
         ) : blob && url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={`صورة الآية ${toArabicDigits(ayah)} من سورة ${surahName(surah)}`} className={`rounded-xl ${format === "story" ? "max-h-[52vh]" : "max-h-[44vh]"} w-auto`} />
+          <img src={url} alt={sel?.ref ?? ""} className={`rounded-xl ${format === "story" ? "max-h-[52vh]" : "max-h-[44vh]"} w-auto`} />
         ) : (
           <p className="text-sm text-muted">جارٍ تجهيز الصورة…</p>
         )}
       </div>
+      {truncated && (
+        <p className="text-sm text-gold-soft">النص أطول من مساحة الصورة، فاتقص آخره. قلّل عدد الآيات أو اختر جزءًا منها.</p>
+      )}
 
       <div className="flex gap-2">
         {canShare && (

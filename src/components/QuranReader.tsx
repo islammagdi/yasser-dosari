@@ -105,6 +105,7 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
           surah={surah}
           ayah={open.n}
           text={open.text}
+          ayahs={ayahs}
           bookmarked={isBookmarked(open.n)}
           onToggleBookmark={() => setBookmark(isBookmarked(open.n) ? null : { surah, ayah: open.n })}
           onClose={close}

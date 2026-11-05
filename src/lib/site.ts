@@ -11,7 +11,7 @@ export const siteUrl = (
  * رابط البث المباشر من المسجد الحرام، بيظهر في الهيرو وقت إمامة الشيخ.
  * حط هنا الرابط الرسمي اللي اخترته؛ لو فاضي، الزرار مش بيظهر.
  */
-export const MAKKAH_LIVE_URL = "";
+export const MAKKAH_LIVE_URL = "https://www.youtube.com/channel/UCos52azQNBgW63_9uDJoPDA/live";
 
 /** بريد التواصل: بيظهر في صفحة "عن الموقع"، وبيتستخدم للاقتراحات لو مفيش نموذج */
 export const CONTACT_EMAIL = "imagdi.swe@gmail.com";

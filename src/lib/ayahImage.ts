@@ -1,7 +1,8 @@
 /**
- * صورة آية للمشاركة: بترسم على canvas بخط المصحف وألوان الموقع، وبترجع PNG.
+ * صورة آية (أو أكتر، أو جزء من آية) للمشاركة: بترسم على canvas بخط المصحف وألوان الموقع، وبترجع PNG.
  * مربع (١٠٨٠×١٠٨٠) للبوستات، أو طولي (١٠٨٠×١٩٢٠) للستوري.
  */
+import type { Ayah } from "./api/quranText";
 import { toArabicDigits } from "./format";
 import { surahName } from "./quran";
 
@@ -18,18 +19,48 @@ const C = {
 const QURAN_FONT = '"Amiri Quran", "Amiri", serif';
 const UI_FONT = '"IBM Plex Sans Arabic", system-ui, sans-serif';
 
+// من غير لوجو: مساحة النص بتبدأ من فوق الإطار على طول
 const LAYOUT = {
-  square: { w: 1080, h: 1080, logoY: 96, top: 230, bottom: 860, refY: 930, siteY: 990, max: 64, pad: 120 },
-  story: { w: 1080, h: 1920, logoY: 250, top: 460, bottom: 1480, refY: 1580, siteY: 1650, max: 76, pad: 110 },
+  square: { w: 1080, h: 1080, top: 120, bottom: 860, refY: 930, siteY: 990, max: 64, pad: 120 },
+  story: { w: 1080, h: 1920, top: 260, bottom: 1480, refY: 1580, siteY: 1650, max: 76, pad: 110 },
 } as const;
 
-function loadImage(src: string): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
+// ---------- اختيار النص: آية، أو كذا آية، أو جزء ----------
+
+/** كلمة في التحديد. علامات الوقف (ۚ ۖ …) بتتلزق في الكلمة اللي قبلها، فمبتتختارش لوحدها */
+export interface Word {
+  ayah: number;
+  text: string;
+  /** آخر كلمة في الآية: بعدها بيتحط رقم الآية */
+  last: boolean;
+}
+
+const HAS_LETTER = /[\u0621-\u064A\u0671-\u06D3]/;
+
+export function wordsOf(ayahs: Ayah[]): Word[] {
+  const out: Word[] = [];
+  for (const a of ayahs) {
+    const tokens: string[] = [];
+    for (const t of a.text.split(/\s+/).filter(Boolean)) {
+      if (!HAS_LETTER.test(t) && tokens.length) tokens[tokens.length - 1] += ` ${t}`;
+      else tokens.push(t);
+    }
+    tokens.forEach((text, i) => out.push({ ayah: a.n, text, last: i === tokens.length - 1 }));
+  }
+  return out;
+}
+
+/** النص والمرجع لكلمات من start لـ end (شاملين) */
+export function selectionText(words: Word[], start: number, end: number, surah: number) {
+  const picked = words.slice(start, end + 1);
+  const body = picked.map((w) => (w.last ? `${w.text} ﴿${toArabicDigits(w.ayah)}﴾` : w.text)).join(" ");
+  const first = picked[0].ayah;
+  const lastAyah = picked[picked.length - 1].ayah;
+  // جزء = البداية مش أول كلمة في آيتها، أو النهاية مش آخر كلمة في آيتها
+  const partial = (start > 0 && words[start - 1].ayah === first) || !picked[picked.length - 1].last;
+  const range = first === lastAyah ? `الآية ${toArabicDigits(first)}` : `الآيات ${toArabicDigits(first)}–${toArabicDigits(lastAyah)}`;
+  const ref = `سورة ${surahName(surah)} · ${partial ? "من " : ""}${range}`;
+  return { body, ref, first, last: lastAyah };
 }
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
@@ -46,21 +77,20 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): strin
   return lines;
 }
 
+/** truncated = النص أطول من مساحة الصورة واتقص */
 export async function renderAyahImage(opts: {
-  surah: number;
-  ayah: number;
-  text: string;
+  body: string;
+  ref: string;
   format: ImageFormat;
   site: string;
-}): Promise<Blob> {
+}): Promise<{ blob: Blob; truncated: boolean }> {
   const L = LAYOUT[opts.format];
-  const body = `${opts.text} ﴿${toArabicDigits(opts.ayah)}﴾`;
+  const body = opts.body;
 
   await Promise.all([
     document.fonts.load(`48px ${QURAN_FONT}`, body),
     document.fonts.load(`32px ${UI_FONT}`, "سورة"),
   ]).catch(() => undefined);
-  const logo = await loadImage("/images/logo.png");
 
   const canvas = document.createElement("canvas");
   canvas.width = L.w;
@@ -86,12 +116,6 @@ export async function renderAyahImage(opts: {
   ctx.strokeStyle = `${C.gold}44`;
   ctx.strokeRect(54, 54, L.w - 108, L.h - 108);
 
-  if (logo) {
-    const lw = 300;
-    const lh = (logo.height / logo.width) * lw;
-    ctx.drawImage(logo, (L.w - lw) / 2, L.logoY - lh / 2, lw, lh);
-  }
-
   // نص الآية: أكبر خط يدخل في المساحة، ولو الآية طويلة جدًا بتتقص بـ "…"
   const width = L.w - L.pad * 2;
   const areaH = L.bottom - L.top;
@@ -105,7 +129,8 @@ export async function renderAyahImage(opts: {
   size = Math.max(size, 28);
   const lh = size * 1.9;
   const maxLines = Math.floor(areaH / lh);
-  if (lines.length > maxLines) {
+  const truncated = lines.length > maxLines;
+  if (truncated) {
     lines = lines.slice(0, maxLines);
     lines[maxLines - 1] += " …";
   }
@@ -122,13 +147,14 @@ export async function renderAyahImage(opts: {
   ctx.stroke();
   ctx.font = `600 34px ${UI_FONT}`;
   ctx.fillStyle = C.goldSoft;
-  ctx.fillText(`سورة ${surahName(opts.surah)} · الآية ${toArabicDigits(opts.ayah)}`, L.w / 2, L.refY);
+  ctx.fillText(opts.ref, L.w / 2, L.refY);
   ctx.font = `24px ${UI_FONT}`;
   ctx.fillStyle = C.muted;
   ctx.direction = "ltr";
   ctx.fillText(opts.site, L.w / 2, L.siteY);
 
-  return new Promise((resolve, reject) =>
+  const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png"),
   );
+  return { blob, truncated };
 }
