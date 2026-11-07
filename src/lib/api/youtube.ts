@@ -213,11 +213,48 @@ export async function fetchYoutube(category: Category): Promise<Recording[]> {
 
   // نفس الفيديو ممكن يكون في أكتر من قايمة
   const seen = new Set<string>();
-  return lists.flat().filter((r): r is Recording => {
+  const unique = lists.flat().filter((r): r is Recording => {
     if (!r || seen.has(r.id)) return false;
     seen.add(r.id);
     return true;
   });
+
+  // اللي ليه ملف صوت على R2 بيتشغّل صوت، والباقي بيفضل يوتيوب
+  const manifest = await audioManifest();
+  return unique.map((r) => withAudio(r, manifest));
+}
+
+// ---------- الصوت من R2 ----------
+
+/** الرابط العام للـ bucket (من غير / في الآخر). لو فاضي، كل التسجيلات بتفضل يوتيوب */
+const AUDIO_BASE = (process.env.AUDIO_BASE_URL ?? "").replace(/\/$/, "");
+
+/** manifest.json في الـ bucket: ID فيديو يوتيوب ← اسم ملف الصوت ومدته بالثواني */
+type AudioManifest = Record<string, { file: string; duration?: number }>;
+
+async function audioManifest(): Promise<AudioManifest> {
+  if (!AUDIO_BASE) return {};
+  try {
+    // بيتقري كل ساعة، فإضافة ملفات جديدة مش محتاجة deploy
+    const res = await fetch(`${AUDIO_BASE}/manifest.json`, { next: { revalidate: 3600 } });
+    if (!res.ok) return {};
+    return (await res.json()) as AudioManifest;
+  } catch {
+    // الفهرس مش متاح: نكمّل بيوتيوب بدل ما الصفحة تقع
+    return {};
+  }
+}
+
+function withAudio(r: Recording, manifest: AudioManifest): Recording {
+  const entry = r.youtubeId ? manifest[r.youtubeId] : undefined;
+  if (!entry?.file) return r;
+  return {
+    ...r,
+    // من غير youtubeId المشغّل بيتعامل معاه كصوت: خلفية وشاشة قفل ومن غير لوحة الفيديو
+    youtubeId: undefined,
+    audioUrl: `${AUDIO_BASE}/${entry.file.replace(/^\//, "")}`,
+    durationSec: entry.duration || r.durationSec,
+  };
 }
 
 // ---------- المصحف المرتل (فيديو) ----------
