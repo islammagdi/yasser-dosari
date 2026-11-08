@@ -6,6 +6,7 @@ import { getCategory } from "@/lib/categories";
 import { formatDuration, toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
 import { surahsMentioned } from "@/lib/surahIndex";
+import { SOURCE_CHANNEL, isFromChannel } from "@/lib/site";
 import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
 import { useProgressTime } from "@/lib/useProgress";
@@ -59,6 +60,21 @@ export function RecordingDetail({ recording: r, queue, startAt }: { recording: R
                 </li>
               ))}
             </ul>
+          )}
+          {/* ذكر المصدر: شرط إذن صاحب القناة */}
+          {isFromChannel(r.id) && (
+            <p className="text-sm text-muted">
+              المصدر: قناة{" "}
+              <a
+                href={SOURCE_CHANNEL.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gold-soft underline-offset-4 hover:underline"
+              >
+                «{SOURCE_CHANNEL.name}»
+              </a>{" "}
+              على يوتيوب
+            </p>
           )}
           {r.durationSec ? <p className="text-sm text-muted">المدة: {formatDuration(r.durationSec)}</p> : null}
         </div>
