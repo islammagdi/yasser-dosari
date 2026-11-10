@@ -1,4 +1,6 @@
 import { IMAMATE_WEEKS, RAMADAN_NIGHTS } from "@/data/imamate";
+import { loadImamateDoc } from "@/lib/admin/imamateStore";
+import type { ImamateWeek, RamadanNight } from "@/types";
 import { expandRamadan, expandWeeks } from "@/lib/imamate";
 import { fetchImamateSheet, fetchRamadanSheet, imamateSheetEnabled, ramadanSheetEnabled } from "./imamateSheet";
 import { makkahPrayerTimes } from "./prayerTimes";
@@ -58,23 +60,11 @@ export const mockRepository: RecordingsRepository = {
       .slice(0, limit);
   },
   async imamate() {
-    // الجدول من Google Sheet لو متظبط، وإلا من src/data/imamate.ts
-    let weeks = IMAMATE_WEEKS;
-    if (imamateSheetEnabled()) {
-      try {
-        weeks = await fetchImamateSheet();
-      } catch (err) {
-        console.warn("imamate sheet: fallback to code", err);
-      }
-    }
-    let nights = RAMADAN_NIGHTS;
-    if (ramadanSheetEnabled()) {
-      try {
-        nights = await fetchRamadanSheet();
-      } catch (err) {
-        console.warn("ramadan sheet: fallback to code", err);
-      }
-    }
+    // الأولوية: لوحة التحكم (R2) ← Google Sheet ← src/data/imamate.ts
+    const doc = await loadImamateDoc();
+    const fallback = doc ? null : await imamateFallback();
+    const weeks = doc?.weeks ?? fallback!.weeks;
+    const nights = doc?.ramadan ?? fallback!.nights;
     const build = (times?: Parameters<typeof expandWeeks>[1]) => [...expandWeeks(weeks, times), ...expandRamadan(nights, times)];
     const slots = build();
     // مواقيت الصلاة، عشان الموعد يعدّي بعد الصلاة نفسها مش بنهاية اليوم
@@ -87,3 +77,24 @@ export const mockRepository: RecordingsRepository = {
     }
   },
 };
+
+/** الجدول القديم (الشيت أو الكود): بيتستخدم لحد ما يتحفظ أول جدول من لوحة التحكم */
+export async function imamateFallback(): Promise<{ weeks: ImamateWeek[]; nights: RamadanNight[] }> {
+  let weeks = IMAMATE_WEEKS;
+  if (imamateSheetEnabled()) {
+    try {
+      weeks = await fetchImamateSheet();
+    } catch (err) {
+      console.warn("imamate sheet: fallback to code", err);
+    }
+  }
+  let nights = RAMADAN_NIGHTS;
+  if (ramadanSheetEnabled()) {
+    try {
+      nights = await fetchRamadanSheet();
+    } catch (err) {
+      console.warn("ramadan sheet: fallback to code", err);
+    }
+  }
+  return { weeks, nights };
+}

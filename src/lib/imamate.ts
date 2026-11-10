@@ -79,7 +79,7 @@ const umalqura = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
   day: "numeric",
 });
 
-function hijriOf(d: Date) {
+export function hijriOf(d: Date) {
   const p = Object.fromEntries(umalqura.formatToParts(d).map((x) => [x.type, x.value]));
   return { y: parseInt(p.year, 10), m: Number(p.month), d: Number(p.day) };
 }
