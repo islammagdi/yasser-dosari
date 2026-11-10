@@ -9,12 +9,14 @@ interface Saved {
   done: number[];
   /** آخر سورة اتسمعت، عشان "كمّل" تبدأ من بعدها */
   last?: number;
+  /** عدد الختمات اللي اكتملت قبل كده (مبيتصفرش مع بداية ختمة جديدة) */
+  completed?: number;
 }
 
 function read(): Saved {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? "{}") as Saved;
-    return { done: Array.isArray(v.done) ? v.done : [], last: v.last };
+    return { done: Array.isArray(v.done) ? v.done : [], last: v.last, completed: Number(v.completed) || 0 };
   } catch {
     return { done: [] };
   }
@@ -33,7 +35,10 @@ function write(s: Saved) {
 export function markSurahListened(surah: number) {
   const s = read();
   if (s.done.includes(surah) && s.last === surah) return;
-  write({ done: s.done.includes(surah) ? s.done : [...s.done, surah], last: surah });
+  const done = s.done.includes(surah) ? s.done : [...s.done, surah];
+  // آخر سورة في الختمة: بنعدّ ختمة جديدة مرة واحدة بس
+  const finishedNow = done.length >= 114 && s.done.length < 114;
+  write({ done, last: surah, completed: (s.completed ?? 0) + (finishedNow ? 1 : 0) });
 }
 
 /** متابعة الختمة: السور اللي اتسمعت، محفوظة على الجهاز */
@@ -55,7 +60,8 @@ export function useKhatma() {
     };
   }, []);
 
-  const reset = useCallback(() => write({ done: [] }), []);
+  // ختمة جديدة: السور بتتصفر، وعدد الختمات بيفضل
+  const reset = useCallback(() => write({ done: [], completed: read().completed }), []);
   const isDone = useCallback((n: number) => state.done.includes(n), [state.done]);
 
   /** السورة اللي بعد آخر واحدة اتسمعت ومتسمعتش، وإلا أول سورة متسمعتش */
@@ -66,5 +72,13 @@ export function useKhatma() {
     return null;
   })();
 
-  return { ready, count: state.done.length, isDone, nextSurah, reset };
+  return { ready, count: state.done.length, completed: state.completed ?? 0, isDone, nextSurah, reset };
+}
+
+/** "ختمة واحدة" / "ختمتان" / "٣ ختمات" / "١٥ ختمة" */
+export function khatmaCountLabel(n: number, digits: (n: number) => string): string {
+  if (n === 1) return "ختمة واحدة";
+  if (n === 2) return "ختمتان";
+  if (n >= 3 && n <= 10) return `${digits(n)} ختمات`;
+  return `${digits(n)} ختمة`;
 }

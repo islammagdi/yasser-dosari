@@ -3,7 +3,7 @@
 import type { Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
-import { useKhatma } from "@/lib/useKhatma";
+import { khatmaCountLabel, useKhatma } from "@/lib/useKhatma";
 import { usePlayer } from "./PlayerProvider";
 import { PlayIcon } from "./icons";
 
@@ -33,6 +33,9 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
             {toArabicDigits(k.count)} من {toArabicDigits(total)} سورة
           </p>
         </div>
+        {k.completed > 0 && (
+          <p className="text-sm text-gold-soft">أتممت حتى الآن {khatmaCountLabel(k.completed, toArabicDigits)} بصوت الشيخ</p>
+        )}
         <div
           role="progressbar"
           aria-label="تقدّم الختمة"

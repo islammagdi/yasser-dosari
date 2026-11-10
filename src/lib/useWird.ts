@@ -6,6 +6,47 @@ import { TOTAL_PAGES, daysBetween, localToday, pickToday, surahPages } from "./w
 
 const KEY = "yd-wird-v1";
 const EVENT = "yd-wird-change";
+/** الأيام اللي الورد فيها اكتمل: لسلسلة الأيام المتتالية */
+const STREAK_KEY = "yd-wird-days-v1";
+
+function readDays(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(STREAK_KEY) ?? "[]");
+    return Array.isArray(v) ? v.filter((d) => typeof d === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** السلسلة الحالية (لحد النهارده أو امبارح) وأطول سلسلة */
+function streaks(days: string[], today: string): { current: number; best: number } {
+  const set = new Set(days);
+  const prev = (d: string) => {
+    const t = new Date(`${d}T12:00:00Z`);
+    t.setUTCDate(t.getUTCDate() - 1);
+    return t.toISOString().slice(0, 10);
+  };
+  let start = set.has(today) ? today : prev(today);
+  let current = 0;
+  while (set.has(start)) {
+    current++;
+    start = prev(start);
+  }
+  let best = 0;
+  for (const d of set) {
+    if (set.has(prev(d))) continue; // مش أول يوم في سلسلة
+    let n = 0;
+    let x = d;
+    while (set.has(x)) {
+      n++;
+      const t = new Date(`${x}T12:00:00Z`);
+      t.setUTCDate(t.getUTCDate() + 1);
+      x = t.toISOString().slice(0, 10);
+    }
+    best = Math.max(best, n);
+  }
+  return { current, best };
+}
 
 interface Plan {
   /** مدة الختمة بالأيام */
@@ -83,6 +124,22 @@ export function useWird() {
   }, [ready, k.ready, plan, today, done, daysLeft]);
 
   const surahs = plan?.today?.date === today ? plan.today.surahs : [];
+  const doneToday = surahs.filter((n) => done.has(n));
+
+  // ورد النهارده خلص: نسجّل اليوم في السلسلة
+  const [days, setDays] = useState<string[]>([]);
+  useEffect(() => setDays(readDays()), []);
+  useEffect(() => {
+    if (!surahs.length || doneToday.length < surahs.length || days.includes(today)) return;
+    const next = [...days, today].sort().slice(-400);
+    try {
+      localStorage.setItem(STREAK_KEY, JSON.stringify(next));
+    } catch {
+      /* تجاهل */
+    }
+    setDays(next);
+  }, [surahs.length, doneToday.length, days, today]);
+  const streak = streaks(days, today);
 
   const start = useCallback((days: number) => write({ days, start: localToday() }), []);
   const stop = useCallback(() => write(null), []);
@@ -102,9 +159,11 @@ export function useWird() {
     daysLeft,
     overdue,
     surahs,
-    doneToday: surahs.filter((n) => done.has(n)),
+    doneToday,
     finished: k.count >= 114,
     khatmaCount: k.count,
+    completedKhatmas: k.completed,
+    streak,
     start,
     stop,
     restart,

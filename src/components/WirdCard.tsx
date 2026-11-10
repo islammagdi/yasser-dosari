@@ -5,6 +5,7 @@ import type { Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
 import { siteUrl } from "@/lib/site";
+import { khatmaCountLabel } from "@/lib/useKhatma";
 import { useWird } from "@/lib/useWird";
 import { WIRD_DURATIONS, localToday, surahPages, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
 import { usePlayer } from "./PlayerProvider";
@@ -100,6 +101,18 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
         <h2 id="wird-title" className="font-display text-2xl font-bold text-gold-soft">
           أتممت الختمة، تقبّل الله منك
         </h2>
+        {w.completedKhatmas > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-muted">أتممت حتى الآن {khatmaCountLabel(w.completedKhatmas, toArabicDigits)} بصوت الشيخ.</p>
+            <button
+              type="button"
+              onClick={() => shareKhatma(w.completedKhatmas)}
+              className="min-h-11 rounded-full border border-line-strong px-4 text-sm font-semibold text-gold-soft hover:border-gold/50"
+            >
+              شارك فرحتك
+            </button>
+          </div>
+        )}
         <p className="text-sm font-semibold">ابدأ ختمة جديدة في:</p>
         {durations(w.restart)}
         <button type="button" onClick={w.stop} className="self-start text-sm text-muted underline-offset-4 hover:text-text hover:underline">
@@ -130,6 +143,12 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
         <h2 id="wird-title" className="font-display text-2xl font-bold text-gold-soft">
           {allDone ? "أتممت ورد اليوم" : "وردك اليوم"}
         </h2>
+        {w.streak.current >= 2 && (
+          <span className="flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold text-gold-soft" title={w.streak.best > w.streak.current ? `أطول سلسلة: ${toArabicDigits(w.streak.best)} يومًا` : undefined}>
+            <FlameIcon />
+            {streakLabel(w.streak.current)}
+          </span>
+        )}
         <span className="text-sm text-muted">
           {w.overdue
             ? `اليوم ${toArabicDigits(w.dayNumber)} · تجاوزت المدة، نكمل بنفس المعدّل`
@@ -227,4 +246,35 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
       </div>
     </section>
   );
+}
+/** مشاركة عدد الختمات: نص ورابط الموقع، من قايمة المشاركة في الموبايل أو نسخ */
+async function shareKhatma(n: number) {
+  const ordinal = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة", "التاسعة", "العاشرة"][n - 1];
+  const text = `الحمد لله، أتممت ختم القرآن الكريم ${ordinal ? `للمرة ${ordinal}` : `${toArabicDigits(n)} مرة`} استماعًا بصوت الشيخ ياسر الدوسري`;
+  const url = window.location.origin;
+  if (navigator.share) {
+    try {
+      await navigator.share({ text, url });
+    } catch {
+      /* المستخدم لغى */
+    }
+  } else {
+    await navigator.clipboard?.writeText(`${text}\n${url}`);
+    window.alert("تم نسخ الرسالة، الصقها حيث تريد.");
+  }
+}
+
+function FlameIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+      <path d="M12 2c1 3.5-1.5 5-1.5 7.5 0 1.4 1 2.5 2.4 2.5 1.6 0 2.6-1.3 2.6-3 2 1.6 3.5 4.2 3.5 7A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-5 4-7 7-14z" />
+    </svg>
+  );
+}
+
+/** "يومان متتاليان" / "٥ أيام متتالية" / "١٢ يومًا متتاليًا" */
+function streakLabel(n: number) {
+  if (n === 2) return "يومان متتاليان";
+  if (n <= 10) return `${toArabicDigits(n)} أيام متتالية`;
+  return `${toArabicDigits(n)} يومًا متتاليًا`;
 }
