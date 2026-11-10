@@ -21,7 +21,11 @@ interface Saved {
   size?: number;
   /** العلامة اللي الزائر حطها بنفسه على آية */
   bookmark?: Bookmark;
+  /** لون صفحة القراءة: داكن (زي الموقع) أو فاتح بلون الورق */
+  theme?: ReadingTheme;
 }
+
+export type ReadingTheme = "dark" | "light";
 
 const validSurah = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 114;
 
@@ -33,6 +37,7 @@ function read(): Saved {
       last: validSurah(v.last) ? v.last : undefined,
       size: Number.isInteger(v.size) && v.size! >= 0 && v.size! < READING_SIZES.length ? v.size : undefined,
       bookmark: b && validSurah(b.surah) && Number.isInteger(b.ayah) && b.ayah >= 1 ? { surah: b.surah, ayah: b.ayah } : undefined,
+      theme: v.theme === "light" ? "light" : undefined,
     };
   } catch {
     return {};
@@ -71,5 +76,7 @@ export function useReading() {
   /** null = شيل العلامة */
   const setBookmark = useCallback((b: Bookmark | null) => write({ bookmark: b ?? undefined }), []);
 
-  return { ready, last: saved.last, size, bookmark: saved.bookmark, setLast, setSize, setBookmark };
+  const setTheme = useCallback((t: ReadingTheme) => write({ theme: t === "light" ? "light" : undefined }), []);
+
+  return { ready, last: saved.last, size, bookmark: saved.bookmark, theme: saved.theme ?? "dark", setLast, setSize, setBookmark, setTheme };
 }

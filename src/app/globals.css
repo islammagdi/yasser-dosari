@@ -87,6 +87,44 @@
       linear-gradient(to bottom, #000 30%, transparent);
     mask-composite: intersect;
   }
+  /* وضع القراءة الفاتح (لون الورق) في صفحة السورة: بيغيّر ألوان الجزء ده بس */
+  .reader-light {
+    background: #f6efdf;
+    color: #2a2316;
+    border-color: rgb(42 35 22 / 0.12);
+    box-shadow: 0 12px 32px -18px rgb(0 0 0 / 0.5);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .reader-light .text-gold,
+  .reader-light .text-gold-soft {
+    color: #7d5a17;
+  }
+  .reader-light .text-gold\/80 {
+    color: rgb(125 90 23 / 0.85);
+  }
+  .reader-light .text-muted {
+    color: #6b6250;
+  }
+  .reader-light .border-white\/10 {
+    border-color: rgb(42 35 22 / 0.15);
+  }
+  .reader-light .hover\:bg-white\/5:hover,
+  .reader-light .focus-visible\:bg-white\/5:focus-visible {
+    background-color: rgb(42 35 22 / 0.06);
+  }
+  .reader-light .hover\:text-gold-soft:hover {
+    color: #7d5a17;
+  }
+  .reader-light .bg-gold\/15 {
+    background-color: rgb(125 90 23 / 0.14);
+  }
+  .reader-light .from-gold\/40 {
+    --tw-gradient-from: rgb(125 90 23 / 0.4) var(--tw-gradient-from-position);
+  }
+  .reader-light .decoration-gold\/70 {
+    text-decoration-color: rgb(125 90 23 / 0.7);
+  }
   .fade-mask {
     -webkit-mask-image: radial-gradient(ellipse 70% 80% at 25% 50%, #000 15%, transparent 75%);
     mask-image: radial-gradient(ellipse 70% 80% at 25% 50%, #000 15%, transparent 75%);

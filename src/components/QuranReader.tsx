@@ -23,7 +23,8 @@ function PartLine({ m }: { m: PartMarker }) {
 
 /** نص السورة للقراءة: علامات الأجزاء والأحزاب، والضغط على آية بيفتح قايمتها */
 export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: Ayah[]; basmala: boolean }) {
-  const { size, setSize, setLast, bookmark, setBookmark } = useReading();
+  const { size, setSize, setLast, bookmark, setBookmark, theme, setTheme } = useReading();
+  const light = theme === "light";
   const [open, setOpen] = useState<Ayah | null>(null);
   const markers = useMemo(() => surahMarkers(surah), [surah]);
   const firstMarker = markers.get(1);
@@ -38,9 +39,30 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
   const fontSize = `${READING_SIZES[size]}rem`;
 
   return (
-    <section aria-label="نص السورة" className="glass-card flex flex-col gap-6 rounded-3xl p-5 sm:p-10">
+    <section aria-label="نص السورة" className={`glass-card flex flex-col gap-6 rounded-3xl p-5 sm:p-10 ${light ? "reader-light" : ""}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted">اضغط على أي آية للتفسير والعلامة والمشاركة.</p>
+        <div className="flex shrink-0 items-center gap-2">
+        {/* الوضع الفاتح: لون الورق، أريح في القراءة بالنهار */}
+        <button
+          type="button"
+          onClick={() => setTheme(light ? "dark" : "light")}
+          aria-pressed={light}
+          aria-label={light ? "الوضع الداكن" : "الوضع الفاتح"}
+          title={light ? "الوضع الداكن" : "الوضع الفاتح"}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-gold-soft transition-colors hover:bg-white/5"
+        >
+          {light ? (
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+            </svg>
+          ) : (
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+          )}
+        </button>
         <div role="group" aria-label="حجم الخط" className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 p-1">
           <button type="button" onClick={() => setSize(size - 1)} disabled={size === 0} aria-label="تصغير الخط" className={btn}>
             <span className="text-sm">أ</span>
@@ -54,6 +76,7 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
           >
             <span className="text-xl">أ</span>
           </button>
+        </div>
         </div>
       </div>
 
