@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { PlayerBar } from "@/components/PlayerBar";
 import { PlayerProvider } from "@/components/PlayerProvider";
 import { RegisterSW } from "@/components/RegisterSW";
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <SiteFooter />
           <PlayerBar />
+          <InstallPrompt />
         </PlayerProvider>
       </body>
     </html>
