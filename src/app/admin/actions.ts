@@ -6,7 +6,10 @@ import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, assertAdmin, checkPassword } from "@/lib/admin/auth";
 import { IMAMATE_TAG, cleanNights, cleanWeeks, loadImamateDoc, saveImamateDoc } from "@/lib/admin/imamateStore";
 import { imamateFallback } from "@/lib/api/mock";
-import { CATALOG_TAG, loadCatalog, saveCatalog, toEntry, type CatalogEntry } from "@/lib/admin/catalog";
+import { DAILY_TAG, loadDaily, saveDaily } from "@/lib/admin/daily";
+import { recordings } from "@/lib/api";
+import { CATEGORIES } from "@/lib/categories";
+import { CATALOG_TAG, isCustomKey, loadCatalog, saveCatalog, toEntry, type CatalogEntry } from "@/lib/admin/catalog";
 import { MANIFEST_TAG, adminManifest } from "@/lib/admin/manifest";
 import { fetchFromPlaylists, recordingFromTitle } from "@/lib/api/youtube";
 import type { Category, LectureType } from "@/types";
@@ -131,6 +134,11 @@ export async function classifyPending(videoId: string, section: string, titleOve
       const r = recordingFromTitle(videoId, title, meta?.uploadedAt, cls);
       if (!r) return { ok: false, message: "تعذّر قراءة العنوان" };
       const [, entry] = toEntry(r);
+      if (isCustomKey(videoId)) {
+        // تسجيل خاص: من غير صورة يوتيوب، وتاريخ الإضافة = دلوقتي عشان يظهر كجديد
+        delete entry.imageUrl;
+        entry.addedAt = new Date().toISOString();
+      }
       items[videoId] = { ...entry, durationSec: meta?.duration };
     }
     await saveCatalog(items);
@@ -163,7 +171,14 @@ export async function updateEntry(videoId: string, patch: EntryPatch): Promise<A
     const cls = patch.section ? parseSection(patch.section) : null;
     if (cls && (cls.category !== e.category || cls.lectureType !== e.lectureType)) {
       const r = recordingFromTitle(videoId, e.searchText || e.title || videoId, e.addedAt, cls);
-      if (r) e = { ...toEntry(r)[1], durationSec: e.durationSec, hidden: e.hidden };
+      if (r) {
+        const rebuilt = toEntry(r)[1];
+        if (isCustomKey(videoId)) {
+          delete rebuilt.imageUrl;
+          rebuilt.addedAt = e.addedAt;
+        }
+        e = { ...rebuilt, durationSec: e.durationSec, hidden: e.hidden };
+      }
     }
     const num = (v: number | null | undefined) => (v == null || Number.isNaN(v) ? undefined : v);
     e = {
@@ -188,4 +203,72 @@ export async function refreshManifest() {
   assertAdmin();
   revalidateTag(MANIFEST_TAG);
   revalidatePath("/admin/recordings");
+}
+
+// ---------- تلاوة اليوم ----------
+
+/** كل تسجيلات الموقع (بما فيها المصحف) بالـ ID بتاع صفحتها */
+async function allRecordingIds(): Promise<Map<string, string>> {
+  const lists = await Promise.all(CATEGORIES.map((c) => recordings.list({ category: c.slug }).catch(() => [])));
+  return new Map(lists.flat().map((r) => [r.id, r.title || r.prayerLabel || r.id]));
+}
+
+/** "https://…/fard/yt-abc" أو "yt-abc" ← "yt-abc" */
+function recordingRef(input: string): string {
+  const s = input.trim();
+  try {
+    return decodeURIComponent(new URL(s).pathname.split("/").filter(Boolean).pop() ?? "");
+  } catch {
+    return s;
+  }
+}
+
+function refreshDaily() {
+  revalidateTag(DAILY_TAG);
+  revalidatePath("/");
+}
+
+export async function addDaily(input: string, date?: string): Promise<ActionResult> {
+  try {
+    assertAdmin();
+    const id = recordingRef(input);
+    const all = await allRecordingIds();
+    if (!all.has(id)) return { ok: false, message: "لم أجد تسجيلًا بهذا الرابط. انسخ رابط صفحة التلاوة من الموقع." };
+    const doc: { pool: string[]; pinned: Record<string, string> } = (await loadDaily()) ?? { pool: [], pinned: {} };
+    const pool = doc.pool.includes(id) ? doc.pool : [...doc.pool, id];
+    const pinned = { ...doc.pinned };
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) pinned[date] = id;
+    await saveDaily({ pool, pinned });
+    refreshDaily();
+    return { ok: true, message: date ? `تمت الإضافة وتثبيتها يوم ${date}` : `تمت الإضافة: ${all.get(id)}` };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحفظ" };
+  }
+}
+
+export async function removeDaily(id: string): Promise<ActionResult> {
+  try {
+    assertAdmin();
+    const doc: { pool: string[]; pinned: Record<string, string> } = (await loadDaily()) ?? { pool: [], pinned: {} };
+    const pinned = Object.fromEntries(Object.entries(doc.pinned).filter(([, v]) => v !== id));
+    await saveDaily({ pool: doc.pool.filter((x) => x !== id), pinned });
+    refreshDaily();
+    return { ok: true, message: "تم الحذف" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحذف" };
+  }
+}
+
+export async function unpinDaily(date: string): Promise<ActionResult> {
+  try {
+    assertAdmin();
+    const doc: { pool: string[]; pinned: Record<string, string> } = (await loadDaily()) ?? { pool: [], pinned: {} };
+    const pinned = { ...doc.pinned };
+    delete pinned[date];
+    await saveDaily({ pool: doc.pool, pinned });
+    refreshDaily();
+    return { ok: true, message: "تم إلغاء التثبيت" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحفظ" };
+  }
 }

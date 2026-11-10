@@ -1,4 +1,6 @@
 import { ContinueListening } from "@/components/ContinueListening";
+import { DailyRecitation } from "@/components/DailyRecitation";
+import { loadDaily } from "@/lib/admin/daily";
 import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
@@ -26,7 +28,7 @@ function newestFirst(list: Recording[]): Recording[] {
 }
 
 export default async function HomePage() {
-  const [sections, recent, imamate, mushaf, taraweeh] = await Promise.all([
+  const [sections, recent, imamate, mushaf, taraweeh, daily, allLists] = await Promise.all([
     Promise.all(
       CATEGORIES.map(async (c): Promise<HomeSection> => {
         const all = await recordings.list({ category: c.slug });
@@ -41,7 +43,17 @@ export default async function HomePage() {
     recordings.imamate(),
     recordings.list({ category: "mushaf" }),
     recordings.list({ category: "taraweeh" }),
+    loadDaily(),
+    // كل التسجيلات، عشان نلاقي تلاوات اليوم بالـ ID بتاعها
+    Promise.all(CATEGORIES.map((c) => recordings.list({ category: c.slug }))),
   ]);
+
+  // تلاوة اليوم: بنبعت للمتصفح التلاوات المختارة بس، وهو بيختار حسب تاريخ النهارده
+  const byId = new Map(allLists.flat().map((r) => [r.id, r]));
+  const dailyPool = (daily?.pool ?? []).flatMap((id) => byId.get(id) ?? []);
+  const dailyPinned = Object.fromEntries(
+    Object.entries(daily?.pinned ?? {}).flatMap(([date, id]) => (byId.has(id) ? [[date, byId.get(id)!]] : [])),
+  );
 
   // سورة الكهف: الصوت أولًا، ولو مش موجود نسخة الفيديو
   // الورد: النسخة الصوتية بس لو موجودة، عشان منبعتش قايمة المصحف مرتين للمتصفح
@@ -51,6 +63,7 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} />
+      <DailyRecitation pool={dailyPool} pinned={dailyPinned} />
       <ContinueListening />
       <WirdCard items={wirdItems} dismissible />
       <RamadanCard slots={imamate} recordings={taraweeh} />

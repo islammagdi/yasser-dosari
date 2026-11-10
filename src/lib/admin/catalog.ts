@@ -38,11 +38,15 @@ export function toEntry(r: Recording): [string, CatalogEntry] {
   return [youtubeId ?? id.replace(/^yt-/, ""), rest];
 }
 
+/** تسجيل خاص (ملوش فيديو على يوتيوب): مفتاحه بيبدأ بـ custom- */
+export const isCustomKey = (key: string) => key.startsWith("custom-");
+
 /** سطر في الكتالوج ← تسجيل يعرضه الموقع */
-export function fromEntry(videoId: string, e: CatalogEntry): Recording {
+export function fromEntry(key: string, e: CatalogEntry): Recording {
   const { hidden, ...rest } = e;
   void hidden;
-  return { ...rest, id: `yt-${videoId}`, youtubeId: videoId, audioUrl: "" };
+  if (isCustomKey(key)) return { ...rest, id: key, audioUrl: "" };
+  return { ...rest, id: `yt-${key}`, youtubeId: key, audioUrl: "" };
 }
 
 export function catalogRecordings(catalog: Catalog, category: Category): Recording[] {

@@ -275,7 +275,8 @@ export async function audioManifest(): Promise<AudioManifest> {
 }
 
 function withAudio(r: Recording, manifest: AudioManifest): Recording {
-  const entry = r.youtubeId ? manifest[r.youtubeId] : undefined;
+  // تسجيلات يوتيوب بالـ ID بتاع الفيديو، والتسجيلات الخاصة باسمها (custom-...)
+  const entry = manifest[r.youtubeId ?? r.id];
   if (!entry?.file) return r;
   return {
     ...r,

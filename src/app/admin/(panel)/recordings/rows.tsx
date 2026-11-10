@@ -59,13 +59,22 @@ export function PendingRow({ id, title, duration }: { id: string; title?: string
         <span className="font-semibold">{title || "بدون عنوان"}</span>
         <span className="text-xs text-muted">
           {mins(duration)} ·{" "}
-          <a href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noopener noreferrer" className="text-gold-soft underline-offset-4 hover:underline">
-            {id}
-          </a>
+          {id.startsWith("custom-") ? (
+            <span>تسجيل خاص: {id.slice(7)}</span>
+          ) : (
+            <a href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noopener noreferrer" className="text-gold-soft underline-offset-4 hover:underline">
+              {id}
+            </a>
+          )}
         </span>
       </div>
       {!title && (
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="اكتب العنوان كما في يوتيوب" className={field} />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={id.startsWith("custom-") ? "عنوان التسجيل (اكتب فيه التاريخ والسورة لو تحب: «من سورة الرحمن | 12-9-1446»)" : "اكتب العنوان كما في يوتيوب"}
+          className={field}
+        />
       )}
       <div className="flex flex-wrap items-center gap-2">
         <select value={section} onChange={(e) => setSection(e.target.value)} className={field}>
@@ -147,7 +156,7 @@ export function EntryRow({ id, entry }: { id: string; entry: CatalogEntry }) {
             <input type="checkbox" checked={hidden} onChange={(e) => setHidden(e.target.checked)} className="h-5 w-5 accent-[#CDAA62]" />
             إخفاء من الموقع
           </label>
-          {entry.searchText && <p className="text-xs text-muted">العنوان الأصلي في يوتيوب: {entry.searchText}</p>}
+          {entry.searchText && <p className="text-xs text-muted">العنوان الأصلي: {entry.searchText}</p>}
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -171,9 +180,11 @@ export function EntryRow({ id, entry }: { id: string; entry: CatalogEntry }) {
             >
               {pending ? "جارٍ الحفظ…" : "حفظ"}
             </button>
-            <a href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noopener noreferrer" className="text-gold-soft underline-offset-4 hover:underline">
-              فتح في يوتيوب
-            </a>
+            {!id.startsWith("custom-") && (
+              <a href={`https://www.youtube.com/watch?v=${id}`} target="_blank" rel="noopener noreferrer" className="text-gold-soft underline-offset-4 hover:underline">
+                فتح في يوتيوب
+              </a>
+            )}
             <Status r={r} />
           </div>
         </div>

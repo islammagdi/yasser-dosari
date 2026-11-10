@@ -60,8 +60,11 @@ let added = 0;
 const skipped = [];
 for await (const file of mp3Files(dir)) {
   const path = relative(dir, file).split(sep).join("/");
-  const id = path.split("/").pop().replace(/\.(mp3|m4a)$/i, "");
-  if (!YT_ID.test(id)) {
+  const name = path.split("/").pop().replace(/\.(mp3|m4a)$/i, "");
+  // التسجيلات الخاصة (فولدر custom): الاسم إنجليزي وأرقام و - بس، والمفتاح custom-الاسم
+  const custom = path.startsWith("custom/");
+  const id = custom ? `custom-${name.toLowerCase()}` : name;
+  if (custom ? !/^[a-z0-9-]+$/i.test(name) : !YT_ID.test(id)) {
     skipped.push(path);
     continue;
   }
@@ -86,6 +89,6 @@ await writeFile(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2) + 
 console.log(`✓ اتضاف ${added} تسجيل جديد، والفهرس فيه ${Object.keys(manifest).length} تسجيل`);
 console.log(`  الملف: ${join(dir, "manifest.json")}`);
 if (skipped.length) {
-  console.log(`\n⚠ ${skipped.length} ملف اسمه مش ID يوتيوب، ومش متضاف:`);
+  console.log(`\n⚠ ${skipped.length} ملف اسمه مش مقبول ومش متضاف (يوتيوب: الـ ID، والخاص في custom: حروف إنجليزي وأرقام و - بس):`);
   skipped.forEach((p) => console.log(`  - ${p}`));
 }

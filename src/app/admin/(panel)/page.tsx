@@ -9,6 +9,10 @@ export default function AdminHome() {
           <span className="font-display text-2xl font-bold text-gold-soft">التسجيلات</span>
           <span className="text-sm text-muted">صنّف التسجيلات الجديدة، وعدّل أقسام وعناوين التسجيلات الموجودة</span>
         </Link>
+        <Link href="/admin/daily" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
+          <span className="font-display text-2xl font-bold text-gold-soft">تلاوة اليوم</span>
+          <span className="text-sm text-muted">اختر التلاوات التي تظهر في الرئيسية كل يوم</span>
+        </Link>
         <Link href="/admin/imamate" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
           <span className="font-display text-2xl font-bold text-gold-soft">جدول الإمامة</span>
           <span className="text-sm text-muted">أضف أسبوع الإمامة الجديد أو عدّل الأسابيع السابقة</span>
