@@ -11,7 +11,7 @@
  * - لو فيه meta.txt (بيعمله الـ bat)، بياخد منه عنوان كل فيديو وتاريخه عشان يظهروا في لوحة التحكم.
  * - الناتج: manifest.json جوه نفس الفولدر، ترفعه على R2 بعد ما ترفع الملفات.
  */
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { access, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { parseFile } from "music-metadata";
 
@@ -77,11 +77,23 @@ for await (const file of mp3Files(dir)) {
   }
   if (!manifest[id]) added++;
   const info = meta.get(id) ?? {};
+  // غلاف التسجيل الخاص: صورة بنفس الاسم جنبه (rahman.mp3 ← rahman.jpg)
+  let image;
+  if (custom) {
+    for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+      const candidate = file.replace(/\.(mp3|m4a)$/i, `.${ext}`);
+      if (await access(candidate).then(() => true, () => false)) {
+        image = path.replace(/\.(mp3|m4a)$/i, `.${ext}`);
+        break;
+      }
+    }
+  }
   manifest[id] = {
     file: path,
     ...(duration && { duration }),
     ...((info.title ?? manifest[id]?.title) && { title: info.title ?? manifest[id].title }),
     ...((info.uploadedAt ?? manifest[id]?.uploadedAt) && { uploadedAt: info.uploadedAt ?? manifest[id].uploadedAt }),
+    ...((image ?? manifest[id]?.image) && { image: image ?? manifest[id].image }),
   };
 }
 

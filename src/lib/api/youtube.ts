@@ -259,7 +259,7 @@ export async function fetchFromPlaylists(category: Category): Promise<Recording[
 const AUDIO_BASE = (process.env.AUDIO_BASE_URL ?? "").replace(/\/$/, "");
 
 /** manifest.json في الـ bucket: ID فيديو يوتيوب ← اسم ملف الصوت ومدته، وعنوانه وتاريخه لو اتنزّل بالـ bat الجديد */
-export type AudioManifest = Record<string, { file: string; duration?: number; title?: string; uploadedAt?: string }>;
+export type AudioManifest = Record<string, { file: string; duration?: number; title?: string; uploadedAt?: string; image?: string }>;
 
 export async function audioManifest(): Promise<AudioManifest> {
   if (!AUDIO_BASE) return {};
@@ -284,6 +284,8 @@ function withAudio(r: Recording, manifest: AudioManifest): Recording {
     youtubeId: undefined,
     audioUrl: `${AUDIO_BASE}/${entry.file.replace(/^\//, "")}`,
     durationSec: entry.duration || r.durationSec,
+    // غلاف التسجيل الخاص: صورة بنفس اسم الملف في فولدر custom
+    imageUrl: r.imageUrl ?? (entry.image ? `${AUDIO_BASE}/${entry.image}` : undefined),
   };
 }
 

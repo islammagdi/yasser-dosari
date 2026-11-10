@@ -32,7 +32,7 @@ if errorlevel 1 goto :error
 
 echo.
 echo [3/4] Uploading audio files to R2...
-C:\rclone\rclone.exe copy "%AUDIO%" r2:audio --progress --exclude manifest.json --exclude downloaded.txt --exclude meta.txt --s3-no-check-bucket
+C:\rclone\rclone.exe copy "%AUDIO%" r2:audio --progress --include "*.mp3" --include "*.m4a" --include "*.jpg" --include "*.jpeg" --include "*.png" --include "*.webp" --s3-no-check-bucket
 if errorlevel 1 goto :error
 
 echo.
