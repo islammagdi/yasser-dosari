@@ -8,9 +8,10 @@
  *   ومسموح فولدرات جوه زي fard/ و taraweeh/ بنفس شكلها على R2.
  * - لو اديته رابط الـ bucket، بيجيب الفهرس الحالي ويضيف عليه بدل ما يمسحه.
  * - المدة بتتحسب من كل ملف، وبيطبع أي ملف اسمه مش شبه ID يوتيوب عشان تراجعه.
+ * - لو فيه meta.txt (بيعمله الـ bat)، بياخد منه عنوان كل فيديو وتاريخه عشان يظهروا في لوحة التحكم.
  * - الناتج: manifest.json جوه نفس الفولدر، ترفعه على R2 بعد ما ترفع الملفات.
  */
-import { readdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { parseFile } from "music-metadata";
 
@@ -42,6 +43,19 @@ if (base) {
   }
 }
 
+// meta.txt: كل سطر = "ID تاريخ_الرفع(YYYYMMDD) العنوان"
+const meta = new Map();
+try {
+  for (const line of (await readFile(join(dir, "meta.txt"), "utf8")).split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z0-9_-]{11}) (\d{8}|NA) (.+)$/);
+    if (!m) continue;
+    const date = m[2] === "NA" ? undefined : `${m[2].slice(0, 4)}-${m[2].slice(4, 6)}-${m[2].slice(6, 8)}T00:00:00Z`;
+    meta.set(m[1], { title: m[3].trim(), uploadedAt: date });
+  }
+} catch {
+  /* مفيش meta.txt: عادي */
+}
+
 let added = 0;
 const skipped = [];
 for await (const file of mp3Files(dir)) {
@@ -59,7 +73,13 @@ for await (const file of mp3Files(dir)) {
     /* الملف مش مقروء: هنضيفه من غير مدة */
   }
   if (!manifest[id]) added++;
-  manifest[id] = duration ? { file: path, duration } : { file: path };
+  const info = meta.get(id) ?? {};
+  manifest[id] = {
+    file: path,
+    ...(duration && { duration }),
+    ...((info.title ?? manifest[id]?.title) && { title: info.title ?? manifest[id].title }),
+    ...((info.uploadedAt ?? manifest[id]?.uploadedAt) && { uploadedAt: info.uploadedAt ?? manifest[id].uploadedAt }),
+  };
 }
 
 await writeFile(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");

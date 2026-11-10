@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const NAV = [
   { href: "/admin", label: "الرئيسية" },
+  { href: "/admin/recordings", label: "التسجيلات" },
   { href: "/admin/imamate", label: "جدول الإمامة" },
   { href: "/admin/ramadan", label: "جدول رمضان" },
 ];

@@ -2,6 +2,7 @@ import type { Category, LectureType, Prayer, Recording } from "@/types";
 import { hijriDateLabel } from "@/lib/labels";
 import { normalizeArabic } from "@/lib/format";
 import { SURAH_NAMES, surahName } from "@/lib/quran";
+import { catalogRecordings, loadCatalog } from "@/lib/admin/catalog";
 
 /**
  * الفروض والتراويح والخطب من قناة يوتيوب (YouTube Data API v3).
@@ -199,7 +200,39 @@ function toRecording(item: YtItem, playlistTitle: string, cls: { category: Categ
   };
 }
 
+/**
+ * تسجيلات قسم: من الكتالوج (لوحة التحكم) لو اتعمل، وإلا من بلاي ليستات القناة زي الأول.
+ * في الحالتين، اللي ليه ملف صوت على R2 بيتشغّل صوت.
+ */
 export async function fetchYoutube(category: Category): Promise<Recording[]> {
+  const [catalog, manifest] = await Promise.all([loadCatalog(), audioManifest()]);
+  const list = catalog ? catalogRecordings(catalog, category) : await fetchFromPlaylists(category);
+  return list.map((r) => withAudio(r, manifest));
+}
+
+/** بيبني تسجيل من عنوان فيديو، بنفس قواعد قراءة العناوين (التاريخ والصلاة والوصف) */
+export function recordingFromTitle(
+  videoId: string,
+  title: string,
+  publishedAt: string | undefined,
+  cls: { category: Category; lectureType?: LectureType },
+): Recording | null {
+  return toRecording(
+    {
+      snippet: {
+        title,
+        publishedAt: publishedAt ?? "",
+        resourceId: { videoId },
+        thumbnails: { high: { url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` } },
+      },
+    },
+    "",
+    cls,
+  );
+}
+
+/** التقسيم القديم من البلاي ليستات: بيتستخدم قبل الكتالوج، ولزرار "إضافة الناقص" في اللوحة */
+export async function fetchFromPlaylists(category: Category): Promise<Recording[]> {
   const playlists = await fetchAll<YtPlaylist>(`playlists?part=snippet&channelId=${CHANNEL_ID}`);
   const matching = playlists
     .map((p) => ({ p, title: clean(p.snippet.title), cls: classify(clean(p.snippet.title)) }))
@@ -213,15 +246,11 @@ export async function fetchYoutube(category: Category): Promise<Recording[]> {
 
   // نفس الفيديو ممكن يكون في أكتر من قايمة
   const seen = new Set<string>();
-  const unique = lists.flat().filter((r): r is Recording => {
+  return lists.flat().filter((r): r is Recording => {
     if (!r || seen.has(r.id)) return false;
     seen.add(r.id);
     return true;
   });
-
-  // اللي ليه ملف صوت على R2 بيتشغّل صوت، والباقي بيفضل يوتيوب
-  const manifest = await audioManifest();
-  return unique.map((r) => withAudio(r, manifest));
 }
 
 // ---------- الصوت من R2 ----------
@@ -229,10 +258,10 @@ export async function fetchYoutube(category: Category): Promise<Recording[]> {
 /** الرابط العام للـ bucket (من غير / في الآخر). لو فاضي، كل التسجيلات بتفضل يوتيوب */
 const AUDIO_BASE = (process.env.AUDIO_BASE_URL ?? "").replace(/\/$/, "");
 
-/** manifest.json في الـ bucket: ID فيديو يوتيوب ← اسم ملف الصوت ومدته بالثواني */
-type AudioManifest = Record<string, { file: string; duration?: number }>;
+/** manifest.json في الـ bucket: ID فيديو يوتيوب ← اسم ملف الصوت ومدته، وعنوانه وتاريخه لو اتنزّل بالـ bat الجديد */
+export type AudioManifest = Record<string, { file: string; duration?: number; title?: string; uploadedAt?: string }>;
 
-async function audioManifest(): Promise<AudioManifest> {
+export async function audioManifest(): Promise<AudioManifest> {
   if (!AUDIO_BASE) return {};
   try {
     // بيتقري كل ساعة، فإضافة ملفات جديدة مش محتاجة deploy
