@@ -21,12 +21,22 @@ export function FavoritesView({ all, title }: { all: Recording[]; title: string 
       .filter((r): r is Recording => !!r);
   }, [all, ids]);
 
-  if (!ready) return <h1 className={titleClass}>{title}</h1>;
+  // رابط لقوائم التشغيل جنب العنوان
+  const heading = (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <h1 className={titleClass}>{title}</h1>
+      <Link href="/playlists" className="min-h-11 py-2.5 text-[15px] font-semibold text-gold-soft underline-offset-4 hover:underline">
+        قوائم التشغيل
+      </Link>
+    </div>
+  );
+
+  if (!ready) return heading;
 
   if (items.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className={titleClass}>{title}</h1>
+        {heading}
         <div className="glass-card flex flex-col items-center gap-4 rounded-3xl px-6 py-14 text-center">
           <HeartIcon className="h-10 w-10 text-gold" />
           <p className="text-lg font-semibold">لم تُضف أي تلاوة إلى المفضلة بعد</p>
@@ -42,5 +52,10 @@ export function FavoritesView({ all, title }: { all: Recording[]; title: string 
     );
   }
 
-  return <RecordingList title={title} items={items} searchable />;
+  return (
+    <div className="flex flex-col gap-6">
+      {heading}
+      <RecordingList items={items} searchable />
+    </div>
+  );
 }

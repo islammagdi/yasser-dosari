@@ -12,6 +12,7 @@ import { useFavorites } from "@/lib/useFavorites";
 import { useProgressTime } from "@/lib/useProgress";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
+import { AddToPlaylist } from "./AddToPlaylist";
 import { ShareBox } from "./ShareBox";
 import { HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
@@ -108,6 +109,7 @@ export function RecordingDetail({ recording: r, queue, startAt }: { recording: R
           >
             <HeartIcon filled={favorite} className="h-6 w-6" />
           </button>
+          <AddToPlaylist recording={r} />
         </div>
 
         <ShareBox id={r.id} title={r.title} path={`/${r.category}/${r.id}`} />

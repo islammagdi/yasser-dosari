@@ -7,6 +7,7 @@ import { getCategory } from "@/lib/categories";
 import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
 import { PLAYBACK_RATES, usePlayer } from "./PlayerProvider";
+import { FullscreenPlayer } from "./FullscreenPlayer";
 import { RecordingCover } from "./RecordingCover";
 import {
   Forward10Icon,
@@ -36,6 +37,7 @@ export function PlayerBar() {
   const p = usePlayer();
   const fav = useFavorites();
   const [sleepOpen, setSleepOpen] = useState(false);
+  const [full, setFull] = useState(false);
   const sleepRef = useRef<HTMLDivElement>(null);
 
   // قايمة التايمر بتقفل لو ضغطت براها أو دوست Escape
@@ -87,7 +89,14 @@ export function PlayerBar() {
       <div className="mx-auto flex max-w-page items-center gap-3 px-4 py-2.5 sm:px-6 md:gap-6">
         {/* العنوان والمفضلة */}
         <div className="flex min-w-0 flex-1 items-center gap-1 md:w-64 md:flex-none lg:w-80">
-          <RecordingCover recording={p.current} sizes="48px" className="me-2 h-12 w-12 shrink-0 rounded-xl border border-gold/30" />
+          {/* الضغط على الغلاف بيفتح وضع ملء الشاشة (للصوت بس: فيديو يوتيوب لازم يفضل ظاهر) */}
+          {p.current.youtubeId ? (
+            <RecordingCover recording={p.current} sizes="48px" className="me-2 h-12 w-12 shrink-0 rounded-xl border border-gold/30" />
+          ) : (
+            <button type="button" onClick={() => setFull(true)} aria-label="فتح المشغّل بملء الشاشة" className="me-2 shrink-0 rounded-xl">
+              <RecordingCover recording={p.current} sizes="48px" className="h-12 w-12 rounded-xl border border-gold/30" />
+            </button>
+          )}
           <span className="flex min-w-0 flex-col">
             <Link href={`/${p.current.category}/${p.current.id}`} className="truncate text-[15px] font-semibold hover:text-gold-soft">
               {p.current.title}
@@ -232,6 +241,7 @@ export function PlayerBar() {
           </div>
         </div>
       </div>
+            {full && !p.current.youtubeId && <FullscreenPlayer onClose={() => setFull(false)} />}
     </div>
   );
 }
