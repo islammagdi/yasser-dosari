@@ -19,6 +19,9 @@ export function SiteFooter() {
           >
             اقترح تحسينًا
           </a>
+          <Link href="/transfer" className="flex min-h-11 items-center hover:text-text">
+            نقل بياناتي
+          </Link>
           <Link href="/about" className="flex min-h-11 items-center hover:text-text">
             عن الموقع
           </Link>

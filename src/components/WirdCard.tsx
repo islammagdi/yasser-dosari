@@ -5,6 +5,7 @@ import type { Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
 import { siteUrl } from "@/lib/site";
+import { canSaveOffline, saveOffline, useOffline } from "@/lib/offline";
 import { khatmaCountLabel } from "@/lib/useKhatma";
 import { useWird } from "@/lib/useWird";
 import { WIRD_DURATIONS, localToday, surahPages, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
@@ -26,6 +27,8 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   const p = usePlayer();
   const [dismissed, setDismissed] = useState(true);
   const [time, setTime] = useState("20:00");
+  const off = useOffline();
+  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -203,6 +206,34 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             </span>
             {w.doneToday.length ? "أكمل وردك" : "استمع لوردك"}
           </button>
+        )}
+
+        {/* حفظ سور ورد اليوم كلها للاستماع بدون إنترنت */}
+        {!allDone && queue.some((r) => canSaveOffline(r)) && (
+          queue.every((r) => off.isSaved(r.id)) ? (
+            <span className="text-sm font-semibold text-gold-soft">✓ ورد اليوم محفوظ بدون إنترنت</span>
+          ) : (
+            <button
+              type="button"
+              disabled={saving !== null}
+              onClick={async () => {
+                const todo = queue.filter((r) => canSaveOffline(r) && !off.isSaved(r.id));
+                try {
+                  for (let i = 0; i < todo.length; i++) {
+                    setSaving(`${toArabicDigits(i + 1)} من ${toArabicDigits(todo.length)}`);
+                    await saveOffline(todo[i]);
+                  }
+                } catch {
+                  window.alert("تعذّر حفظ بعض السور الآن. تأكد من الاتصال وحاول مرة أخرى.");
+                } finally {
+                  setSaving(null);
+                }
+              }}
+              className="min-h-11 rounded-full border border-line-strong px-4 text-sm font-semibold text-gold-soft hover:border-gold/50 disabled:opacity-70"
+            >
+              {saving ? `جارٍ الحفظ… ${saving}` : "حفظ ورد اليوم بدون إنترنت"}
+            </button>
+          )
         )}
 
         <details className="group">

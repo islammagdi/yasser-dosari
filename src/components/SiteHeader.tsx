@@ -186,6 +186,11 @@ export function SiteHeader() {
                 قوائم التشغيل
               </Link>
             </li>
+            <li>
+              <Link href="/saved" className="flex min-h-12 items-center rounded-2xl px-4 text-lg text-text transition-colors hover:bg-white/5">
+                المحفوظات (بدون إنترنت)
+              </Link>
+            </li>
             <li aria-hidden className="my-2 h-px bg-white/10" />
             <li>
               <Link href="/about" className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-white/5 hover:text-text">

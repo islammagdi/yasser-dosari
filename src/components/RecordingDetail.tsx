@@ -13,6 +13,7 @@ import { useProgressTime } from "@/lib/useProgress";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { AddToPlaylist } from "./AddToPlaylist";
+import { SaveOffline } from "./SaveOffline";
 import { ShareBox } from "./ShareBox";
 import { HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
@@ -111,6 +112,7 @@ export function RecordingDetail({ recording: r, queue, startAt }: { recording: R
           </button>
           <AddToPlaylist recording={r} />
         </div>
+        <SaveOffline recording={r} />
 
         <ShareBox id={r.id} title={r.title} path={`/${r.category}/${r.id}`} />
       </div>
