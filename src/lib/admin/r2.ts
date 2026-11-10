@@ -37,10 +37,13 @@ export async function getJson<T>(key: string, tags: string[] = []): Promise<T | 
 
 export async function putJson(key: string, data: unknown): Promise<void> {
   if (!r2Enabled()) throw new Error("R2 مش متظبط: راجع متغيرات R2_* على Vercel");
-  const res = await r2().fetch(url(key), {
+  // البيانات كـ bytes مش stream، عشان الطلب يتبعت بطول معروف (R2 بيرفض الطلب من غير Content-Length)
+  const body = new TextEncoder().encode(JSON.stringify(data));
+  const signed = await r2().sign(url(key), {
     method: "PUT",
     headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify(data, null, 2),
+    body,
   });
+  const res = await fetch(signed.url, { method: "PUT", headers: signed.headers, body, cache: "no-store" });
   if (!res.ok) throw new Error(`R2 PUT ${key}: ${res.status} ${await res.text()}`);
 }
