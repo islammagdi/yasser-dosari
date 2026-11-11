@@ -6,7 +6,53 @@ const AUDIO = "yd-audio-v1";
 const PAGES = "yd-pages-v1";
 const STATIC = "yd-static-v1";
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+  event.waitUntil(warm());
+});
+
+// الصفحة بتطلب تجهيز الوضع بدون إنترنت (مرة كل جلسة، وبعد حفظ أي تلاوة)
+self.addEventListener("message", (event) => {
+  if (event.data === "warm-offline") event.waitUntil(warm());
+});
+
+/**
+ * بيحفظ الرئيسية وصفحة المحفوظات، ومعاهم ملفات JS و CSS والخطوط اللي محتاجينها،
+ * عشان الموقع يفتح وتقدر تشغّل المحفوظ حتى لو أول مرة تفتحه من غير نت.
+ */
+async function warm() {
+  const pages = await caches.open(PAGES);
+  const assets = await caches.open(STATIC);
+  const grab = async (url) => {
+    if (await assets.match(url)) return null;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    await assets.put(url, res.clone());
+    return res;
+  };
+  for (const path of ["/", "/saved"]) {
+    try {
+      const res = await fetch(path, { cache: "no-store" });
+      if (!res.ok) continue;
+      const html = await res.clone().text();
+      await pages.put(new URL(path, self.location.origin).href, res);
+      const files = [...new Set(html.match(/\/_next\/static\/[^"'\s\\)]+\.(?:js|css)/g) || [])];
+      await Promise.all(
+        files.map(async (f) => {
+          const r = await grab(f).catch(() => null);
+          // الخطوط جوه ملفات CSS
+          if (r && f.endsWith(".css")) {
+            const css = await r.text();
+            const fonts = [...new Set(css.match(/\/_next\/static\/media\/[^"')\s]+/g) || [])];
+            await Promise.all(fonts.map((u) => grab(u).catch(() => null)));
+          }
+        }),
+      );
+    } catch {
+      /* مفيش نت دلوقتي: نحاول المرة الجاية */
+    }
+  }
+}
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener("fetch", (event) => {

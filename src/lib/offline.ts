@@ -63,6 +63,8 @@ export async function saveOffline(r: Recording, onProgress?: (pct: number) => vo
     new Response(blob, { headers: { "Content-Type": blob.type, "Content-Length": String(blob.size), "Accept-Ranges": "bytes" } }),
   );
   write([...read().filter((x) => x.rec.id !== r.id), { rec: r, url: r.audioUrl, size: blob.size, savedAt: new Date().toISOString() }]);
+  // نتأكد إن صفحة المحفوظات نفسها هتفتح من غير نت
+  navigator.serviceWorker?.controller?.postMessage("warm-offline");
 }
 
 export async function removeOffline(id: string): Promise<void> {
