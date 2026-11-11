@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ImamateSlot } from "@/types";
-import { IMAMATE_PRAYER_LABELS, NIGHT_PART_LABELS, addDays, hijriDayLabel, isNowLive, nextSlot, prayersList, relativeDayLabel } from "@/lib/imamate";
+import { IMAMATE_PRAYER_LABELS, NIGHT_PART_LABELS, prayerTitle, addDays, hijriDayLabel, isNowLive, nextSlot, prayersList, relativeDayLabel } from "@/lib/imamate";
 import { MAKKAH_LIVE_URL } from "@/lib/site";
 import { ImamateReminder } from "./ImamateReminder";
 import { ClockIcon, MosqueIcon } from "./icons";
@@ -44,7 +44,7 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
           </span>
           <span className="flex min-w-0 flex-col gap-0.5 lg:gap-1">
             <span className="text-xs font-semibold text-gold lg:text-[13px]">الآن في المسجد الحرام</span>
-            <span className="font-semibold leading-6 lg:text-[17px]">صلاة {IMAMATE_PRAYER_LABELS[slot.prayer]} بإمامة الشيخ</span>
+            <span className="font-semibold leading-6 lg:text-[17px]">{prayerTitle(slot.prayer)} بإمامة الشيخ</span>
             {slot.part && <span className="text-sm text-gold-soft">{NIGHT_PART_LABELS[slot.part]}</span>}
           </span>
         </div>
@@ -73,7 +73,7 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
           ) : slot ? (
             <>
               <span className="font-semibold leading-6 lg:text-[17px]">
-                صلاة {IMAMATE_PRAYER_LABELS[slot.prayer]}، {slot.nightOf ? `ليلة ${hijriDayLabel(slot.nightOf)}` : hijriDayLabel(slot.date)}
+                {prayerTitle(slot.prayer)}، {slot.nightOf ? `ليلة ${hijriDayLabel(slot.nightOf)}` : hijriDayLabel(slot.date)}
               </span>
               {slot.part && <span className="text-sm text-gold-soft">{NIGHT_PART_LABELS[slot.part]}</span>}
               <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] leading-6 text-muted">

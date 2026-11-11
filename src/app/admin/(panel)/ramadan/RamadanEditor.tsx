@@ -6,11 +6,14 @@ import { hijriOf } from "@/lib/imamate";
 import { saveRamadanYear, type ActionResult } from "../../actions";
 
 type Col = { prayer: RamadanNight["prayer"]; part: NightPart; label: string };
+// نفس ترتيب جدول الحرم: كل صلاة ٣ أجزاء
 const COLS: Col[] = [
   { prayer: "taraweeh", part: "first", label: "تراويح: الأولى" },
-  { prayer: "taraweeh", part: "last", label: "تراويح: الأخيرة والوتر" },
+  { prayer: "taraweeh", part: "second", label: "تراويح: الثانية" },
+  { prayer: "taraweeh", part: "last", label: "تراويح: الأخيرة مع الوتر" },
   { prayer: "tahajjud", part: "first", label: "تهجد: الأولى" },
-  { prayer: "tahajjud", part: "last", label: "تهجد: الأخيرة والوتر" },
+  { prayer: "tahajjud", part: "second", label: "تهجد: الثانية" },
+  { prayer: "tahajjud", part: "last", label: "تهجد: الأخيرة مع الوتر" },
 ];
 const key = (night: number, c: Pick<Col, "prayer" | "part">) => `${night}-${c.prayer}-${c.part}`;
 
@@ -120,7 +123,7 @@ export function RamadanEditor({ initial }: { initial: RamadanNight[] }) {
 
       {/* الجدول */}
       <div className="overflow-x-auto rounded-2xl border border-line">
-        <table className="w-full min-w-[560px] text-sm">
+        <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="bg-white/5">
               <th className="p-3 text-start">الليلة</th>

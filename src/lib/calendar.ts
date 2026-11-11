@@ -18,10 +18,13 @@ const dayStamp = (iso: string) => iso.replace(/-/g, "");
 
 /** موعد الإمامة كحدث: من الأذان لمدة ٤٥ دقيقة. لو مواقيت الصلاة مش متاحة، بيبقى حدث لليوم كله */
 export function imamateEvent(slot: ImamateSlot, siteUrl: string): CalendarEvent {
-  const prayer = IMAMATE_PRAYER_LABELS[slot.prayer];
+  const prayer = slot.prayer === "jumuah" ? "خطبة وصلاة الجمعة" : `صلاة ${IMAMATE_PRAYER_LABELS[slot.prayer]}`;
   const part = slot.part ? ` (${NIGHT_PART_LABELS[slot.part]})` : "";
-  const title = `إمامة الشيخ ياسر الدوسري: صلاة ${prayer}${part}`;
-  const details = `صلاة ${prayer} في المسجد الحرام بإمامة الشيخ ياسر الدوسري، حسب الجدول المعلن.\n${siteUrl}`;
+  const backup = slot.backup ? " (احتياطي)" : "";
+  const title = `${slot.backup ? "الشيخ ياسر الدوسري إمام احتياطي" : "إمامة الشيخ ياسر الدوسري"}: ${prayer}${part}${backup}`;
+  const details = slot.backup
+    ? `الشيخ ياسر الدوسري إمام احتياطي في ${prayer} بالمسجد الحرام، فقد لا يؤم الصلاة.\n${siteUrl}`
+    : `${prayer} في المسجد الحرام بإمامة الشيخ ياسر الدوسري، حسب الجدول المعلن.\n${siteUrl}`;
 
   if (slot.start) {
     // بتوقيت مكة (UTC+3). التراويح والتهجد أطول من الفروض

@@ -6,10 +6,10 @@ import { NotifyForm } from "./NotifyForm";
 // الإرسال لكل المشتركين ممكن ياخد وقت
 export const maxDuration = 60;
 
-export default async function AdminNotifyPage({ searchParams }: { searchParams: { id?: string } }) {
+export default async function AdminNotifyPage({ searchParams }: { searchParams: { id?: string; title?: string; body?: string; url?: string } }) {
   const count = await countSubscriptions().catch(() => 0);
   // جاي من "أرسل إشعارًا عنه": نملا البيانات من التسجيل
-  let preset = { title: "تلاوة جديدة", body: "", url: "/" };
+  let preset = { title: searchParams.title ?? "تلاوة جديدة", body: searchParams.body ?? "", url: searchParams.url ?? "/" };
   if (searchParams.id) {
     const lists = await Promise.all(CATEGORIES.map((c) => recordings.list({ category: c.slug }).catch(() => [])));
     const r = lists.flat().find((x) => x.id === searchParams.id);

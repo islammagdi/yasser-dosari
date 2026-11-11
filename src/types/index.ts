@@ -5,7 +5,7 @@ export type Prayer = "fajr" | "maghrib" | "isha";
 export type LectureType = "khutbah" | "lesson";
 
 /** جدول الإمامة بيشمل الصلوات الخمس */
-export type ImamatePrayer = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha" | "taraweeh" | "tahajjud";
+export type ImamatePrayer = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha" | "taraweeh" | "tahajjud" | "jumuah";
 
 /** موعد إمامة واحد من الجدول الأسبوعي */
 export interface ImamateSlot {
@@ -26,9 +26,12 @@ export interface ImamateSlot {
   ramadanYear?: number;
   /** صلوات الشيخ في الأسبوع ده كله، عشان تتعرض تحت الموعد */
   weekPrayers?: ImamatePrayer[];
+  /** الشيخ إمام احتياطي في الموعد ده (مش أكيد إنه هيصلي) */
+  backup?: boolean;
 }
 
-export type NightPart = "first" | "last";
+/** أجزاء صلاة الليل زي جدول الحرم: التسليمات الأولى، والثانية، والأخيرة مع الوتر */
+export type NightPart = "first" | "second" | "last";
 
 /** ليلة من جدول رمضان: الشيخ بيؤم جزء من التراويح أو التهجد في ليلة معيّنة */
 export interface RamadanNight {
@@ -46,6 +49,15 @@ export interface ImamateWeek {
   from: string;
   /** الصلوات اللي هيؤمها الشيخ طول الأسبوع */
   prayers: ImamatePrayer[];
+  /** الصلوات اللي الشيخ إمام احتياطي فيها الأسبوع ده */
+  backup?: ImamatePrayer[];
+}
+
+/** جمعة الشيخ فيها خطيب وإمام (أو احتياطي) */
+export interface ImamateFriday {
+  /** تاريخ الجمعة بالهجري: "1448-06-07" */
+  date: string;
+  backup?: boolean;
 }
 
 /** تسجيل صوتي واحد. ده الشكل اللي الـ backend لازم يرجّعه. */

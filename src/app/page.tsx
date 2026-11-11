@@ -1,5 +1,6 @@
 import { ContinueListening } from "@/components/ContinueListening";
 import { DailyRecitation } from "@/components/DailyRecitation";
+import { FridayCard } from "@/components/FridayCard";
 import { loadDaily } from "@/lib/admin/daily";
 import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
@@ -63,6 +64,7 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} />
+      <FridayCard slots={imamate} />
       <DailyRecitation pool={dailyPool} pinned={dailyPinned} />
       <ContinueListening />
       <WirdCard items={wirdItems} dismissible />

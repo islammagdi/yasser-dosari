@@ -1,4 +1,4 @@
-import type { ImamatePrayer, ImamateSlot, ImamateWeek, NightPart, RamadanNight } from "@/types";
+import type { ImamateFriday, ImamatePrayer, ImamateSlot, ImamateWeek, NightPart, RamadanNight } from "@/types";
 import { toArabicDigits } from "./format";
 
 /** الدقايق بعد الأذان اللي الموعد بيفضل ظاهر فيها (الإقامة + الصلاة) */
@@ -15,6 +15,7 @@ export const IMAMATE_PRAYER_LABELS: Record<ImamatePrayer, string> = {
   isha: "العشاء",
   taraweeh: "التراويح",
   tahajjud: "التهجد",
+  jumuah: "الجمعة",
 };
 
 /** تاريخ النهارده في مكة بصيغة "2026-11-02" */
@@ -26,12 +27,15 @@ export function makkahTime(now: Date): string {
   return new Intl.DateTimeFormat("en-GB", { timeZone: MAKKAH_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
 }
 
-/** أقرب إمامة جاية. لو الموعد فيه وقت، بتعدّي بعد الوقت ده؛ لو مفيهوش، بتعدّي بنهاية اليوم */
+/**
+ * أقرب إمامة جاية. لو الموعد فيه وقت، بتعدّي بعد الوقت ده؛ لو مفيهوش، بتعدّي بنهاية اليوم.
+ * مواعيد الاحتياطي مش بتتحسب، لأن الشيخ مش أكيد هيصلي.
+ */
 export function nextSlot(slots: ImamateSlot[], now: Date): ImamateSlot | null {
   const today = makkahToday(now);
   const time = makkahTime(now);
   const upcoming = slots
-    .filter((s) => s.date > today || (s.date === today && (!s.time || s.time > time)))
+    .filter((s) => !s.backup && (s.date > today || (s.date === today && (!s.time || s.time > time))))
     .sort((a, b) => (a.date + (a.time ?? "")).localeCompare(b.date + (b.time ?? "")));
   return upcoming[0] ?? null;
 }
@@ -115,27 +119,62 @@ function prayerTiming(prayer: ImamatePrayer, adhan: Partial<Record<ImamatePrayer
   return a ? { start: a, time: plusMinutes(a, AFTER_ADHAN_MIN) } : {};
 }
 
-/** كل أسبوع ← ٧ أيام × صلوات الشيخ فيه (الفروض) */
+const isFriday = (iso: string) => new Date(`${iso}T12:00:00Z`).getUTCDay() === 5;
+
+/**
+ * كل أسبوع ← ٧ أيام × صلوات الشيخ فيه (الفروض)، والاحتياطي بعلامة backup.
+ * ظهر يوم الجمعة مش بيتحسب: مكانه صلاة الجمعة، وليها جدول لوحدها.
+ */
 export function expandWeeks(weeks: ImamateWeek[], times: PrayerTimes = {}): ImamateSlot[] {
   const slots: ImamateSlot[] = [];
   for (const w of weeks) {
     const [y, m, d] = w.from.split("-").map(Number);
     const first = hijriToIso(y, m, d);
     if (!first) continue;
+    const all = [...w.prayers.map((p) => [p, false] as const), ...(w.backup ?? []).map((p) => [p, true] as const)];
     for (let i = 0; i < 7; i++) {
       const date = addDays(first, i);
-      for (const prayer of w.prayers) {
-        slots.push({ id: `${date}-${prayer}`, date, prayer, ...prayerTiming(prayer, times[date]), weekPrayers: w.prayers });
+      for (const [prayer, backup] of all) {
+        if (prayer === "dhuhr" && isFriday(date)) continue;
+        slots.push({
+          id: `${date}-${prayer}${backup ? "-backup" : ""}`,
+          date,
+          prayer,
+          ...prayerTiming(prayer, times[date]),
+          weekPrayers: w.prayers,
+          ...(backup && { backup: true }),
+        });
       }
     }
   }
   return slots;
 }
 
+/** الجمعة: من أذان الظهر لحد ساعة بعده تقريبًا (الخطبة والصلاة) */
+export function expandFridays(fridays: ImamateFriday[], times: PrayerTimes = {}): ImamateSlot[] {
+  const slots: ImamateSlot[] = [];
+  for (const f of fridays) {
+    const [y, m, d] = f.date.split("-").map(Number);
+    const date = hijriToIso(y, m, d);
+    if (!date) continue;
+    const adhan = times[date]?.dhuhr;
+    slots.push({
+      id: `${date}-jumuah${f.backup ? "-backup" : ""}`,
+      date,
+      prayer: "jumuah",
+      ...(adhan && { start: adhan, time: plusMinutes(adhan, 60) }),
+      ...(f.backup && { backup: true }),
+    });
+  }
+  return slots;
+}
+
 export const NIGHT_PART_LABELS: Record<NightPart, string> = {
   first: "التسليمات الأولى",
-  last: "التسليمات الأخيرة والوتر",
+  second: "التسليمات الثانية",
+  last: "التسليمة الأخيرة مع الوتر",
 };
+export const NIGHT_PARTS: NightPart[] = ["first", "second", "last"];
 
 /**
  * مواعيد تقريبية لأجزاء صلوات الليل (بتوقيت مكة):
@@ -143,16 +182,15 @@ export const NIGHT_PART_LABELS: Record<NightPart, string> = {
  * - التهجد: بعد نص الليل، والأخيرة والوتر بتخلص قبل الفجر بحوالي ساعة
  */
 function nightTiming(prayer: "taraweeh" | "tahajjud", part: NightPart, adhan: Partial<Record<ImamatePrayer, string>> = {}) {
-  if (prayer === "taraweeh") {
-    if (!adhan.isha) return {};
-    return part === "first"
-      ? { start: plusMinutes(adhan.isha, 30), time: plusMinutes(adhan.isha, 80) }
-      : { start: plusMinutes(adhan.isha, 75), time: plusMinutes(adhan.isha, 135) };
-  }
-  if (!adhan.fajr) return {};
-  return part === "first"
-    ? { start: plusMinutes(adhan.fajr, -240), time: plusMinutes(adhan.fajr, -150) }
-    : { start: plusMinutes(adhan.fajr, -160), time: plusMinutes(adhan.fajr, -60) };
+  // [بداية، نهاية] بالدقايق من الأذان المرجعي لكل جزء
+  const offsets: Record<"taraweeh" | "tahajjud", Record<NightPart, [number, number]>> = {
+    taraweeh: { first: [30, 70], second: [65, 105], last: [100, 145] },
+    tahajjud: { first: [-240, -185], second: [-190, -130], last: [-135, -60] },
+  };
+  const base = prayer === "taraweeh" ? adhan.isha : adhan.fajr;
+  if (!base) return {};
+  const [a, b] = offsets[prayer][part];
+  return { start: plusMinutes(base, a), time: plusMinutes(base, b) };
 }
 
 /**
@@ -189,4 +227,8 @@ export function isRamadan(now: Date): boolean {
 
 export function prayersList(list: ImamatePrayer[]): string {
   return list.map((p) => IMAMATE_PRAYER_LABELS[p]).join(" و");
+}
+/** "صلاة الفجر" أو "خطبة وصلاة الجمعة" */
+export function prayerTitle(prayer: ImamatePrayer): string {
+  return prayer === "jumuah" ? "خطبة وصلاة الجمعة" : `صلاة ${IMAMATE_PRAYER_LABELS[prayer]}`;
 }

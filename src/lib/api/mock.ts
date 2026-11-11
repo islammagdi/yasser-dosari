@@ -1,7 +1,7 @@
 import { IMAMATE_WEEKS, RAMADAN_NIGHTS } from "@/data/imamate";
 import { loadImamateDoc } from "@/lib/admin/imamateStore";
 import type { ImamateWeek, RamadanNight } from "@/types";
-import { expandRamadan, expandWeeks } from "@/lib/imamate";
+import { expandFridays, expandRamadan, expandWeeks } from "@/lib/imamate";
 import { fetchImamateSheet, fetchRamadanSheet, imamateSheetEnabled, ramadanSheetEnabled } from "./imamateSheet";
 import { makkahPrayerTimes } from "./prayerTimes";
 import { MOCK_RECORDINGS } from "@/data/mock";
@@ -70,7 +70,12 @@ export const mockRepository: RecordingsRepository = {
     const fallback = doc ? null : await imamateFallback();
     const weeks = doc?.weeks ?? fallback!.weeks;
     const nights = doc?.ramadan ?? fallback!.nights;
-    const build = (times?: Parameters<typeof expandWeeks>[1]) => [...expandWeeks(weeks, times), ...expandRamadan(nights, times)];
+    const fridays = doc?.fridays ?? [];
+    const build = (times?: Parameters<typeof expandWeeks>[1]) => [
+      ...expandWeeks(weeks, times),
+      ...expandRamadan(nights, times),
+      ...expandFridays(fridays, times),
+    ];
     const slots = build();
     // مواقيت الصلاة، عشان الموعد يعدّي بعد الصلاة نفسها مش بنهاية اليوم
     try {

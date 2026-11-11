@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, assertAdmin, clearFailures, lockedMinutes, passwordMatches, recordFailure } from "@/lib/admin/auth";
 import { cookieOptions, makeToken } from "@/lib/admin/session";
-import { IMAMATE_TAG, cleanNights, cleanWeeks, loadImamateDoc, saveImamateDoc } from "@/lib/admin/imamateStore";
+import { IMAMATE_TAG, cleanFridays, cleanNights, cleanWeeks, loadImamateDoc, saveImamateDoc } from "@/lib/admin/imamateStore";
 import { imamateFallback } from "@/lib/api/mock";
 import { BACKUP_FILES, restoreBackup, type BackupName } from "@/lib/admin/backup";
 import { broadcast } from "@/lib/push/server";
@@ -46,9 +46,9 @@ export async function logout() {
 /** الجدول الحالي: من R2 لو اتحفظ قبل كده، وإلا من الشيت عشان يتنقل */
 async function currentDoc() {
   const doc = await loadImamateDoc();
-  if (doc) return { weeks: doc.weeks, ramadan: doc.ramadan };
+  if (doc) return { weeks: doc.weeks, ramadan: doc.ramadan, fridays: doc.fridays ?? [] };
   const old = await imamateFallback();
-  return { weeks: old.weeks, ramadan: old.nights };
+  return { weeks: old.weeks, ramadan: old.nights, fridays: [] };
 }
 
 function refreshSite() {
@@ -62,7 +62,7 @@ export async function saveWeeks(weeks: unknown): Promise<ActionResult> {
     await assertAdmin();
     const doc = await currentDoc();
     const clean = cleanWeeks(weeks);
-    await saveImamateDoc({ weeks: clean, ramadan: doc.ramadan });
+    await saveImamateDoc({ ...doc, weeks: clean });
     refreshSite();
     return { ok: true, message: `تم حفظ ${clean.length} أسبوع وتحديث الموقع.` };
   } catch (err) {
@@ -77,7 +77,7 @@ export async function saveRamadanYear(year: number, nights: unknown): Promise<Ac
     const doc = await currentDoc();
     const thisYear = cleanNights(nights).filter((n) => n.year === year);
     const others = doc.ramadan.filter((n) => n.year !== year);
-    await saveImamateDoc({ weeks: doc.weeks, ramadan: [...others, ...thisYear] });
+    await saveImamateDoc({ ...doc, ramadan: [...others, ...thisYear] });
     refreshSite();
     return { ok: true, message: `تم حفظ جدول رمضان ${year} وتحديث الموقع.` };
   } catch (err) {
@@ -310,5 +310,19 @@ export async function restoreBackupAction(name: string, key: string): Promise<Ac
     return { ok: true, message: "تم الاسترجاع، والموقع اتحدّث." };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر الاسترجاع" };
+  }
+}
+
+/** جُمَع الشيخ (خطيب وإمام، أو احتياطي) */
+export async function saveFridays(fridays: unknown): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const doc = await currentDoc();
+    const clean = cleanFridays(fridays);
+    await saveImamateDoc({ ...doc, fridays: clean });
+    refreshSite();
+    return { ok: true, message: `تم حفظ ${clean.length} جمعة وتحديث الموقع.` };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحفظ" };
   }
 }

@@ -105,8 +105,14 @@ export default async function ImamatePage() {
                   </span>
                   <span className="flex flex-wrap gap-2">
                     {list.map((s) => (
-                      <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-sm">
-                        <span className="font-semibold text-gold-soft">{IMAMATE_PRAYER_LABELS[s.prayer]}</span>
+                      <span
+                        key={s.id}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ${s.backup ? "border border-dashed border-line-strong opacity-75" : "bg-white/5"}`}
+                      >
+                        <span className={`font-semibold ${s.backup ? "text-muted" : "text-gold-soft"}`}>
+                          {s.prayer === "jumuah" ? "خطبة وصلاة الجمعة" : IMAMATE_PRAYER_LABELS[s.prayer]}
+                        </span>
+                        {s.backup && <span className="text-muted">(احتياطي)</span>}
                         {s.part && <span className="text-muted">({NIGHT_PART_LABELS[s.part]})</span>}
 {s.start && <span className="text-muted">الأذان {clock(s.start)}</span>}
                       </span>

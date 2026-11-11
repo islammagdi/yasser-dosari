@@ -1,5 +1,6 @@
 import { loadImamateDoc } from "@/lib/admin/imamateStore";
 import { imamateFallback } from "@/lib/api/mock";
+import { FridaysEditor } from "./FridaysEditor";
 import { WeeksEditor } from "./WeeksEditor";
 
 export default async function AdminImamatePage() {
@@ -17,6 +18,8 @@ export default async function AdminImamatePage() {
         </p>
       )}
       <WeeksEditor initial={weeks} />
+      <hr className="border-line" />
+      <FridaysEditor initial={doc?.fridays ?? []} />
     </div>
   );
 }

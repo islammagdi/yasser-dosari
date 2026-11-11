@@ -7,7 +7,8 @@ import { IMAMATE_PRAYER_LABELS, addDays, daysFromToday, isRamadan, makkahTime, m
 import { usePlayer } from "./PlayerProvider";
 import { PauseIcon, PlayIcon } from "./icons";
 
-const PART_SHORT: Record<NightPart, string> = { first: "الأولى", last: "الأخيرة والوتر" };
+const PART_SHORT: Record<NightPart, string> = { first: "الأولى", second: "الثانية", last: "الأخيرة مع الوتر" };
+const PART_ORDER: Record<NightPart, number> = { first: 0, second: 1, last: 2 };
 
 /** الكارت بيظهر في رمضان، أو قبله بشهر لو الجدول اتعلن */
 const SHOW_BEFORE_DAYS = 30;
@@ -56,7 +57,7 @@ export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recor
   )
     .map((parts) => ({
       night: parts[0].ramadanNight!,
-      parts: parts.sort((a, b) => (a.prayer === b.prayer ? (a.part === "first" ? -1 : 1) : a.prayer === "taraweeh" ? -1 : 1)),
+      parts: parts.sort((a, b) => (a.prayer === b.prayer ? PART_ORDER[a.part!] - PART_ORDER[b.part!] : a.prayer === "taraweeh" ? -1 : 1)),
       past: parts.every(isPast),
       evening: addDays(parts[0].nightOf!, -1),
     }))
