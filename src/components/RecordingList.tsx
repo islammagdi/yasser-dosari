@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LectureType, Recording } from "@/types";
 import { LECTURE_TYPE_LABELS, hijriMonthName } from "@/lib/categories";
 import { normalizeArabic, toArabicDigits } from "@/lib/format";
@@ -33,6 +33,11 @@ interface Props {
   more?: { href: string; label: string; remaining: number };
   /** الكروت على الموبايل صفوف أفقية بدل شبكة عمودين (الرئيسية) */
   mobileRows?: boolean;
+  /**
+   * الأقسام الكبيرة (الفروض والتراويح): الصفحة بتبعت أحدث سنة بس في items،
+   * وباقي السنين بتتجاب من السيرفر لما الزائر يفتحها، والبحث بيدوّر في كل السنين من السيرفر.
+   */
+  yearSource?: { category: string; years: number[] };
 }
 type TypeValue = LectureType | "all";
 
@@ -95,6 +100,7 @@ export function RecordingList({
   extra,
   more,
   mobileRows = false,
+  yearSource,
 }: Props) {
   const { current, isPlaying, playQueue } = usePlayer();
   const fav = useFavorites();
@@ -109,16 +115,64 @@ export function RecordingList({
 
   const years = useMemo(
     () =>
+      yearSource?.years ??
       Array.from(new Set(items.map((r) => r.hijriYear).filter((y): y is number => !!y))).sort((a, b) => b - a),
-    [items],
+    [items, yearSource],
   );
   // الافتراضي: أحدث سنة
   const activeYear = yearTabs ? year ?? years[0] ?? null : null;
 
+  // ---- السنين اللي بتتجاب من السيرفر (yearSource) ----
+  const [byYear, setByYear] = useState<Record<number, Recording[]>>(() =>
+    yearSource && years[0] != null ? { [years[0]]: items } : {},
+  );
+  const [loadingYear, setLoadingYear] = useState(false);
+  useEffect(() => {
+    if (!yearSource || activeYear == null || byYear[activeYear]) return;
+    let alive = true;
+    setLoadingYear(true);
+    fetch(`/api/years/${yearSource.category}/${activeYear}`)
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((d) => alive && setByYear((m) => ({ ...m, [activeYear]: d.items ?? [] })))
+      .catch(() => {})
+      .finally(() => alive && setLoadingYear(false));
+    return () => {
+      alive = false;
+    };
+  }, [yearSource, activeYear, byYear]);
+
+  // البحث في كل السنين (من السيرفر)، بعد ما الزائر يبطّل كتابة بشوية
+  const [remote, setRemote] = useState<Recording[] | null>(null);
+  useEffect(() => {
+    if (!yearSource) return;
+    const q = query.trim();
+    if (q.length < 2) {
+      setRemote(null);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(q)}&category=${yearSource.category}`)
+        .then((r) => r.json())
+        .then((d) => alive && setRemote(d.groups?.[0]?.items ?? []))
+        .catch(() => alive && setRemote([]));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [query, yearSource]);
+
+  const searchingAll = !!yearSource && remote !== null;
+  const source = useMemo(
+    () => (!yearSource ? items : searchingAll ? remote ?? [] : activeYear != null ? byYear[activeYear] ?? [] : items),
+    [yearSource, items, searchingAll, remote, activeYear, byYear],
+  );
+
   const groups = useMemo<Group[]>(() => {
     const q = normalizeArabic(query);
-    let list = items.filter((r) => {
-      if (activeYear != null && r.hijriYear !== activeYear) return false;
+    let list = source.filter((r) => {
+      if (activeYear != null && !searchingAll && r.hijriYear !== activeYear) return false;
       if (activeVersion != null && versionOf(r) !== activeVersion) return false;
       if (type !== "all" && r.lectureType !== type) return false;
       if (q && !matchesSearch(r, searchTerms(query))) return false;
@@ -145,7 +199,7 @@ export function RecordingList({
     return Array.from(byMonth.entries())
       .sort(([a], [b]) => a - b)
       .map(([m, recs]) => ({ key: `m-${m}`, title: hijriMonthName(m) || "شهر غير محدد", items: recs }));
-}, [items, query, type, activeYear, activeVersion, numbered, groupByMonth]);
+}, [source, searchingAll, query, type, activeYear, activeVersion, numbered, groupByMonth]);
 
   // قايمة التشغيل = كل اللي ظاهر بنفس ترتيب العرض
   const queue = useMemo(() => groups.flatMap((g) => g.items), [groups]);
@@ -205,7 +259,7 @@ export function RecordingList({
       )}
       {queue.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-line-strong px-6 py-12 text-center text-muted">
-{filtered ? "لا توجد نتائج. جرّب كلمة أخرى أو غيّر التصفية." : "لا توجد تسجيلات هنا بعد."}
+{loadingYear ? "جارٍ التحميل…" : filtered ? "لا توجد نتائج. جرّب كلمة أخرى أو غيّر التصفية." : "لا توجد تسجيلات هنا بعد."}
         </p>
       ) : (
         <div className="flex flex-col gap-10">

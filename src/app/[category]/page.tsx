@@ -22,7 +22,11 @@ export function generateMetadata({ params }: Props): Metadata {
 export default async function CategoryPage({ params }: Props) {
   const category = getCategory(params.category);
   if (!category) notFound();
-  const items = await recordings.list({ category: category.slug });
+  const all = await recordings.list({ category: category.slug });
+  // الفروض والتراويح كبار: بنبعت للمتصفح أحدث سنة بس، والباقي بيتجاب لما الزائر يفتح السنة
+  const byYear = category.slug === "fard" || category.slug === "taraweeh";
+  const years = byYear ? [...new Set(all.map((r) => r.hijriYear).filter((y): y is number => !!y))].sort((a, b) => b - a) : [];
+  const items = byYear && years.length ? all.filter((r) => r.hijriYear === years[0]) : all;
 
   return (
     <>
@@ -36,6 +40,7 @@ export default async function CategoryPage({ params }: Props) {
         numbered={category.slug === "taraweeh" || category.slug === "mushaf"}
         typeFilter={category.slug === "lectures"}
         versionTabs={category.slug === "mushaf"}
+        yearSource={byYear && years.length ? { category: category.slug, years } : undefined}
         extra={
           category.slug === "mushaf" ? (
             <>

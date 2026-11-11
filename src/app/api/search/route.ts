@@ -8,14 +8,18 @@ const PER_CATEGORY = 60;
 
 /** GET /api/search?q=الزخرف ← النتايج من كل الأقسام، مجمّعة بالقسم */
 export async function GET(req: Request) {
-  const q = new URL(req.url).searchParams.get("q") ?? "";
+  const params = new URL(req.url).searchParams;
+  const q = params.get("q") ?? "";
+  // ?category=fard: البحث جوه قسم واحد (صفحة القسم)، وبيرجّع نتايج أكتر
+  const only = CATEGORIES.find((c) => c.slug === params.get("category"));
   const terms = searchTerms(q);
   if (terms.join("").length < 2) return NextResponse.json({ groups: [] });
 
+  const limit = only ? 300 : PER_CATEGORY;
   const groups = await Promise.all(
-    CATEGORIES.map(async (c) => {
+    (only ? [only] : CATEGORIES).map(async (c) => {
       const hits = (await recordings.list({ category: c.slug })).filter((r) => matchesSearch(r, terms));
-      return { slug: c.slug, title: c.title, total: hits.length, items: hits.slice(0, PER_CATEGORY) };
+      return { slug: c.slug, title: c.title, total: hits.length, items: hits.slice(0, limit) };
     }),
   );
 
