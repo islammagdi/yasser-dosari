@@ -46,7 +46,7 @@ export function SiteHeader() {
 
   return (
     <header ref={headerRef} className="glass sticky top-0 z-30 border-b border-gold/25">
-      <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:grid-cols-[1fr_auto_1fr] md:py-3">
+      <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:py-3 xl:grid-cols-[1fr_auto_1fr]">
         {/* اللوجو */}
                <Link href="/" className="col-start-1 row-start-1 flex min-h-11 items-center justify-self-start">
           <Image
@@ -61,7 +61,8 @@ export function SiteHeader() {
         </Link>
 
         {/* الأقسام: ديسكتوب بس */}
-        <nav aria-label="الأقسام" className="hidden md:col-start-2 md:row-start-1 md:block md:justify-self-center">
+        {/* القايمة الكاملة من ١٢٨٠px وطالع؛ أقل من كده (تابلت ولابتوب صغير) بتظهر في زرار القايمة */}
+        <nav aria-label="الأقسام" className="hidden xl:col-start-2 xl:row-start-1 xl:block xl:justify-self-center">
           <div className="glass-card flex gap-1 rounded-full px-2 py-1">
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
@@ -100,7 +101,7 @@ export function SiteHeader() {
         </nav>
 
         {/* البحث والمفضلة (وزرار القايمة على الموبايل) */}
-        <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-3">
+        <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end xl:col-start-3">
           <Link
             href="/search"
             aria-label="البحث"
@@ -129,7 +130,7 @@ export function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-menu"
             aria-label={open ? "إغلاق القائمة" : "القائمة"}
-            className={`${iconBtn} md:hidden ${open ? "text-gold" : "text-text"}`}
+            className={`${iconBtn} xl:hidden ${open ? "text-gold" : "text-text"}`}
           >
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
@@ -140,7 +141,7 @@ export function SiteHeader() {
 
       {/* قايمة الموبايل */}
       {open && (
-        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-white/5 md:hidden">
+        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-white/5 xl:hidden">
           <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 py-3">
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
