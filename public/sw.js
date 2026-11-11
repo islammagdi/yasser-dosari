@@ -23,13 +23,8 @@ self.addEventListener("message", (event) => {
 async function warm() {
   const pages = await caches.open(PAGES);
   const assets = await caches.open(STATIC);
-  // كل ملف النسخة الحالية محتاجاه، عشان نمسح الباقي في الآخر
-  const keep = new Set();
-  let fetchedAny = false;
   const grab = async (url) => {
-    keep.add(new URL(url, self.location.origin).href);
-    const hit = await assets.match(url);
-    if (hit) return hit;
+    if (await assets.match(url)) return null;
     const res = await fetch(url);
     if (!res.ok) return null;
     await assets.put(url, res.clone());
@@ -41,7 +36,6 @@ async function warm() {
       if (!res.ok) continue;
       const html = await res.clone().text();
       await pages.put(new URL(path, self.location.origin).href, res);
-      fetchedAny = true;
       const files = [...new Set(html.match(/\/_next\/static\/[^"'\s\\)]+\.(?:js|css)/g) || [])];
       await Promise.all(
         files.map(async (f) => {
@@ -56,12 +50,6 @@ async function warm() {
       );
     } catch {
       /* مفيش نت دلوقتي: نحاول المرة الجاية */
-    }
-  }
-  // نمسح ملفات النسخ القديمة بس (ملفات _next/static)، والأيقونات والصور تفضل
-  if (fetchedAny) {
-    for (const req of await assets.keys()) {
-      if (req.url.includes("/_next/static/") && !keep.has(req.url)) await assets.delete(req);
     }
   }
 }

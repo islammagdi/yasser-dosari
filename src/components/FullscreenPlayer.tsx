@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Ayah, AyahTiming } from "@/lib/api/quranText";
 import { getCategory } from "@/lib/categories";
@@ -15,17 +15,95 @@ import { HeartIcon, NextIcon, PauseIcon, PlayIcon, PrevIcon } from "./icons";
  * وضع الاستماع بملء الشاشة: غلاف كبير وأزرار كبيرة، ونص الآية الحالية في سور المصحف.
  * مناسب للسواقة وكبار السن والاستماع مع العيلة. (للصوت بس؛ فيديو يوتيوب لازم يفضل ظاهر)
  */
+/** مدة الطلوع والنزول (لازم تساوي duration-[420ms] في الكلاسات) */
+const SHEET_MS = 420;
+
 export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
   const p = usePlayer();
   const fav = useFavorites();
   const r = p.current;
   const [text, setText] = useState<{ surah: number; ayahs: Ayah[]; timings: AyahTiming[] } | null>(null);
 
-  // Escape بيقفل، والصفحة اللي ورا متتحركش
+  // حركة الطلوع والنزول: بيترسم تحت الشاشة، وفي الفريم اللي بعده بيطلع لفوق
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+  const closing = useRef(false);
+  useEffect(() => {
+    let id = requestAnimationFrame(() => {
+      id = requestAnimationFrame(() => setShown(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // القفل: بينزل الأول، وبعد ما الحركة تخلص بيتشال فعلًا
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const requestClose = useCallback(() => {
+    if (closing.current) return;
+    closing.current = true;
+    const el = sheetRef.current;
+    if (el) {
+      el.style.transition = "";
+      el.style.transform = "";
+    }
+    setShown(false);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => closeRef.current(), reduce ? 0 : SHEET_MS);
+  }, []);
+
+  // السحب لتحت بيقفل (لو الشاشة مش متسكرولة)، والسحب القصير بيرجع مكانه
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
+    const el = sheetRef.current;
+    if (!el) return;
+    let startY = 0, startX = 0, t0 = 0, dy = 0;
+    let tracking = false, dragging = false;
+    const start = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      tracking = e.touches.length === 1 && el.scrollTop <= 0 && !target.closest("input, [data-no-drag]");
+      dragging = false;
+      if (!tracking) return;
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      t0 = Date.now();
+    };
+    const move = (e: TouchEvent) => {
+      if (!tracking) return;
+      dy = e.touches[0].clientY - startY;
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      if (!dragging) {
+        if (dy < 0 || dx > Math.abs(dy)) { tracking = false; return; } // سكرول لفوق أو سحب بالعرض
+        if (dy < 8) return;
+        dragging = true;
+      }
+      e.preventDefault();
+      el.style.transition = "none";
+      el.style.transform = `translate3d(0, ${Math.max(0, dy - 8)}px, 0)`;
+    };
+    const end = () => {
+      if (!dragging) { tracking = false; return; }
+      tracking = dragging = false;
+      const speed = dy / Math.max(1, Date.now() - t0); // بكسل لكل ملي ثانية
+      if (dy > 140 || speed > 0.6) requestClose();
+      else {
+        el.style.transition = "";
+        el.style.transform = "";
+      }
+    };
+    el.addEventListener("touchstart", start, { passive: true });
+    el.addEventListener("touchmove", move, { passive: false });
+    el.addEventListener("touchend", end);
+    el.addEventListener("touchcancel", end);
+    return () => {
+      el.removeEventListener("touchstart", start);
+      el.removeEventListener("touchmove", move);
+      el.removeEventListener("touchend", end);
+      el.removeEventListener("touchcancel", end);
+    };
+  }, [requestClose]);
+
+  // Escape بيقفل، والصفحة اللي ورا متتحركش
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && requestClose();
     document.addEventListener("keydown", esc);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -33,7 +111,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
       document.removeEventListener("keydown", esc);
       document.body.style.overflow = prev;
     };
-  }, []);
+  }, [requestClose]);
 
   // نص السورة وتوقيتها: لسور المصحف الصوتية بس (التوقيت متاح لتلاوة mp3quran)
   const surah = r?.category === "mushaf" && r.surah && r.audioUrl.includes("mp3quran") ? r.surah : null;
@@ -76,16 +154,26 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
 
   // بيترسم في body مباشرة: المشغّل اللي تحت عليه blur، وده بيحبس أي عنصر fixed جواه في حدوده
   return createPortal(
+    <>
+    {/* تعتيم خفيف ورا الشاشة وهي طالعة ونازلة */}
     <div
+      aria-hidden
+      onClick={requestClose}
+      className={`fixed inset-0 z-[59] bg-black/60 transition-opacity duration-[420ms] motion-reduce:transition-none ${shown ? "opacity-100" : "pointer-events-none opacity-0"}`}
+    />
+    <div
+      ref={sheetRef}
       role="dialog"
       aria-modal="true"
       aria-label="المشغّل بملء الشاشة"
-      className="fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-ink"
+      className={`fixed inset-0 z-[60] flex flex-col overflow-y-auto overscroll-contain bg-ink transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none ${
+        shown ? "translate-y-0" : "translate-y-full"
+      }`}
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div aria-hidden className="ambient" />
       <div className="flex items-center justify-between px-4 py-3">
-        <button type="button" onClick={onClose} aria-label="إغلاق ملء الشاشة" className={`${big} h-12 w-12`}>
+        <button type="button" onClick={requestClose} aria-label="إغلاق ملء الشاشة" className={`${big} h-12 w-12`}>
           <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -113,7 +201,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="flex w-full flex-col items-center gap-1 text-center">
-          <Link href={`/${r.category}/${r.id}`} onClick={onClose} className="font-display text-2xl font-bold leading-snug hover:text-gold-soft sm:text-3xl">
+          <Link href={`/${r.category}/${r.id}`} onClick={requestClose} className="font-display text-2xl font-bold leading-snug hover:text-gold-soft sm:text-3xl">
             {r.title || r.prayerLabel}
           </Link>
           {r.subtitle && <p className="line-clamp-2 text-muted">{r.subtitle}</p>}
@@ -187,7 +275,8 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
           <p className="-mt-3 text-xs text-muted">باقي {toArabicDigits(p.repeatLeft)} {p.repeatLeft === 1 ? "مرة" : "مرات"} بعد هذه</p>
         )}
       </div>
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 }
