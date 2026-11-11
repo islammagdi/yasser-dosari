@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, assertAdmin, checkPassword } from "@/lib/admin/auth";
 import { IMAMATE_TAG, cleanNights, cleanWeeks, loadImamateDoc, saveImamateDoc } from "@/lib/admin/imamateStore";
 import { imamateFallback } from "@/lib/api/mock";
+import { broadcast } from "@/lib/push/server";
 import { DAILY_TAG, loadDaily, saveDaily } from "@/lib/admin/daily";
 import { recordings } from "@/lib/api";
 import { CATEGORIES } from "@/lib/categories";
@@ -90,7 +91,7 @@ function refreshCatalog() {
 
 /** "fard" | "taraweeh" | "lectures:khutbah" | "lectures:lesson" ← القسم ونوع المحاضرة */
 function parseSection(v: string): { category: Category; lectureType?: LectureType } | null {
-  if (v === "fard" || v === "taraweeh") return { category: v };
+  if (v === "fard" || v === "taraweeh" || v === "rare") return { category: v };
   if (v === "lectures:khutbah") return { category: "lectures", lectureType: "khutbah" };
   if (v === "lectures:lesson") return { category: "lectures", lectureType: "lesson" };
   return null;
@@ -270,5 +271,22 @@ export async function unpinDaily(date: string): Promise<ActionResult> {
     return { ok: true, message: "تم إلغاء التثبيت" };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحفظ" };
+  }
+}
+
+// ---------- الإشعارات ----------
+
+export async function sendPush(title: string, body: string, url: string): Promise<ActionResult> {
+  try {
+    assertAdmin();
+    if (!title.trim() || !body.trim()) return { ok: false, message: "اكتب العنوان والنص" };
+    const path = url.trim() ? (url.trim().startsWith("/") ? url.trim() : new URL(url.trim()).pathname) : "/";
+    const r = await broadcast("recitations", { title: title.trim(), body: body.trim(), url: path });
+    return {
+      ok: true,
+      message: `تم الإرسال إلى ${r.sent} جهاز${r.removed ? `، وحذف ${r.removed} اشتراك منتهي` : ""}${r.failed ? `، وتعذّر ${r.failed}` : ""}.`,
+    };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الإرسال" };
   }
 }

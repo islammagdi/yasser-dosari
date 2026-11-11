@@ -68,7 +68,8 @@ export default async function HomePage() {
       <WirdCard items={wirdItems} dismissible />
       <RamadanCard slots={imamate} recordings={taraweeh} />
       <FridayKahf kahf={kahf} />
-      <HomeBrowser sections={sections} />
+      {/* القسم اللي لسه مفيهوش تسجيلات (زي التلاوات النادرة في الأول) مبيظهرش كتاب */}
+      <HomeBrowser sections={sections.filter((s) => s.total > 0)} />
     </div>
   );
 }

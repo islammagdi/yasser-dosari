@@ -13,6 +13,7 @@ const SECTIONS = [
   { value: "fard", label: "الفروض" },
   { value: "taraweeh", label: "التراويح" },
   { value: "lectures", label: "الخطب والمحاضرات" },
+  { value: "rare", label: "تلاوات نادرة" },
   { value: "hidden", label: "المخفية" },
 ];
 

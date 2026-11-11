@@ -188,6 +188,17 @@ function toRecording(item: YtItem, playlistTitle: string, cls: { category: Categ
       night: nightFrom(t),
     };
   }
+  if (cls.category === "rare") {
+    return {
+      ...base,
+      category: "rare",
+      title: description || t,
+      subtitle: hijriDateLabel(date.day, date.month, date.year) || undefined,
+      hijriYear: date.year,
+      hijriMonth: date.month,
+      hijriDay: date.day,
+    };
+  }
   return {
     ...base,
     category: "lectures",

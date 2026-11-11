@@ -84,3 +84,40 @@ async function cacheFirst(req) {
   if (res.ok || res.type === "opaque") cache.put(req, res.clone());
   return res;
 }
+
+// ---------- الإشعارات ----------
+self.addEventListener("push", (event) => {
+  let msg = { title: "تلاوات الشيخ ياسر الدوسري", body: "", url: "/" };
+  try {
+    msg = { ...msg, ...event.data.json() };
+  } catch {
+    /* إشعار من غير بيانات */
+  }
+  event.waitUntil(
+    self.registration.showNotification(msg.title, {
+      body: msg.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      dir: "rtl",
+      lang: "ar",
+      data: { url: msg.url || "/" },
+    }),
+  );
+});
+
+// الضغط على الإشعار: لو الموقع مفتوح بنروح للصفحة فيه، وإلا بنفتحه
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const win = wins.find((w) => new URL(w.url).origin === self.location.origin);
+      if (win) {
+        await win.focus();
+        return win.navigate(url);
+      }
+      return self.clients.openWindow(url);
+    })(),
+  );
+});

@@ -47,3 +47,33 @@ export async function putJson(key: string, data: unknown): Promise<void> {
   const res = await fetch(signed.url, { method: "PUT", headers: signed.headers, body, cache: "no-store" });
   if (!res.ok) throw new Error(`R2 PUT ${key}: ${res.status} ${await res.text()}`);
 }
+
+/** حذف ملف (بيتجاهل لو مش موجود) */
+export async function deleteKey(key: string): Promise<void> {
+  if (!r2Enabled()) return;
+  await r2().fetch(url(key), { method: "DELETE" });
+}
+
+/** كل المفاتيح اللي بتبدأ بـ prefix (ListObjectsV2، صفحة صفحة) */
+export async function listKeys(prefix: string): Promise<string[]> {
+  if (!r2Enabled()) return [];
+  const keys: string[] = [];
+  let token = "";
+  do {
+    const q = new URLSearchParams({ "list-type": "2", prefix, ...(token && { "continuation-token": token }) });
+    const res = await r2().fetch(`${endpoint}/${bucket}?${q}`, { method: "GET" });
+    if (!res.ok) throw new Error(`R2 LIST ${prefix}: ${res.status}`);
+    const xml = await res.text();
+    for (const m of xml.matchAll(/<Key>([^<]+)<\/Key>/g)) keys.push(m[1]);
+    token = /<IsTruncated>true<\/IsTruncated>/.test(xml) ? xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/)?.[1] ?? "" : "";
+  } while (token);
+  return keys;
+}
+
+/** قراءة ملف من غير cache (للاشتراكات وقت الإرسال) */
+export async function getFresh<T>(key: string): Promise<T | null> {
+  if (!r2Enabled()) return null;
+  const res = await r2().fetch(url(key), { method: "GET", cache: "no-store" } as RequestInit);
+  if (!res.ok) return null;
+  return (await res.json()) as T;
+}

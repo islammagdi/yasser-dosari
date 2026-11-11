@@ -32,6 +32,12 @@ export const CATEGORIES: CategoryInfo[] = [
     title: "الخطب والمحاضرات",
     description: "دروس ومحاضرات وخطب الشيخ.",
   },
+  {
+    slug: "rare",
+    label: "نادرة",
+    title: "تلاوات نادرة",
+    description: "تلاوات ومقاطع نادرة للشيخ من خارج الصلوات المعتادة.",
+  },
 ];
 
 export function getCategory(slug: string): CategoryInfo | undefined {

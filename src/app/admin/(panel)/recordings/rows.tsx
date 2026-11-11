@@ -9,6 +9,7 @@ const SECTION_OPTIONS = [
   { value: "taraweeh", label: "التراويح" },
   { value: "lectures:khutbah", label: "خطب الجمعة" },
   { value: "lectures:lesson", label: "دروس ومحاضرات" },
+  { value: "rare", label: "تلاوات نادرة" },
 ];
 const field = "min-h-11 rounded-xl border border-line-strong bg-ink px-3 text-text";
 const sectionOf = (e: CatalogEntry) => (e.category === "lectures" ? `lectures:${e.lectureType ?? "lesson"}` : e.category);
@@ -51,7 +52,18 @@ export function PendingRow({ id, title, duration }: { id: string; title?: string
   const [name, setName] = useState(title ?? "");
   const [pending, start] = useTransition();
   const [r, setR] = useState<ActionResult | null>(null);
-  if (r?.ok) return null; // اتصنّف: يختفي من القائمة
+  // اتصنّف: نعرض رابط إرسال إشعار عنه
+  if (r?.ok)
+    return (
+      <li className="flex flex-wrap items-center gap-3 rounded-2xl border border-gold/30 bg-gold/5 p-4 text-sm">
+        <span>✓ تم تصنيف «{name || title || id}»</span>
+        {section !== "hidden" && (
+          <a href={`/admin/notify?id=${id.startsWith("custom-") ? id : `yt-${id}`}`} className="font-semibold text-gold-soft underline-offset-4 hover:underline">
+            أرسل إشعارًا عنه
+          </a>
+        )}
+      </li>
+    );
 
   return (
     <li className="flex flex-col gap-3 rounded-2xl border border-line p-4">

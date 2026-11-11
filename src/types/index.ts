@@ -1,4 +1,4 @@
-export type Category = "fard" | "mushaf" | "taraweeh" | "lectures";
+export type Category = "fard" | "mushaf" | "taraweeh" | "lectures" | "rare";
 
 export type Prayer = "fajr" | "maghrib" | "isha";
 

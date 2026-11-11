@@ -50,7 +50,10 @@ export function fromEntry(key: string, e: CatalogEntry): Recording {
 }
 
 export function catalogRecordings(catalog: Catalog, category: Category): Recording[] {
-  return Object.entries(catalog.items)
+  const list = Object.entries(catalog.items)
     .filter(([, e]) => e.category === category && !e.hidden)
     .map(([id, e]) => fromEntry(id, e));
+  // التلاوات النادرة ملهاش تاريخ ثابت: الأحدث إضافة الأول
+  if (category === "rare") list.sort((a, b) => (b.addedAt ?? "").localeCompare(a.addedAt ?? ""));
+  return list;
 }

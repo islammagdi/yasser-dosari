@@ -28,7 +28,7 @@ export const EqualizerIcon = ({ className }: P) => (
   </svg>
 );
 
-export function CategoryIcon({ category, className }: P & { category: "fard" | "mushaf" | "taraweeh" | "lectures" }) {
+export function CategoryIcon({ category, className }: P & { category: "fard" | "mushaf" | "taraweeh" | "lectures" | "rare" }) {
   const common = { "aria-hidden": true, viewBox: "0 0 24 24", className, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   if (category === "fard") {
     return (
@@ -39,6 +39,12 @@ export function CategoryIcon({ category, className }: P & { category: "fard" | "
     // مصحف مفتوح على حامل (رحل)
     return (
       <svg {...common}><path d="M12 6.5C10 5.2 7.5 4.8 4.5 5.3v8.5c3-.5 5.5-.1 7.5 1.2 2-1.3 4.5-1.7 7.5-1.2V5.3c-3-.5-5.5-.1-7.5 1.2Z" /><path d="M12 6.5V15" /><path d="m7 20.5 10-5.5" /><path d="m17 20.5-10-5.5" /></svg>
+    );
+  }
+  if (category === "rare") {
+    // جوهرة
+    return (
+      <svg {...common}><path d="M6.5 4h11L21 9l-9 11L3 9l3.5-5Z" /><path d="M3 9h18" /><path d="m9.5 4-1.5 5 4 11 4-11-1.5-5" /></svg>
     );
   }
   if (category === "lectures") {

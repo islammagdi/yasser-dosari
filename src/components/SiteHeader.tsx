@@ -8,6 +8,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
+import { NotificationsButton } from "./NotificationsButton";
 import { HeartIcon, SearchIcon } from "./icons";
 
 /**
@@ -108,6 +109,7 @@ export function SiteHeader() {
           >
             <SearchIcon className="h-5 w-5" />
           </Link>
+          <NotificationsButton className={`${iconBtn} text-muted hover:text-text`} />
           <Link
             href="/favorites"
             aria-label={`المفضلة${ids.length ? ` (${ids.length})` : ""}`}
