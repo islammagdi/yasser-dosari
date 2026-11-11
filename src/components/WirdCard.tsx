@@ -6,6 +6,7 @@ import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
 import { siteUrl } from "@/lib/site";
 import { canSaveOffline, saveOffline, useOffline } from "@/lib/offline";
+import { disableWirdReminder, enableWirdReminder, wirdReminderTime } from "@/lib/push/client";
 import { khatmaCountLabel } from "@/lib/useKhatma";
 import { useWird } from "@/lib/useWird";
 import { WIRD_DURATIONS, localToday, surahPages, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
@@ -28,6 +29,11 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   const [dismissed, setDismissed] = useState(true);
   const [time, setTime] = useState("20:00");
   const off = useOffline();
+  // تذكير الورد بإشعار على الجهاز
+  const [pushTime, setPushTime] = useState<string | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState("");
+  useEffect(() => setPushTime(wirdReminderTime()), []);
   const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
@@ -242,6 +248,9 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             ذكّرني يوميًا
           </summary>
           <div className="mt-3 flex flex-wrap items-center gap-2">
+            {pushTime && (
+              <p className="w-full text-sm text-gold-soft">✓ يصلك إشعار يوميًا الساعة {pushTime}</p>
+            )}
             <label className="flex items-center gap-2 text-sm text-muted">
               الساعة
               <input
@@ -251,6 +260,41 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
                 className="min-h-10 rounded-xl border border-line-strong bg-transparent px-3 text-text"
               />
             </label>
+            {/* إشعار على الجوال: الأسهل، ومش محتاج تقويم */}
+            <button
+              type="button"
+              disabled={pushBusy}
+              onClick={async () => {
+                setPushBusy(true);
+                setPushMsg("");
+                try {
+                  const state = await enableWirdReminder(time);
+                  if (state === "on") setPushTime(time);
+                  else if (state === "denied") setPushMsg("الإشعارات محظورة من إعدادات المتصفح.");
+                  else if (state === "needs-install") setPushMsg("على الآيفون: ثبّت الموقع على الشاشة الرئيسية أولًا، ثم افتحه من الأيقونة.");
+                  else if (state === "unsupported") setPushMsg("متصفحك لا يدعم الإشعارات، استخدم التقويم.");
+                } catch {
+                  setPushMsg("تعذّر تفعيل الإشعار الآن.");
+                } finally {
+                  setPushBusy(false);
+                }
+              }}
+              className="min-h-10 rounded-full bg-gold px-4 text-sm font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-60"
+            >
+              {pushBusy ? "جارٍ التفعيل…" : pushTime ? "تغيير الساعة" : "إشعار على الجوال"}
+            </button>
+            {pushTime && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await disableWirdReminder();
+                  setPushTime(null);
+                }}
+                className="min-h-10 px-2 text-sm text-muted hover:text-text"
+              >
+                إيقاف الإشعار
+              </button>
+            )}
             <a
               href={wirdGoogleUrl(localToday(), w.daysLeft, time, siteUrl)}
               target="_blank"
@@ -262,6 +306,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             <button type="button" onClick={downloadIcs} className="min-h-10 rounded-full bg-white/5 px-4 text-sm hover:bg-white/10">
               تقويم الجهاز
             </button>
+            {pushMsg && <p className="w-full text-sm text-[#E5636B]">{pushMsg}</p>}
           </div>
         </details>
 

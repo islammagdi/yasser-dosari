@@ -86,3 +86,83 @@ export async function broadcast(topic: keyof StoredSub["topics"], msg: PushMessa
   }
   return { sent, removed, failed };
 }
+
+// ---------- تذكير الورد اليومي ----------
+// كل جهاز فعّل التذكير ليه ملف في push/wird/ فيه الاشتراك والساعة والمنطقة الزمنية وآخر يوم اتبعتله فيه.
+
+const WIRD_PREFIX = "push/wird/";
+
+interface WirdReminder {
+  subscription: webpush.PushSubscription;
+  /** "20:00" بتوقيت الزائر */
+  time: string;
+  /** المنطقة الزمنية بتاعة جهاز الزائر، زي Africa/Cairo */
+  tz: string;
+  /** آخر يوم (بتوقيت الزائر) اتبعتله فيه التذكير */
+  lastSent?: string;
+}
+
+const wirdKey = (endpoint: string) => `${WIRD_PREFIX}${createHash("sha256").update(endpoint).digest("hex").slice(0, 40)}.json`;
+
+export async function saveWirdReminder(sub: webpush.PushSubscription, time: string, tz: string) {
+  const prev = await getFresh<WirdReminder>(wirdKey(sub.endpoint));
+  await putJson(wirdKey(sub.endpoint), { subscription: sub, time, tz, lastSent: prev?.lastSent } satisfies WirdReminder);
+}
+
+export async function deleteWirdReminder(endpoint: string) {
+  await deleteKey(wirdKey(endpoint));
+}
+
+export async function countWirdReminders(): Promise<number> {
+  return (await listKeys(WIRD_PREFIX)).length;
+}
+
+/** الساعة والتاريخ دلوقتي في منطقة زمنية معيّنة */
+function localNow(tz: string, now: Date) {
+  try {
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+        .formatToParts(now)
+        .map((x) => [x.type, x.value]),
+    );
+    return { date: `${p.year}-${p.month}-${p.day}`, minutes: Number(p.hour) * 60 + Number(p.minute) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * بيتنادي كل ١٥ دقيقة: بيبعت التذكير لكل جهاز وصل ميعاده النهارده ولسه متبعتلوش.
+ * لو المهمة اتأخرت أكتر من ساعة عن الميعاد، بنستنى بكرة بدل ما نبعت في وقت غريب.
+ */
+export async function sendDueWirdReminders(now = new Date()): Promise<{ checked: number; sent: number; removed: number }> {
+  configure();
+  const keys = await listKeys(WIRD_PREFIX);
+  let sent = 0;
+  let removed = 0;
+  const payload = JSON.stringify({ title: "وردك اليوم 📖", body: "حان وقت وردك. استمع لورد اليوم بصوت الشيخ ياسر الدوسري.", url: "/" } satisfies PushMessage);
+  for (let i = 0; i < keys.length; i += 50) {
+    await Promise.all(
+      keys.slice(i, i + 50).map(async (key) => {
+        const r = await getFresh<WirdReminder>(key);
+        if (!r) return;
+        const local = localNow(r.tz, now);
+        const [h, m] = r.time.split(":").map(Number);
+        const due = h * 60 + m;
+        if (!local || r.lastSent === local.date || local.minutes < due || local.minutes - due > 60) return;
+        try {
+          await webpush.sendNotification(r.subscription, payload, { TTL: 60 * 60 * 3, urgency: "normal" });
+          await putJson(key, { ...r, lastSent: local.date });
+          sent++;
+        } catch (err) {
+          const code = (err as { statusCode?: number }).statusCode;
+          if (code === 404 || code === 410) {
+            await deleteKey(key);
+            removed++;
+          }
+        }
+      }),
+    );
+  }
+  return { checked: keys.length, sent, removed };
+}

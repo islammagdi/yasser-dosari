@@ -8,7 +8,7 @@ import { fetchMushaf } from "@/lib/api/mp3quran";
 import { makkahPrayerTimes } from "@/lib/api/prayerTimes";
 import { fetchYoutubeMushaf } from "@/lib/api/youtube";
 import { makkahToday } from "@/lib/imamate";
-import { countSubscriptions } from "@/lib/push/server";
+import { countSubscriptions, countWirdReminders } from "@/lib/push/server";
 
 // الفحوصات بتكلّم يوتيوب و R2 وغيرهم، فممكن تاخد ثواني
 export const maxDuration = 60;
@@ -128,7 +128,10 @@ export default async function AdminStatusPage() {
     run("الإشعارات", async () => {
       if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY)
         return { level: "error", message: "مفاتيح VAPID ناقصة على Vercel، فالإشعارات مش هتشتغل." };
-      return { level: "ok", message: `مفعّلة، وعدد المشتركين ${n(await countSubscriptions())}.` };
+      const [subs, wird] = await Promise.all([countSubscriptions(), countWirdReminders()]);
+      if (!process.env.CRON_SECRET)
+        return { level: "warn", message: `مفعّلة (${n(subs)} مشترك)، بس CRON_SECRET مش متظبط، فتذكير الورد اليومي مش هيتبعت.` };
+      return { level: "ok", message: `مفعّلة، وعدد المشتركين ${n(subs)}، ومنهم ${n(wird)} مفعّل تذكير الورد.` };
     }),
 
     run("إعدادات عامة", async () => {

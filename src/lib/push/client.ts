@@ -48,3 +48,42 @@ export async function disablePush(): Promise<PushState> {
   }
   return "off";
 }
+
+// ---------- تذكير الورد اليومي ----------
+
+const WIRD_KEY = "yd-wird-push";
+
+/** الساعة اللي التذكير متظبط عليها على الجهاز ده، أو null */
+export function wirdReminderTime(): string | null {
+  try {
+    return localStorage.getItem(WIRD_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** بيفعّل الإشعارات لو مش مفعّلة، وبيظبط التذكير على الساعة دي */
+export async function enableWirdReminder(time: string): Promise<PushState> {
+  const state = await enablePush();
+  if (state !== "on") return state;
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return "off";
+  const res = await fetch("/api/push/wird", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscription: sub.toJSON(), time, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+  });
+  if (!res.ok) throw new Error("wird reminder failed");
+  localStorage.setItem(WIRD_KEY, time);
+  return "on";
+}
+
+export async function disableWirdReminder(): Promise<void> {
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (sub) {
+    await fetch("/api/push/wird", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+  }
+  localStorage.removeItem(WIRD_KEY);
+}
