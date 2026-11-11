@@ -3,7 +3,8 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ADMIN_COOKIE, assertAdmin, checkPassword } from "@/lib/admin/auth";
+import { ADMIN_COOKIE, assertAdmin, clearFailures, lockedMinutes, passwordMatches, recordFailure } from "@/lib/admin/auth";
+import { cookieOptions, makeToken } from "@/lib/admin/session";
 import { IMAMATE_TAG, cleanNights, cleanWeeks, loadImamateDoc, saveImamateDoc } from "@/lib/admin/imamateStore";
 import { imamateFallback } from "@/lib/api/mock";
 import { BACKUP_FILES, restoreBackup, type BackupName } from "@/lib/admin/backup";
@@ -19,19 +20,21 @@ import type { Category, LectureType } from "@/types";
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string };
 
 export async function login(_: unknown, form: FormData): Promise<{ error?: string }> {
-  const token = checkPassword(String(form.get("password") ?? ""));
-  if (!token) {
+  const locked = await lockedMinutes();
+  if (locked) return { error: `الدخول مقفول بسبب محاولات خاطئة كثيرة. حاول بعد ${locked} دقيقة.` };
+
+  if (!passwordMatches(String(form.get("password") ?? ""))) {
     // تأخير بسيط عشان محاولات التخمين متبقاش سريعة
     await new Promise((r) => setTimeout(r, 1200));
-    return { error: "كلمة المرور غير صحيحة" };
+    const left = await recordFailure();
+    return {
+      error: left === 0 ? "محاولات خاطئة كثيرة. الدخول مقفول ١٥ دقيقة." : `كلمة المرور غير صحيحة. باقي ${left} ${left === 1 ? "محاولة" : "محاولات"} قبل قفل الدخول.`,
+    };
   }
-  cookies().set(ADMIN_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  await clearFailures();
+  const token = await makeToken(Date.now());
+  if (!token) return { error: "باسورد اللوحة على Vercel قصير أو مش متظبط." };
+  cookies().set(ADMIN_COOKIE, token, cookieOptions);
   redirect("/admin");
 }
 
@@ -56,7 +59,7 @@ function refreshSite() {
 
 export async function saveWeeks(weeks: unknown): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const doc = await currentDoc();
     const clean = cleanWeeks(weeks);
     await saveImamateDoc({ weeks: clean, ramadan: doc.ramadan });
@@ -70,7 +73,7 @@ export async function saveWeeks(weeks: unknown): Promise<ActionResult> {
 /** بيحفظ ليالي سنة واحدة، ومبيلمسش السنين التانية */
 export async function saveRamadanYear(year: number, nights: unknown): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const doc = await currentDoc();
     const thisYear = cleanNights(nights).filter((n) => n.year === year);
     const others = doc.ramadan.filter((n) => n.year !== year);
@@ -101,7 +104,7 @@ function parseSection(v: string): { category: Category; lectureType?: LectureTyp
 /** بيضيف للكتالوج أي فيديو موجود في بلاي ليستات القناة ومش في الكتالوج، ومبيغيّرش اللي موجود */
 export async function syncFromPlaylists(): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const items = { ...((await loadCatalog())?.items ?? {}) };
     let added = 0;
     for (const cat of ["fard", "taraweeh", "lectures"] as const) {
@@ -123,7 +126,7 @@ export async function syncFromPlaylists(): Promise<ActionResult> {
 /** تصنيف تسجيل جديد من "بانتظار التصنيف" */
 export async function classifyPending(videoId: string, section: string, titleOverride?: string): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const items = { ...((await loadCatalog())?.items ?? {}) };
     const meta = (await adminManifest())[videoId];
     if (section === "hidden") {
@@ -164,7 +167,7 @@ export interface EntryPatch {
 /** تعديل تسجيل موجود في الكتالوج */
 export async function updateEntry(videoId: string, patch: EntryPatch): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const items = { ...((await loadCatalog())?.items ?? {}) };
     let e: CatalogEntry | undefined = items[videoId];
     if (!e) return { ok: false, message: "التسجيل غير موجود في الكتالوج" };
@@ -202,7 +205,7 @@ export async function updateEntry(videoId: string, patch: EntryPatch): Promise<A
 }
 
 export async function refreshManifest() {
-  assertAdmin();
+  await assertAdmin();
   revalidateTag(MANIFEST_TAG);
   revalidatePath("/admin/recordings");
 }
@@ -232,7 +235,7 @@ function refreshDaily() {
 
 export async function addDaily(input: string, date?: string): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const id = recordingRef(input);
     const all = await allRecordingIds();
     if (!all.has(id)) return { ok: false, message: "لم أجد تسجيلًا بهذا الرابط. انسخ رابط صفحة التلاوة من الموقع." };
@@ -250,7 +253,7 @@ export async function addDaily(input: string, date?: string): Promise<ActionResu
 
 export async function removeDaily(id: string): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const doc: { pool: string[]; pinned: Record<string, string> } = (await loadDaily()) ?? { pool: [], pinned: {} };
     const pinned = Object.fromEntries(Object.entries(doc.pinned).filter(([, v]) => v !== id));
     await saveDaily({ pool: doc.pool.filter((x) => x !== id), pinned });
@@ -263,7 +266,7 @@ export async function removeDaily(id: string): Promise<ActionResult> {
 
 export async function unpinDaily(date: string): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     const doc: { pool: string[]; pinned: Record<string, string> } = (await loadDaily()) ?? { pool: [], pinned: {} };
     const pinned = { ...doc.pinned };
     delete pinned[date];
@@ -279,7 +282,7 @@ export async function unpinDaily(date: string): Promise<ActionResult> {
 
 export async function sendPush(title: string, body: string, url: string): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     if (!title.trim() || !body.trim()) return { ok: false, message: "اكتب العنوان والنص" };
     const path = url.trim() ? (url.trim().startsWith("/") ? url.trim() : new URL(url.trim()).pathname) : "/";
     const r = await broadcast("recitations", { title: title.trim(), body: body.trim(), url: path });
@@ -296,7 +299,7 @@ export async function sendPush(title: string, body: string, url: string): Promis
 
 export async function restoreBackupAction(name: string, key: string): Promise<ActionResult> {
   try {
-    assertAdmin();
+    await assertAdmin();
     if (!(name in BACKUP_FILES)) return { ok: false, message: "ملف غير معروف" };
     await restoreBackup(name as BackupName, key);
     // الموقع واللوحة يقروا النسخة المسترجعة على طول

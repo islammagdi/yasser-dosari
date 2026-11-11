@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { r2Enabled } from "@/lib/admin/r2";
+import { AdminIdle } from "@/components/AdminIdle";
 import { logout } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,11 @@ const NAV = [
   { href: "/admin/ramadan", label: "جدول رمضان" },
 ];
 
-export default function PanelLayout({ children }: { children: React.ReactNode }) {
-  if (!isAdmin()) redirect("/admin/login");
+export default async function PanelLayout({ children }: { children: React.ReactNode }) {
+  if (!(await isAdmin())) redirect("/admin/login");
   return (
     <>
+      <AdminIdle />
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <nav aria-label="أقسام اللوحة" className="flex flex-wrap gap-2">
           {NAV.map((n) => (
