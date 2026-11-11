@@ -134,7 +134,8 @@ export default async function AdminStatusPage() {
     run("إعدادات عامة", async () => {
       const problems: string[] = [];
       if ((process.env.ADMIN_PASSWORD ?? "").length < 16) problems.push("باسورد اللوحة أقصر من ١٦ حرف.");
-      if (!process.env.NEXT_PUBLIC_SITE_URL) problems.push("NEXT_PUBLIC_SITE_URL مش متظبط، فروابط المشاركة وخريطة الموقع ممكن تبقى غلط.");
+      if (!process.env.NEXT_PUBLIC_SITE_URL && !process.env.VERCEL_PROJECT_PRODUCTION_URL)
+        problems.push("رابط الموقع مش معروف، فروابط المشاركة وخريطة الموقع ممكن تبقى غلط.");
       return problems.length ? { level: "warn", message: "فيه حاجات تستاهل تتظبط.", details: problems } : { level: "ok", message: "تمام." };
     }),
   ]);
