@@ -54,8 +54,10 @@ export function SiteHeader() {
             alt="الشيخ ياسر الدوسري"
             width={0}
             height={0}
-            sizes="200px"
-            priority
+            // ١٤٤px على الموبايل و١٧٦ من sm؛ ومن غير priority عشان صورة الهيرو تاخد النت الأول
+            sizes="(min-width: 640px) 176px, 144px"
+            quality={60}
+            loading="eager"
             className="h-9 w-auto sm:h-11"
           />
         </Link>

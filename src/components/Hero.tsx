@@ -64,7 +64,8 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
               width={0}
               height={0}
               sizes="(min-width: 1024px) 440px, (min-width: 640px) 360px, 248px"
-              priority
+              quality={60}
+              loading="eager"
               className="h-auto w-[248px] min-w-0 sm:w-[360px] lg:w-[440px]"
             />
           </h1>
