@@ -24,6 +24,11 @@ interface PlayerContextValue {
   seek: (sec: number) => void;
   skip: (deltaSec: number) => void;
   setRate: (rate: number) => void;
+  /** تكرار التلاوة الحالية: ٠ = من غير تكرار، رقم = عدد مرات التشغيل كلها، Infinity = بلا حد */
+  repeat: number;
+  /** مرات التكرار الباقية بعد المرة الحالية */
+  repeatLeft: number;
+  setRepeat: (times: number) => void;
   volume: number;
   muted: boolean;
   setVolume: (v: number) => void;
@@ -120,6 +125,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [rate, setRateState] = useState(1);
+  const [repeat, setRepeatState] = useState(0);
+  const [repeatLeft, setRepeatLeftState] = useState(0);
+  const repeatLeftRef = useRef(0);
+  const setLeft = useCallback((n: number) => {
+    repeatLeftRef.current = n;
+    setRepeatLeftState(n);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolumeState] = useState(1);
   const [muted, setMuted] = useState(false);
@@ -207,11 +219,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (sleep?.kind === "end") {
       setSleep(null);
       setIsPlaying(false);
+    } else if (repeatLeftRef.current > 0) {
+      // التكرار: نرجع لأول التلاوة ونشغّلها تاني
+      if (repeatLeftRef.current !== Infinity) setLeft(repeatLeftRef.current - 1);
+      const m = media();
+      if (m) {
+        m.seek(0);
+        m.play();
+        setCurrentTime(0);
+      }
     } else if (index < queue.length - 1) next();
     else setIsPlaying(false);
   };
   const endedRef = useRef(handleEnded);
   endedRef.current = handleEnded;
+
+  // تلاوة جديدة: التكرار بيتلغي (كان للتلاوة اللي قبلها)
+  useEffect(() => {
+    setRepeatState(0);
+    setLeft(0);
+  }, [current?.id, setLeft]);
 
   // تحميل التسجيل لما يتغيّر
   useEffect(() => {
@@ -377,6 +404,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [media, seek]);
 
   const setRate = useCallback((r: number) => setRateState(r), []);
+  const setRepeat = useCallback((times: number) => {
+    setRepeatState(times);
+    setLeft(times === Infinity ? Infinity : Math.max(0, times - 1));
+  }, [setLeft]);
 
   /** إغلاق لوحة الفيديو = إيقاف التلاوة */
   const closeVideo = useCallback(() => {
@@ -431,9 +462,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<PlayerContextValue>(() => ({
     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
-    playQueue, toggle, next, prev, seek, skip, setRate,
+    playQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
     volume, muted, setVolume, toggleMute, sleep, setSleepTimer,
-  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, toggle, next, prev, seek, skip, setRate, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
+  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
 
   return (
     <PlayerContext.Provider value={value}>
