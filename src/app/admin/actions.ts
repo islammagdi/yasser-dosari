@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, assertAdmin, checkPassword } from "@/lib/admin/auth";
 import { IMAMATE_TAG, cleanNights, cleanWeeks, loadImamateDoc, saveImamateDoc } from "@/lib/admin/imamateStore";
 import { imamateFallback } from "@/lib/api/mock";
+import { BACKUP_FILES, restoreBackup, type BackupName } from "@/lib/admin/backup";
 import { broadcast } from "@/lib/push/server";
 import { DAILY_TAG, loadDaily, saveDaily } from "@/lib/admin/daily";
 import { recordings } from "@/lib/api";
@@ -288,5 +289,23 @@ export async function sendPush(title: string, body: string, url: string): Promis
     };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر الإرسال" };
+  }
+}
+
+// ---------- النسخ الاحتياطية ----------
+
+export async function restoreBackupAction(name: string, key: string): Promise<ActionResult> {
+  try {
+    assertAdmin();
+    if (!(name in BACKUP_FILES)) return { ok: false, message: "ملف غير معروف" };
+    await restoreBackup(name as BackupName, key);
+    // الموقع واللوحة يقروا النسخة المسترجعة على طول
+    revalidateTag(CATALOG_TAG);
+    revalidateTag(IMAMATE_TAG);
+    revalidateTag(DAILY_TAG);
+    revalidatePath("/", "layout");
+    return { ok: true, message: "تم الاسترجاع، والموقع اتحدّث." };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الاسترجاع" };
   }
 }

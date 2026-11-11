@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/recordings", label: "التسجيلات" },
   { href: "/admin/daily", label: "تلاوة اليوم" },
   { href: "/admin/notify", label: "الإشعارات" },
+  { href: "/admin/backups", label: "النسخ الاحتياطية" },
   { href: "/admin/imamate", label: "جدول الإمامة" },
   { href: "/admin/ramadan", label: "جدول رمضان" },
 ];

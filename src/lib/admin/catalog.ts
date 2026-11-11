@@ -1,4 +1,5 @@
 import type { Category, Recording } from "@/types";
+import { backupBeforeSave } from "./backup";
 import { getJson, putJson } from "./r2";
 
 /**
@@ -28,6 +29,7 @@ export async function loadCatalog(): Promise<Catalog | null> {
 }
 
 export async function saveCatalog(items: Record<string, CatalogEntry>): Promise<void> {
+  await backupBeforeSave("catalog");
   await putJson(KEY, { items, updatedAt: new Date().toISOString() });
 }
 

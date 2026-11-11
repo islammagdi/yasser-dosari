@@ -1,4 +1,5 @@
 import type { ImamatePrayer, ImamateWeek, RamadanNight } from "@/types";
+import { backupBeforeSave } from "./backup";
 import { getJson, putJson } from "./r2";
 
 /** جدول الإمامة ورمضان اللي بيتعدّل من لوحة التحكم، محفوظ على R2 */
@@ -21,6 +22,7 @@ export async function loadImamateDoc(): Promise<ImamateDoc | null> {
 }
 
 export async function saveImamateDoc(doc: Omit<ImamateDoc, "updatedAt">): Promise<void> {
+  await backupBeforeSave("imamate");
   await putJson(KEY, { ...doc, updatedAt: new Date().toISOString() });
 }
 

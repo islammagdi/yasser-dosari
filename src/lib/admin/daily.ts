@@ -1,3 +1,4 @@
+import { backupBeforeSave } from "./backup";
 import { getJson, putJson } from "./r2";
 
 /**
@@ -23,6 +24,7 @@ export async function loadDaily(): Promise<DailyDoc | null> {
 }
 
 export async function saveDaily(doc: Omit<DailyDoc, "updatedAt">): Promise<void> {
+  await backupBeforeSave("daily");
   await putJson(KEY, { ...doc, updatedAt: new Date().toISOString() });
 }
 
