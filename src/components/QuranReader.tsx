@@ -35,7 +35,7 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
   const isBookmarked = (n: number) => bookmark?.surah === surah && bookmark.ayah === n;
 
   const btn =
-    "flex h-11 w-11 items-center justify-center rounded-full text-lg font-semibold text-gold-soft transition-colors hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent";
+    "flex h-11 w-11 items-center justify-center rounded-full text-lg font-semibold text-gold-soft transition-colors hover:bg-fg/5 disabled:opacity-30 disabled:hover:bg-transparent";
   const fontSize = `${READING_SIZES[size]}rem`;
 
   return (
@@ -50,7 +50,7 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
           aria-pressed={light}
           aria-label={light ? "الوضع الداكن" : "الوضع الفاتح"}
           title={light ? "الوضع الداكن" : "الوضع الفاتح"}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-gold-soft transition-colors hover:bg-white/5"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-fg/10 text-gold-soft transition-colors hover:bg-fg/5"
         >
           {light ? (
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -63,7 +63,7 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
             </svg>
           )}
         </button>
-        <div role="group" aria-label="حجم الخط" className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 p-1">
+        <div role="group" aria-label="حجم الخط" className="flex shrink-0 items-center gap-1 rounded-full border border-fg/10 p-1">
           <button type="button" onClick={() => setSize(size - 1)} disabled={size === 0} aria-label="تصغير الخط" className={btn}>
             <span className="text-sm">أ</span>
           </button>
@@ -111,7 +111,7 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
                 aria-label={`الآية ${toArabicDigits(a.n)}${marked ? "، عليها علامة" : ""}`}
                 onClick={() => setOpen(a)}
                 onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen(a))}
-                className={`scroll-mt-28 cursor-pointer rounded-lg transition-colors hover:text-gold-soft focus-visible:bg-white/5 focus-visible:outline-none ${
+                className={`scroll-mt-28 cursor-pointer rounded-lg transition-colors hover:text-gold-soft focus-visible:bg-fg/5 focus-visible:outline-none ${
                   open?.n === a.n ? "bg-gold/15 text-gold-soft" : ""
                 } ${marked ? "underline decoration-gold/70 decoration-2 underline-offset-[0.5em]" : ""}`}
               >

@@ -172,7 +172,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             <li
               key={n}
               className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-sm ${
-                done ? "bg-gold/15 text-gold-soft" : "bg-white/5 text-text"
+                done ? "bg-gold/15 text-gold-soft" : "bg-fg/5 text-text"
               }`}
             >
               {done && <span aria-hidden>✓</span>}
@@ -191,9 +191,9 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
           aria-valuemin={0}
           aria-valuemax={114}
           aria-valuenow={w.khatmaCount}
-          className="h-1.5 overflow-hidden rounded-full bg-white/10"
+          className="h-1.5 overflow-hidden rounded-full bg-fg/10"
         >
-          <div className="h-full rounded-full bg-gold transition-[width] duration-500" style={{ width: `${Math.round((w.khatmaCount / 114) * 100)}%` }} />
+          <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.round((w.khatmaCount / 114) * 100)}%` }} />
         </div>
         <p className="text-xs text-muted">
           الختمة: {toArabicDigits(w.khatmaCount)} من ١١٤ سورة · السورة تُحسب عند سماع ٩٠٪ منها
@@ -205,9 +205,9 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
           <button
             type="button"
             onClick={() => p.playQueue(queue, 0)}
-            className="flex min-h-11 items-center gap-2 rounded-full bg-gold pe-5 ps-2 text-[15px] font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+            className="flex min-h-11 items-center gap-2 rounded-full bg-accent pe-5 ps-2 text-[15px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-ink text-gold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-ink text-accent">
               <PlayIcon className="h-4 w-4" />
             </span>
             {w.doneToday.length ? "أكمل وردك" : "استمع لوردك"}
@@ -279,7 +279,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
                   setPushBusy(false);
                 }
               }}
-              className="min-h-10 rounded-full bg-gold px-4 text-sm font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-60"
+              className="min-h-10 rounded-full bg-accent px-4 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-60"
             >
               {pushBusy ? "جارٍ التفعيل…" : pushTime ? "تغيير الساعة" : "إشعار على الجوال"}
             </button>
@@ -299,11 +299,11 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
               href={wirdGoogleUrl(localToday(), w.daysLeft, time, siteUrl)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-10 items-center rounded-full bg-white/5 px-4 text-sm hover:bg-white/10"
+              className="inline-flex min-h-10 items-center rounded-full bg-fg/5 px-4 text-sm hover:bg-fg/10"
             >
               تقويم Google
             </a>
-            <button type="button" onClick={downloadIcs} className="min-h-10 rounded-full bg-white/5 px-4 text-sm hover:bg-white/10">
+            <button type="button" onClick={downloadIcs} className="min-h-10 rounded-full bg-fg/5 px-4 text-sm hover:bg-fg/10">
               تقويم الجهاز
             </button>
             {pushMsg && <p className="w-full text-sm text-[#E5636B]">{pushMsg}</p>}

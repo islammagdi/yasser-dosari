@@ -43,7 +43,7 @@ export function FavoritesView({ all, title }: { all: Recording[]; title: string 
           <p className="max-w-md leading-7 text-muted">اضغط على القلب في أي تلاوة أو في المشغّل، وستجدها هنا.</p>
           <Link
             href="/"
-            className="mt-2 flex min-h-11 items-center rounded-full bg-gold px-6 font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+            className="mt-2 flex min-h-11 items-center rounded-full bg-accent px-6 font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
           >
             تصفّح التلاوات
           </Link>

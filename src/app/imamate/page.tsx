@@ -63,7 +63,7 @@ export default async function ImamatePage() {
               href={google}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-full bg-gold px-5 text-[15px] font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+              className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-[15px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
             >
               تقويم Google
             </a>
@@ -107,7 +107,7 @@ export default async function ImamatePage() {
                     {list.map((s) => (
                       <span
                         key={s.id}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ${s.backup ? "border border-dashed border-line-strong opacity-75" : "bg-white/5"}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm ${s.backup ? "border border-dashed border-line-strong opacity-75" : "bg-fg/5"}`}
                       >
                         <span className={`font-semibold ${s.backup ? "text-muted" : "text-gold-soft"}`}>
                           {s.prayer === "jumuah" ? "خطبة وصلاة الجمعة" : IMAMATE_PRAYER_LABELS[s.prayer]}

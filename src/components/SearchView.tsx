@@ -97,7 +97,7 @@ export function SearchView() {
               <h2 id={`r-${g.slug}`} className="font-display text-2xl font-bold text-gold-soft">
                 {g.title}
               </h2>
-              <span className="rounded-full bg-white/5 px-2.5 text-sm leading-6 text-muted">{toArabicDigits(g.total)}</span>
+              <span className="rounded-full bg-fg/5 px-2.5 text-sm leading-6 text-muted">{toArabicDigits(g.total)}</span>
               <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-gold/30 to-transparent" />
             </div>
             <RecordingList key={`${g.slug}-${open}`} items={shown} numbered={g.slug === "mushaf"} />

@@ -49,7 +49,7 @@ export function NotificationsButton({ className = "" }: { className?: string }) 
       </button>
 
       {open && (
-        <div className="glass absolute end-0 top-full z-50 mt-2 flex w-72 flex-col gap-3 rounded-2xl border border-white/10 p-4 text-sm shadow-float">
+        <div className="glass absolute end-0 top-full z-50 mt-2 flex w-72 flex-col gap-3 rounded-2xl border border-fg/10 p-4 text-sm shadow-float">
           <p className="font-semibold text-gold-soft">إشعارات التلاوات الجديدة</p>
           {state === "unsupported" && <p className="leading-6 text-muted">متصفحك لا يدعم الإشعارات.</p>}
           {state === "needs-install" && (
@@ -61,7 +61,7 @@ export function NotificationsButton({ className = "" }: { className?: string }) 
           {state === "off" && (
             <>
               <p className="leading-6 text-muted">يصلك إشعار عند إضافة تلاوات جديدة للشيخ، حتى والموقع مغلق.</p>
-              <button type="button" disabled={busy} onClick={() => run(enablePush)} className="min-h-11 rounded-full bg-gold font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={() => run(enablePush)} className="min-h-11 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50">
                 {busy ? "جارٍ التفعيل…" : "فعّل الإشعارات"}
               </button>
             </>

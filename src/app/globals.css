@@ -2,38 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * الألوان كلها هنا كقنوات RGB، وTailwind بيقراها بـ rgb(var(--c-x) / alpha).
+ * الافتراضي فاتح، و data-theme="dark" على <html> بيرجّع ألوان الموقع القديمة بالظبط.
+ */
+:root {
+  --c-ink: 244 238 225;
+  --c-night: 239 231 214;
+  --c-surface: 250 246 236;
+  --c-raised: 255 253 248;
+  --c-line: 230 220 198;
+  --c-line-strong: 211 195 160;
+  --c-emerald: 30 74 60;
+  --c-deep: 18 50 39;
+  --c-text: 27 40 34;
+  --c-muted: 86 99 91;
+  --c-fg: 27 40 34;
+  --c-gold: 125 90 23;
+  --c-gold-soft: 107 76 18;
+  --c-gold-ink: 255 250 240;
+  --c-accent: 30 74 60;
+  --c-accent-hover: 22 59 48;
+  --c-accent-ink: 246 241 230;
+  /* الدهبي الزخرفي (خطوط ونقشة) أفتح من دهبي النص */
+  --c-ornament: 184 146 74;
+  --logo: rgb(30 74 60);
+  --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 18px 36px -24px rgb(70 52 18 / 0.45);
+  --shadow-float: 0 30px 60px -30px rgb(40 30 10 / 0.45);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --c-ink: 13 21 18;
+  --c-night: 17 28 24;
+  --c-surface: 21 33 28;
+  --c-raised: 27 42 36;
+  --c-line: 34 50 43;
+  --c-line-strong: 46 64 56;
+  --c-emerald: 30 74 60;
+  --c-deep: 16 36 29;
+  --c-text: 241 238 230;
+  --c-muted: 163 177 169;
+  --c-fg: 255 255 255;
+  --c-gold: 205 170 98;
+  --c-gold-soft: 231 205 148;
+  --c-gold-ink: 26 20 8;
+  --c-accent: 205 170 98;
+  --c-accent-hover: 231 205 148;
+  --c-accent-ink: 26 20 8;
+  --c-ornament: 205 170 98;
+  --logo: rgb(246 241 230);
+  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 12px 32px -18px rgb(0 0 0 / 0.6);
+  --shadow-float: 0 24px 60px -16px rgb(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
 @layer base {
-  html { background-color: theme("colors.ink"); color: theme("colors.text"); color-scheme: dark; }
+  html { background-color: rgb(var(--c-ink)); color: rgb(var(--c-text)); }
   body {
     @apply font-sans antialiased;
     min-height: 100vh;
     overflow-x: clip;
   }
    * { -webkit-tap-highlight-color: transparent; }
-  ::selection { background: theme("colors.gold.DEFAULT"); color: theme("colors.gold.ink"); }
-  :focus-visible { outline: 2px solid theme("colors.gold.DEFAULT"); outline-offset: 2px; border-radius: 12px; }
+  ::selection { background: rgb(var(--c-gold)); color: rgb(var(--c-gold-ink)); }
+  :focus-visible { outline: 2px solid rgb(var(--c-gold)); outline-offset: 2px; border-radius: 12px; }
   input:focus { outline: none; }
 }
 
 @layer components {
   .glass {
-    background-color: rgb(16 27 23 / 0.72);
+    background-color: rgb(var(--c-ink) / 0.78);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
     backdrop-filter: blur(18px) saturate(140%);
   }
   /* نقشة النجمة الثمانية */
   .pattern-stars {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none' stroke='%23CDAA62' stroke-width='0.7'%3E%3Cpath d='M20 20h40v40H20z'/%3E%3Cpath d='M40 11.7 68.3 40 40 68.3 11.7 40z'/%3E%3Cpath d='M0 0l20 20M80 0 60 20M0 80l20-20M80 80 60 60'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none' stroke='%23B8924A' stroke-width='0.7'%3E%3Cpath d='M20 20h40v40H20z'/%3E%3Cpath d='M40 11.7 68.3 40 40 68.3 11.7 40z'/%3E%3Cpath d='M0 0l20 20M80 0 60 20M0 80l20-20M80 80 60 60'/%3E%3C/svg%3E");
     background-size: 80px 80px;
     background-position: center;
   }
   /* زجاج للكروت والحاويات: شفاف + blur + لمعة خفيفة في الحافة اللي فوق */
   .glass-card {
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
+    background: rgb(var(--c-raised) / 0.82);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     backdrop-filter: blur(16px) saturate(140%);
-    border: 1px solid rgb(255 255 255 / 0.08);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 12px 32px -18px rgb(0 0 0 / 0.6);
+    border: 1px solid rgb(var(--c-line));
+    box-shadow: var(--shadow-soft);
+  }
+  :root[data-theme="dark"] .glass-card {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
+    border-color: rgb(255 255 255 / 0.08);
   }
   /* خلفية ثابتة ورا الموقع كله: هي اللي بتخلي الزجاج يبان */
   .ambient {
@@ -42,9 +100,47 @@
     z-index: -1;
     pointer-events: none;
     background:
+      radial-gradient(900px 600px at 85% -10%, rgb(var(--c-ornament) / 0.12), transparent 65%),
+      radial-gradient(640px 420px at 75% 105%, rgb(var(--c-ornament) / 0.10), transparent 70%);
+  }
+  :root[data-theme="dark"] .ambient {
+    background:
       radial-gradient(900px 600px at 85% -10%, rgb(30 74 60 / 0.6), transparent 65%),
       radial-gradient(700px 520px at 5% 55%, rgb(30 74 60 / 0.4), transparent 70%),
       radial-gradient(640px 420px at 75% 105%, rgb(205 170 98 / 0.12), transparent 70%);
+  }
+  /* اللوجو PNG أبيض، فبنستخدمه كـ mask ونلوّنه بلون الوضع الحالي */
+  .logo-mask {
+    display: block;
+    background-color: var(--logo);
+    -webkit-mask: url("/images/logo.png") center / contain no-repeat;
+    mask: url("/images/logo.png") center / contain no-repeat;
+    aspect-ratio: 4 / 1;
+  }
+  /* صورة الشيخ في الهيرو: بتسيح في الخلفية من كل الجوانب، ومن ناحية النص أكتر */
+  .hero-portrait {
+    -webkit-mask-image:
+      radial-gradient(ellipse 80% 85% at 50% 32%, #000 42%, transparent 100%),
+      linear-gradient(to bottom, #000 45%, transparent 92%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      radial-gradient(ellipse 80% 85% at 50% 32%, #000 42%, transparent 100%),
+      linear-gradient(to bottom, #000 45%, transparent 92%);
+    mask-composite: intersect;
+  }
+  @media (min-width: 1024px) {
+    .hero-portrait {
+      -webkit-mask-image:
+        radial-gradient(ellipse 72% 80% at 45% 36%, #000 42%, transparent 100%),
+        linear-gradient(to right, #000 40%, transparent 96%),
+        linear-gradient(to bottom, #000 55%, transparent 94%);
+      -webkit-mask-composite: source-in, source-in;
+      mask-image:
+        radial-gradient(ellipse 72% 80% at 45% 36%, #000 42%, transparent 100%),
+        linear-gradient(to right, #000 40%, transparent 96%),
+        linear-gradient(to bottom, #000 55%, transparent 94%);
+      mask-composite: intersect;
+    }
   }
   /* يكسر حدود الـ container ويبقى بعرض الشاشة كلها */
   .full-bleed {
@@ -106,11 +202,11 @@
   .reader-light .text-muted {
     color: #6b6250;
   }
-  .reader-light .border-white\/10 {
+  .reader-light .border-fg\/10 {
     border-color: rgb(42 35 22 / 0.15);
   }
-  .reader-light .hover\:bg-white\/5:hover,
-  .reader-light .focus-visible\:bg-white\/5:focus-visible {
+  .reader-light .hover\:bg-fg\/5:hover,
+  .reader-light .focus-visible\:bg-fg\/5:focus-visible {
     background-color: rgb(42 35 22 / 0.06);
   }
   .reader-light .hover\:text-gold-soft:hover {
@@ -137,18 +233,18 @@
   appearance: none;
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, theme("colors.gold.DEFAULT") var(--pct, 0%), rgb(255 255 255 / 0.1) var(--pct, 0%));
+  background: linear-gradient(to right, rgb(var(--c-accent)) var(--pct, 0%), rgb(var(--c-fg) / 0.1) var(--pct, 0%));
   cursor: pointer;
 }
 .progress::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
-  background: theme("colors.gold.soft");
-  box-shadow: 0 0 0 4px rgb(205 170 98 / 0.2);
+  background: rgb(var(--c-accent));
+  box-shadow: 0 0 0 4px rgb(var(--c-accent) / 0.2);
 }
 .progress::-moz-range-thumb {
   width: 14px; height: 14px; border: 0; border-radius: 50%;
-  background: theme("colors.gold.soft");
+  background: rgb(var(--c-accent));
 }
 .progress:disabled { cursor: default; opacity: .5; }
 

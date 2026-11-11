@@ -9,7 +9,7 @@ function Submit() {
     <button
       type="submit"
       disabled={pending}
-      className="min-h-12 rounded-full bg-gold font-semibold text-gold-ink transition-colors hover:bg-gold-soft disabled:opacity-50"
+      className="min-h-12 rounded-full bg-accent font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
     >
       {pending ? "جارٍ الدخول…" : "دخول"}
     </button>

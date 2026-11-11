@@ -43,7 +43,7 @@ export function AddToPlaylist({ recording }: { recording: Recording }) {
       </button>
 
       {open && (
-        <div className="glass absolute end-0 top-full z-30 mt-2 flex w-72 flex-col gap-2 rounded-2xl border border-white/10 p-3 shadow-float">
+        <div className="glass absolute end-0 top-full z-30 mt-2 flex w-72 flex-col gap-2 rounded-2xl border border-fg/10 p-3 shadow-float">
           <p className="px-1 text-sm font-semibold text-gold-soft">إضافة إلى قائمة</p>
           {pl.lists.length > 0 && (
             <ul className="flex max-h-60 flex-col gap-1 overflow-y-auto">
@@ -51,7 +51,7 @@ export function AddToPlaylist({ recording }: { recording: Recording }) {
                 const has = p.items.some((r) => r.id === recording.id);
                 return (
                   <li key={p.id}>
-                    <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-white/5">
+                    <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-fg/5">
                       <input type="checkbox" checked={has} onChange={() => pl.toggleItem(p.id, recording)} className="h-5 w-5 accent-[#CDAA62]" />
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
                       <span className="text-xs text-muted">{p.items.length}</span>
@@ -68,7 +68,7 @@ export function AddToPlaylist({ recording }: { recording: Recording }) {
               pl.create(name, recording);
               setName("");
             }}
-            className="flex gap-2 border-t border-white/10 pt-2"
+            className="flex gap-2 border-t border-fg/10 pt-2"
           >
             <input
               value={name}
@@ -76,7 +76,7 @@ export function AddToPlaylist({ recording }: { recording: Recording }) {
               placeholder="قائمة جديدة، مثلًا: قيام الليل"
               className="min-h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-ink px-3 text-sm text-text"
             />
-            <button type="submit" disabled={!name.trim()} className="min-h-11 rounded-xl bg-gold px-3 text-sm font-semibold text-gold-ink disabled:opacity-40">
+            <button type="submit" disabled={!name.trim()} className="min-h-11 rounded-xl bg-accent px-3 text-sm font-semibold text-accent-ink disabled:opacity-40">
               إنشاء
             </button>
           </form>

@@ -36,7 +36,7 @@ export default async function SurahIndexPage() {
                   href={`/surah/${n}`}
                   className="glass-card flex min-h-[72px] items-center gap-3 rounded-2xl p-3 transition-colors hover:border-gold/40"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-sm font-semibold text-gold-soft">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fg/5 text-sm font-semibold text-gold-soft">
                     {toArabicDigits(n)}
                   </span>
                   <span className="flex min-w-0 flex-col">

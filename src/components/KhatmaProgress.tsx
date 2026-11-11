@@ -42,9 +42,9 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
           aria-valuemin={0}
           aria-valuemax={total}
           aria-valuenow={k.count}
-          className="h-2 overflow-hidden rounded-full bg-white/10"
+          className="h-2 overflow-hidden rounded-full bg-fg/10"
         >
-          <div className="h-full rounded-full bg-gold transition-[width] duration-500" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${pct}%` }} />
         </div>
         <p className="text-xs text-muted">السورة بتتحسب لما تسمع ٩٠٪ منها. التقدّم محفوظ على جهازك.</p>
       </div>
@@ -54,9 +54,9 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
           <button
             type="button"
             onClick={() => p.playQueue(queue, start)}
-            className="flex min-h-11 items-center gap-2 rounded-full bg-gold pe-5 ps-2 text-[15px] font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+            className="flex min-h-11 items-center gap-2 rounded-full bg-accent pe-5 ps-2 text-[15px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-ink text-gold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-ink text-accent">
               <PlayIcon className="h-4 w-4" />
             </span>
             {k.count ? "كمّل" : "ابدأ"} من سورة {surahName(k.nextSurah!)}
@@ -66,7 +66,7 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
           <button
             type="button"
             onClick={() => window.confirm("تبدأ ختمة جديدة؟ هيتمسح التقدّم الحالي.") && k.reset()}
-            className="flex min-h-11 items-center rounded-full border border-white/15 px-5 text-[15px] text-muted transition-colors hover:text-text"
+            className="flex min-h-11 items-center rounded-full border border-fg/15 px-5 text-[15px] text-muted transition-colors hover:text-text"
           >
             ختمة جديدة
           </button>

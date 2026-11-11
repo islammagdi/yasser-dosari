@@ -125,7 +125,7 @@ export function RamadanEditor({ initial }: { initial: RamadanNight[] }) {
       <div className="overflow-x-auto rounded-2xl border border-line">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
-            <tr className="bg-white/5">
+            <tr className="bg-fg/5">
               <th className="p-3 text-start">الليلة</th>
               {COLS.map((c) => <th key={c.label} className="p-3 text-center font-semibold">{c.label}</th>)}
             </tr>
@@ -155,7 +155,7 @@ export function RamadanEditor({ initial }: { initial: RamadanNight[] }) {
       </div>
 
       <div className="sticky bottom-24 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-ink/95 p-3 backdrop-blur">
-        <button type="button" onClick={save} disabled={saving} className="min-h-12 rounded-full bg-gold px-8 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50">
+        <button type="button" onClick={save} disabled={saving} className="min-h-12 rounded-full bg-accent px-8 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50">
           {saving ? "جارٍ الحفظ…" : `حفظ رمضان ${year}`}
         </button>
         {dirty && !result && <span className="text-sm text-gold-soft">توجد تعديلات لم تُحفظ بعد</span>}

@@ -31,7 +31,7 @@ const SLEEP_OPTIONS: { value: number | "end"; label: string }[] = [
 ];
 
 const iconBtn =
-  "relative flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors hover:bg-white/5 hover:text-gold-soft disabled:opacity-30 disabled:hover:bg-transparent";
+  "relative flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors hover:bg-fg/5 hover:text-gold-soft disabled:opacity-30 disabled:hover:bg-transparent";
 
 export function PlayerBar() {
   const p = usePlayer();
@@ -79,11 +79,11 @@ export function PlayerBar() {
     <div
       role="region"
       aria-label="المشغّل"
-      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-white/10 pb-[env(safe-area-inset-bottom)]"
+      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-fg/10 pb-[env(safe-area-inset-bottom)]"
     >
       {/* خط التقدّم للموبايل */}
-      <div aria-hidden dir="ltr" className="absolute inset-x-0 top-0 h-[2px] bg-white/5 md:hidden">
-        <div className="h-full bg-gold transition-[width] duration-200" style={{ width: `${pct}%` }} />
+      <div aria-hidden dir="ltr" className="absolute inset-x-0 top-0 h-[2px] bg-fg/5 md:hidden">
+        <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="mx-auto flex max-w-page items-center gap-3 px-4 py-2.5 sm:px-6 md:gap-6">
@@ -108,7 +108,7 @@ export function PlayerBar() {
             onClick={() => p.current && fav.toggle(p.current.id)}
             aria-pressed={favorite}
             aria-label={favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/5 ${
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-fg/5 ${
               favorite ? "text-[#E5636B]" : "text-muted hover:text-text"
             }`}
           >
@@ -140,7 +140,7 @@ export function PlayerBar() {
           <button type="button" onClick={cycleRate} aria-label={`سرعة التشغيل ${p.rate}x`} className={`${iconBtn} hidden md:flex`}>
             <GaugeIcon className="h-5 w-5" />
             {p.rate !== 1 && (
-              <span className="absolute -bottom-0.5 rounded-full bg-gold px-1 text-[10px] font-bold leading-4 text-gold-ink">
+              <span className="absolute -bottom-0.5 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-ink">
                 {p.rate}x
               </span>
             )}
@@ -156,7 +156,7 @@ export function PlayerBar() {
             onClick={p.toggle}
             disabled={!isPlayable(p.current)}
             aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
-            className="mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
+            className="mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-ink shadow-glow transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:shadow-none"
           >
             {p.isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
           </button>
@@ -179,7 +179,7 @@ export function PlayerBar() {
             >
               <TimerIcon className="h-5 w-5" />
               {sleepBadge && (
-                <span className="absolute -bottom-0.5 rounded-full bg-gold px-1 text-[10px] font-bold leading-4 text-gold-ink">
+                <span className="absolute -bottom-0.5 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-ink">
                   {sleepBadge}
                 </span>
               )}
@@ -195,7 +195,7 @@ export function PlayerBar() {
                       p.setSleepTimer(o.value);
                       setSleepOpen(false);
                     }}
-                    className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-white/5"
+                    className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-fg/5"
                   >
                     {o.label}
                   </button>
@@ -207,7 +207,7 @@ export function PlayerBar() {
                       p.setSleepTimer(null);
                       setSleepOpen(false);
                     }}
-                    className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-white/10 px-3 text-start text-sm text-gold-soft transition-colors hover:bg-white/5"
+                    className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-fg/10 px-3 text-start text-sm text-gold-soft transition-colors hover:bg-fg/5"
                   >
                     إلغاء التايمر
                   </button>

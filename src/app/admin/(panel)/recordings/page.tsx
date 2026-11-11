@@ -33,7 +33,7 @@ export default async function AdminRecordingsPage({ searchParams }: Props) {
   const tabLink = (t: string, label: string) => (
     <Link
       href={`/admin/recordings?tab=${t}`}
-      className={`min-h-11 rounded-full px-5 py-2.5 text-sm font-semibold ${tab === t ? "bg-gold text-gold-ink" : "border border-line-strong text-muted hover:text-text"}`}
+      className={`min-h-11 rounded-full px-5 py-2.5 text-sm font-semibold ${tab === t ? "bg-accent text-accent-ink" : "border border-line-strong text-muted hover:text-text"}`}
     >
       {label}
     </Link>

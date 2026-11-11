@@ -41,7 +41,7 @@ export function DailyAdd() {
               }
             })
           }
-          className="min-h-11 rounded-full bg-gold px-6 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50"
+          className="min-h-11 rounded-full bg-accent px-6 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
         >
           {pending ? "جارٍ الإضافة…" : "إضافة"}
         </button>

@@ -40,7 +40,7 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
         <div className="flex min-w-0 flex-1 items-center gap-3 lg:gap-4">
           <span aria-hidden className="relative flex h-8 w-8 shrink-0 items-center justify-center lg:h-9 lg:w-9">
             <span className="absolute h-3 w-3 animate-ping rounded-full bg-gold/60 motion-reduce:animate-none" />
-            <span className="relative h-3 w-3 rounded-full bg-gold" />
+            <span className="relative h-3 w-3 rounded-full bg-accent" />
           </span>
           <span className="flex min-w-0 flex-col gap-0.5 lg:gap-1">
             <span className="text-xs font-semibold text-gold lg:text-[13px]">الآن في المسجد الحرام</span>
@@ -53,7 +53,7 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
             href={MAKKAH_LIVE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative z-10 inline-flex min-h-11 shrink-0 items-center justify-center self-end rounded-full bg-gold px-5 text-sm font-semibold text-gold-ink transition-colors hover:bg-gold-soft lg:self-auto"
+            className="relative z-10 inline-flex min-h-11 shrink-0 items-center justify-center self-end rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover lg:self-auto"
           >
             شاهد البث المباشر
           </a>
@@ -69,7 +69,7 @@ export function NextImamate({ slots }: { slots: ImamateSlot[] }) {
         <span className="flex min-w-0 flex-col gap-0.5 lg:gap-1">
           <span className="text-xs text-gold-soft lg:text-[13px]">الإمامة القادمة في المسجد الحرام</span>
           {now === null ? (
-            <span aria-hidden className="my-1 h-4 w-52 max-w-full animate-pulse rounded bg-white/10" />
+            <span aria-hidden className="my-1 h-4 w-52 max-w-full animate-pulse rounded bg-fg/10" />
           ) : slot ? (
             <>
               <span className="font-semibold leading-6 lg:text-[17px]">
