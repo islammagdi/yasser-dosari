@@ -5,6 +5,10 @@ export default function AdminHome() {
     <div className="flex flex-col gap-6">
       <h1 className="font-display text-4xl font-bold">لوحة التحكم</h1>
       <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/admin/status" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
+          <span className="font-display text-2xl font-bold text-gold-soft">حالة الموقع</span>
+          <span className="text-sm text-muted">فحص سريع لكل أجزاء الموقع: يوتيوب، والتخزين، والصوتيات، والجدول، والإشعارات</span>
+        </Link>
         <Link href="/admin/recordings" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
           <span className="font-display text-2xl font-bold text-gold-soft">التسجيلات</span>
           <span className="text-sm text-muted">صنّف التسجيلات الجديدة، وعدّل أقسام وعناوين التسجيلات الموجودة</span>
