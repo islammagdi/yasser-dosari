@@ -143,7 +143,8 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(msg.title, {
       body: msg.body,
       icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      // أندرويد بيعرض الأيقونة دي بلون واحد في شريط الحالة: لازم شكل أبيض على خلفية شفافة
+      badge: "/icons/badge-96.png",
       dir: "rtl",
       lang: "ar",
       data: { url: msg.url || "/" },
