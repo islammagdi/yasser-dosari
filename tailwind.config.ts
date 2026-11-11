@@ -17,10 +17,10 @@ const config: Config = {
         gold: { DEFAULT: "#CDAA62", soft: "#E7CD94", ink: "#1A1408" },
       },
       fontFamily: {
-        display: ["Amiri", "serif"],
-        quran: ['"Amiri Quran"', "Amiri", "serif"],
-        ruqaa: ['"Aref Ruqaa"', "Amiri", "serif"],
-        sans: ['"IBM Plex Sans Arabic"', "Tahoma", "system-ui", "sans-serif"],
+        display: ["var(--font-amiri)", "serif"],
+        quran: ["var(--font-amiri-quran)", "var(--font-amiri)", "serif"],
+        ruqaa: ["var(--font-ruqaa)", "var(--font-amiri)", "serif"],
+        sans: ["var(--font-plex)", "Tahoma", "system-ui", "sans-serif"],
       },
         maxWidth: { page: "1400px" },
       boxShadow: {

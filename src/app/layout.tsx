@@ -9,6 +9,14 @@ import "./globals.css";
 
 // رابط الموقع الأساسي: مهم عشان صور المشاركة على واتساب تبقى روابط كاملة
 import { siteUrl } from "@/lib/site";
+import { Amiri, Amiri_Quran, Aref_Ruqaa, IBM_Plex_Sans_Arabic } from "next/font/google";
+
+// الخطوط بتتحمّل من موقعنا نفسه (next/font) بدل Google Fonts: مبتعطلش ظهور الصفحة، والنص بيظهر على طول
+const amiri = Amiri({ subsets: ["arabic"], weight: ["400", "700"], display: "swap", variable: "--font-amiri" });
+const plex = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600"], display: "swap", variable: "--font-plex" });
+// خطوط صفحات معيّنة: بتتحمّل بس في الصفحات اللي بتستخدمها
+const amiriQuran = Amiri_Quran({ subsets: ["arabic"], weight: "400", display: "swap", variable: "--font-amiri-quran", preload: false });
+const ruqaa = Aref_Ruqaa({ subsets: ["arabic"], weight: "700", display: "swap", variable: "--font-ruqaa", preload: false });
 export const metadata: Metadata = {
   // مهم: من غيره صور المشاركة بتطلع على localhost
      metadataBase: new URL(siteUrl),
@@ -37,16 +45,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Amiri+Quran&family=Aref+Ruqaa:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap"
-        />
-      </head>
+    <html lang="ar" dir="rtl" className={`${amiri.variable} ${plex.variable} ${amiriQuran.variable} ${ruqaa.variable}`}>
       <body>
         <div aria-hidden className="ambient" />
         <RegisterSW />

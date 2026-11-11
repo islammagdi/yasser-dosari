@@ -41,6 +41,7 @@ export function Hero({ recent, imamate }: { recent: Recording[]; imamate: Imamat
           fill
           priority
           sizes="(min-width: 1024px) 54vw, 100vw"
+          quality={70}
           className="object-cover object-[45%_30%]"
         />
       </div>

@@ -16,8 +16,13 @@ const C = {
   gold: "#CDAA62",
   goldSoft: "#E7CD94",
 };
-const QURAN_FONT = '"Amiri Quran", "Amiri", serif';
-const UI_FONT = '"IBM Plex Sans Arabic", system-ui, sans-serif';
+// الخطوط متحمّلة بـ next/font بأسامي متولّدة، فبناخد الاسم الحقيقي من متغيرات الصفحة
+const cssFont = (name: string, fallback: string) => {
+  const v = typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v ? `${v}, ${fallback}` : fallback;
+};
+let QURAN_FONT = 'serif';
+let UI_FONT = "system-ui, sans-serif";
 
 // من غير لوجو: مساحة النص بتبدأ من فوق الإطار على طول
 const LAYOUT = {
@@ -84,6 +89,8 @@ export async function renderAyahImage(opts: {
   format: ImageFormat;
   site: string;
 }): Promise<{ blob: Blob; truncated: boolean }> {
+  QURAN_FONT = cssFont("--font-amiri-quran", "serif");
+  UI_FONT = cssFont("--font-plex", "system-ui, sans-serif");
   const L = LAYOUT[opts.format];
   const body = opts.body;
 
