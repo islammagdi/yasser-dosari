@@ -9,6 +9,13 @@ import { fetchMushaf } from "./mp3quran";
 import { fetchYoutube, fetchYoutubeMushaf, youtubeEnabled } from "./youtube";
 import type { RecordingsRepository } from "./repository";
 
+/**
+ * على الموقع الحقيقي (فيه مفتاح يوتيوب): لو جلب البيانات فشل، بنرمي الخطأ بدل ما نعرض بيانات تجريبية.
+ * Next.js وقتها بيفضل يعرض آخر نسخة سليمة من الصفحة، ويحاول تاني بعدين.
+ * البيانات التجريبية للتجربة على الجهاز من غير مفاتيح بس.
+ */
+const strict = () => youtubeEnabled();
+
 export const mockRepository: RecordingsRepository = {
   async list({ category, limit }) {
     let items = MOCK_RECORDINGS.filter((r) => r.category === category);
@@ -18,6 +25,7 @@ export const mockRepository: RecordingsRepository = {
         const real = await fetchMushaf();
         if (real.length) items = real;
       } catch (err) {
+        if (strict()) throw err;
         console.warn("mp3quran: fallback to mock mushaf", err);
       }
       // نسخة تانية: المصحف المرتل من إنتاج المركز السعودي (فيديو يوتيوب)
@@ -31,12 +39,8 @@ export const mockRepository: RecordingsRepository = {
     }
     // الفروض والتراويح والخطب من يوتيوب لو فيه YOUTUBE_API_KEY
     if (category !== "mushaf" && youtubeEnabled()) {
-      try {
-        const real = await fetchYoutube(category);
-        if (real.length) items = real;
-      } catch (err) {
-        console.warn(`youtube: fallback to mock ${category}`, err);
-      }
+      // على الموقع الحقيقي بناخد النتيجة حتى لو فاضية (قسم لسه ملوش تسجيلات)، ولو فشلت بنرمي الخطأ
+      items = await fetchYoutube(category);
     }
     return typeof limit === "number" ? items.slice(0, limit) : items;
   },
@@ -50,8 +54,9 @@ export const mockRepository: RecordingsRepository = {
         const latest = [...fard, ...taraweeh]
           .sort((a, b) => (b.addedAt ?? "").localeCompare(a.addedAt ?? ""))
           .slice(0, limit);
-        if (latest.length) return latest;
+        return latest;
       } catch (err) {
+        if (strict()) throw err;
         console.warn("youtube: fallback to mock recent", err);
       }
     }

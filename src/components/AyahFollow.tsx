@@ -67,6 +67,15 @@ export function AyahFollow({
   const [from, setFrom] = useState(() => clampAyah(initialFrom, firstAyah));
   const [to, setTo] = useState(() => clampAyah(initialTo ?? initialFrom, firstAyah));
   const [times, setTimes] = useState(3); // 0 = بلا توقف
+  // رابط "شارك المقطع" (?from=&to=): بيتقري في المتصفح
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const f = Number(q.get("from")) || undefined;
+    const t = Number(q.get("to")) || undefined;
+    if (!f) return;
+    setFrom(clampAyah(f, firstAyah));
+    setTo(clampAyah(t ?? f, firstAyah));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [repeat, setRepeat] = useState<{ round: number } | null>(null);
   const guard = useRef(0);
 

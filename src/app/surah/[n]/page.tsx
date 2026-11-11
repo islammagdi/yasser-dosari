@@ -10,6 +10,11 @@ import type { Recording } from "@/types";
 
 export const revalidate = 21600;
 
+// صفحات بتتبني أول ما حد يفتحها، وبعدين بتتخزن جاهزة (بدل ما تتبني من الأول مع كل زيارة)
+export function generateStaticParams() {
+  return [];
+}
+
 interface Props {
   params: { n: string };
 }

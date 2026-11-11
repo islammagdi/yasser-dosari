@@ -11,11 +11,15 @@ import { siteUrl } from "@/lib/site";
 
 interface Props {
   params: { category: string; id: string };
-  searchParams: { t?: string; from?: string; to?: string };
 }
 
 /** الصفحة بتتبني أول ما حد يفتحها، وبتتخزن ٦ ساعات */
 export const revalidate = 21600;
+
+// صفحات بتتبني أول ما حد يفتحها، وبعدين بتتخزن جاهزة (بدل ما تتبني من الأول مع كل زيارة)
+export function generateStaticParams() {
+  return [];
+}
 
 async function load(params: Props["params"]) {
   const category = getCategory(params.category);
@@ -110,12 +114,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function RecordingPage({ params, searchParams }: Props) {
+export default async function RecordingPage({ params }: Props) {
   const data = await load(params);
   if (!data) notFound();
   const { recording, all, category } = data;
   const more = related(recording, all);
-  const startAt = Math.max(0, Number(searchParams.t) || 0);
   const description = [recording.subtitle, `${category.title} بصوت الشيخ ياسر الدوسري`].filter(Boolean).join("، ");
 
   // نص السورة وتوقيت الآيات: للمصحف الصوتي من mp3quran بس (التوقيت مربوط بالتسجيل ده)
@@ -135,15 +138,13 @@ export default async function RecordingPage({ params, searchParams }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData(recording, category, description) }} />
       <div aria-hidden className="pattern-stars page-pattern" />
       <div className="flex flex-col gap-14">
-        <RecordingDetail recording={recording} queue={[recording, ...more]} startAt={startAt} />
+        <RecordingDetail recording={recording} queue={[recording, ...more]} />
         {text && (
           <AyahFollow
             recording={recording}
             ayahs={text.ayahs}
             basmala={text.basmala}
             timings={timings}
-            initialFrom={Number(searchParams.from) || undefined}
-            initialTo={Number(searchParams.to) || undefined}
           />
         )}
         {more.length > 0 && (

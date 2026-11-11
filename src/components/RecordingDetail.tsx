@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { Recording } from "@/types";
 import { getCategory } from "@/lib/categories";
 import { formatDuration, toArabicDigits } from "@/lib/format";
@@ -18,7 +19,12 @@ import { ShareBox } from "./ShareBox";
 import { HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
 /** رأس صفحة التلاوة: الغلاف والعنوان والتشغيل والمفضلة والمشاركة */
-export function RecordingDetail({ recording: r, queue, startAt }: { recording: Recording; queue: Recording[]; startAt: number }) {
+export function RecordingDetail({ recording: r, queue }: { recording: Recording; queue: Recording[] }) {
+  // "شارك من الدقيقة": ?t= بيتقري هنا في المتصفح، عشان الصفحة نفسها تتخزن جاهزة على السيرفر
+  const [startAt, setStartAt] = useState(0);
+  useEffect(() => {
+    setStartAt(Math.max(0, Number(new URLSearchParams(window.location.search).get("t")) || 0));
+  }, []);
   const p = usePlayer();
   // لو بدأها قبل كده: الزرار بيقول "أكمل من" وبيكمّل من مكانه
   const resumeSec = useProgressTime(r.id);
