@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { loadCatalog } from "@/lib/admin/catalog";
 import { adminManifest } from "@/lib/admin/manifest";
+import { fetchYoutubeMushaf } from "@/lib/api/youtube";
 import { normalizeArabic } from "@/lib/format";
 import { EntryRow, PendingRow, RefreshManifestButton, SyncButton } from "./rows";
 
@@ -22,9 +23,11 @@ interface Props {
 }
 
 export default async function AdminRecordingsPage({ searchParams }: Props) {
-  const [catalog, manifest] = await Promise.all([loadCatalog(), adminManifest()]);
+  const [catalog, manifest, mushaf] = await Promise.all([loadCatalog(), adminManifest(), fetchYoutubeMushaf().catch(() => [])]);
   const items = catalog?.items ?? {};
-  const pending = Object.entries(manifest).filter(([id]) => !items[id]);
+  // فيديوهات المصحف (المركز السعودي) ليها مكانها في قسم المصحف، فمش محتاجة تصنيف
+  const mushafIds = new Set(mushaf.map((r) => r.id.replace(/^yt-mushaf-/, "")));
+  const pending = Object.entries(manifest).filter(([id]) => !items[id] && !mushafIds.has(id));
   const tab = searchParams.tab === "all" ? "all" : "pending";
 
   const tabLink = (t: string, label: string) => (

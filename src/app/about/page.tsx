@@ -74,11 +74,7 @@ export default function AboutPage() {
         <div className="glass-card flex flex-col gap-2 rounded-3xl p-6">
           <p className="font-semibold">هذا موقع غير رسمي.</p>
           <p className="leading-8 text-muted">
-            لا يتبع الموقع للشيخ ياسر الدوسري، ولا لرئاسة الشؤون الدينية، ولا لأي جهة رسمية. الموقع الرسمي للشيخ هو{" "}
-            <a href="https://yaldosry.com" target="_blank" rel="noopener noreferrer" className="text-gold-soft underline underline-offset-4">
-              yaldosry.com
-            </a>
-            .
+            لا يتبع الموقع للشيخ ياسر الدوسري، ولا لرئاسة الشؤون الدينية، ولا لأي جهة رسمية، وإنما هو جهد تطوعي لجمع تلاواته في مكان واحد.
           </p>
         </div>
 

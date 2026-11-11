@@ -330,12 +330,14 @@ export async function fetchYoutubeMushaf(): Promise<Recording[]> {
       surah: n,
       title: `سورة ${surahName(n)}`,
       subtitle: "إنتاج المركز السعودي للتلاوات القرآنية",
-      versionLabel: "المركز السعودي (فيديو)",
+      versionLabel: "المركز السعودي",
       youtubeId: it.snippet.resourceId.videoId,
       audioUrl: "",
       imageUrl: (th.high ?? th.medium ?? th.default)?.url,
       searchText: t,
     });
   }
-  return out.sort((a, b) => (a.surah ?? 0) - (b.surah ?? 0));
+  // اللي اتحوّل لصوت على R2 بيتشغّل صوت، زي الفروض والتراويح
+  const manifest = await audioManifest();
+  return out.sort((a, b) => (a.surah ?? 0) - (b.surah ?? 0)).map((r) => withAudio(r, manifest));
 }
