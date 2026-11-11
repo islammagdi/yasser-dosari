@@ -42,7 +42,8 @@ function write(list: SavedItem[]) {
 export async function saveOffline(r: Recording, onProgress?: (pct: number) => void): Promise<void> {
   // نطلب من المتصفح ميمسحش الملفات لوحده لما المساحة تقل
   navigator.storage?.persist?.().catch(() => {});
-  const res = await fetch(r.audioUrl, { mode: "cors" });
+  // من غير cache: النسخة اللي المشغّل حمّلها قبل كده مفيهاش إذن CORS، فالحفظ بيفشل لو استخدمها
+  const res = await fetch(r.audioUrl, { mode: "cors", cache: "no-store" });
   if (!res.ok || !res.body) throw new Error(`تعذّر التحميل (${res.status})`);
   const total = Number(res.headers.get("Content-Length")) || 0;
   const reader = res.body.getReader();
