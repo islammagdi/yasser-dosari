@@ -6,6 +6,7 @@ import { RegisterSW } from "@/components/RegisterSW";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { themeInitScript } from "@/components/ThemeToggle";
+import { AdminShortcut } from "@/components/AdminShortcut";
 import "./globals.css";
 
 // رابط الموقع الأساسي: مهم عشان صور المشاركة على واتساب تبقى روابط كاملة
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <SiteFooter />
+          <AdminShortcut />
           <PlayerBar />
           <InstallPrompt />
         </PlayerProvider>
