@@ -73,7 +73,8 @@ export function SurahMap({ stats }: { stats: SurahStat[] }) {
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 rounded-[26px] border border-line bg-surface p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(32px,1fr))] gap-1.5 self-start sm:grid-cols-[repeat(auto-fill,minmax(38px,1fr))]">
+        <div className="flex min-w-0 flex-col gap-4 self-start">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(32px,1fr))] gap-1.5 sm:grid-cols-[repeat(auto-fill,minmax(38px,1fr))]">
           {stats.map((st) => {
             const isSel = st.n === selected;
             return (
@@ -92,6 +93,15 @@ export function SurahMap({ stats }: { stats: SurahStat[] }) {
               </button>
             );
           })}
+        </div>
+
+          {/* ملخص التغطية: جزء من الخريطة نفسها */}
+          <p className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-sm text-muted">
+            <span>{toArabicDigits(covered)} سورة من ١١٤ ليها تلاوات</span>
+            <Link href="/surah" className="font-semibold text-gold-soft underline-offset-4 hover:underline">
+              فهرس السور كامل
+            </Link>
+          </p>
         </div>
 
         {/* تفصيل السورة المختارة */}
@@ -122,12 +132,6 @@ export function SurahMap({ stats }: { stats: SurahStat[] }) {
         </div>
       </div>
 
-      <p className="text-sm text-muted">
-        {toArabicDigits(covered)} سورة من ١١٤ ليها تلاوات.{" "}
-        <Link href="/surah" className="font-semibold text-gold-soft underline-offset-4 hover:underline">
-          فهرس السور كامل
-        </Link>
-      </p>
     </section>
   );
 }
