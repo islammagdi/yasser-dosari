@@ -42,6 +42,15 @@ export function pushTopics(): PushTopics {
   return { recitations: true, imamate: true };
 }
 
+/** الزائر اختار الأنواع بنفسه قبل كده؟ (المشتركين قبل إضافة إشعار الإمامة: لأ) */
+export function hasChosenTopics(): boolean {
+  try {
+    return localStorage.getItem(TOPICS_KEY) !== null;
+  } catch {
+    return true;
+  }
+}
+
 /** تغيير الأنواع: بيتحفظ، ولو الجهاز مشترك بيتبعت للسيرفر */
 export async function setPushTopics(topics: PushTopics): Promise<void> {
   try {
@@ -73,6 +82,11 @@ export async function enablePush(): Promise<PushState> {
     body: JSON.stringify({ subscription: sub.toJSON(), topics: pushTopics() }),
   });
   if (!res.ok) throw new Error("subscribe failed");
+  try {
+    localStorage.setItem(TOPICS_KEY, JSON.stringify(pushTopics()));
+  } catch {
+    /* تجاهل */
+  }
   return "on";
 }
 

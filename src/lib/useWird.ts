@@ -8,6 +8,8 @@ const KEY = "yd-wird-v2";
 /** الخطة القديمة (بالسور): بنحوّلها مرة واحدة لخطة بالأجزاء بنفس المدة */
 const OLD_KEY = "yd-wird-v1";
 const KHATMAS_KEY = "yd-wird-khatmas";
+/** علامة لمرة واحدة: الخطة اتحوّلت من السور للأجزاء، عشان الكارت يشرح للزائر */
+const MIGRATED_KEY = "yd-wird-migrated";
 const EVENT = "yd-wird-change";
 /** الأيام اللي الورد فيها اكتمل: لسلسلة الأيام المتتالية */
 const STREAK_KEY = "yd-wird-days-v1";
@@ -71,6 +73,7 @@ function read(): Plan | null {
       const plan: Plan = { days, start: localToday(), done: [] };
       localStorage.setItem(KEY, JSON.stringify(plan));
       localStorage.removeItem(OLD_KEY);
+      localStorage.setItem(MIGRATED_KEY, "1");
       return plan;
     }
     return null;
@@ -105,11 +108,17 @@ export function useWird() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [ready, setReady] = useState(false);
   const [khatmas, setKhatmas] = useState(0);
+  const [migrated, setMigrated] = useState(false);
 
   useEffect(() => {
     const sync = () => {
       setPlan(read());
       setKhatmas(readKhatmas());
+      try {
+        setMigrated(localStorage.getItem(MIGRATED_KEY) === "1");
+      } catch {
+        setMigrated(false);
+      }
       setReady(true);
     };
     sync();
@@ -173,6 +182,15 @@ export function useWird() {
     }
   }, []);
 
+  const dismissMigrated = useCallback(() => {
+    try {
+      localStorage.removeItem(MIGRATED_KEY);
+    } catch {
+      /* تجاهل */
+    }
+    setMigrated(false);
+  }, []);
+
   const start = useCallback((days: number) => write({ days, start: localToday(), done: [] }), []);
   const stop = useCallback(() => write(null), []);
   const restart = start;
@@ -188,6 +206,8 @@ export function useWird() {
     doneToday,
     finished,
     completedKhatmas: khatmas,
+    migrated,
+    dismissMigrated,
     streak,
     markDone,
     start,

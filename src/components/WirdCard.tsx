@@ -216,6 +216,17 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
         </span>
       </div>
 
+      {w.migrated && (
+        <div className="flex items-start gap-3 rounded-2xl bg-gold/10 px-4 py-3 text-sm leading-6">
+          <p className="flex-1">
+            الورد بقى بالأجزاء: خطتك بقت {dailyAmountLabel(w.plan.days)} بنفس المدة، وبتبدأ من أول المصحف. وختمتك في صفحة المصحف زي ما هي.
+          </p>
+          <button type="button" onClick={w.dismissMigrated} aria-label="إخفاء" className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-fg/5 hover:text-text">
+            <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col gap-1">
         <p className="font-display text-xl font-bold">{allDone ? `الجاي: ${portion.label}` : portion.label}</p>
         <p className="text-sm text-muted">{portion.range}</p>
