@@ -85,7 +85,7 @@ export function InstallCard() {
                 ثبّت التطبيق
               </button>
             )}
-            <NotificationsButton label="فعّل الإشعارات" align="start" className="flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-semibold transition-colors hover:border-gold/60" />
+            <NotificationsButton label="فعّل الإشعارات" align="start" sheet className="flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-semibold transition-colors hover:border-gold/60" />
           </div>
         </div>
 

@@ -6,7 +6,21 @@ import { disablePush, enablePush, hasChosenTopics, pushState, pushTopics, setPus
 /** زرار الجرس: تفعيل الإشعارات واختيار أنواعها (تلاوات جديدة، بداية صلاة الشيخ) */
 /** label: نص جنب الأيقونة (للكارت في الرئيسية)؛ من غيره زرار أيقونة بس زي الهيدر */
 /** align: ناحية فتح القايمة؛ "end" للهيدر (الزرار على الشمال)، "start" للزرار اللي على اليمين */
-export function NotificationsButton({ className = "", label, align = "end" }: { className?: string; label?: string; align?: "start" | "end" }) {
+/**
+ * sheet: على الموبايل القايمة بتظهر كلوحة ثابتة تحت الشاشة (للزرار اللي في نص الصفحة).
+ * في الهيدر مينفعش، لأن الهيدر عليه backdrop-filter فـ fixed بيتحسب منه مش من الشاشة.
+ */
+export function NotificationsButton({
+  className = "",
+  label,
+  align = "end",
+  sheet = false,
+}: {
+  className?: string;
+  label?: string;
+  align?: "start" | "end";
+  sheet?: boolean;
+}) {
   const [state, setState] = useState<PushState | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,7 +92,13 @@ export function NotificationsButton({ className = "", label, align = "end" }: { 
       </button>
 
       {open && (
-        <div className={`glass absolute ${align === "start" ? "start-0" : "end-0"} top-full z-50 mt-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-3 rounded-2xl border border-fg/10 p-4 text-sm shadow-float`}>
+        <div
+          className={`glass z-[60] flex flex-col gap-3 rounded-2xl border border-fg/10 p-4 text-sm shadow-float ${
+            sheet
+              ? `!bg-raised fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:mt-2 sm:w-72 ${align === "start" ? "sm:start-0" : "sm:end-0"}`
+              : `absolute top-full mt-2 w-72 max-w-[calc(100vw-2rem)] ${align === "start" ? "start-0" : "end-0"}`
+          }`}
+        >
           <p className="font-semibold text-gold-soft">الإشعارات</p>
           {state === "on" && !topics.imamate && (
             <p className="rounded-xl bg-gold/10 px-3 py-2 leading-6 text-text">جديد: إشعار أول ما صلاة الشيخ تبدأ في الحرم، ومعاه رابط البث المباشر.</p>
