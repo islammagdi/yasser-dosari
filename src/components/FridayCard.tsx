@@ -44,7 +44,7 @@ export function FridayCard({ slots }: { slots: ImamateSlot[] }) {
             href={MAKKAH_LIVE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center rounded-full bg-gold px-5 text-sm font-semibold text-gold-ink hover:bg-gold-soft"
+            className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
           >
             شاهد البث المباشر
           </a>

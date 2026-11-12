@@ -20,7 +20,7 @@ export function RecordingCover({ recording, className = "", sizes = "64px", labe
   const lg = size === "lg";
 
   return (
-    <span className={`relative block overflow-hidden bg-gradient-to-br from-emerald to-surface ${className}`}>
+    <span className={`relative block overflow-hidden bg-gradient-to-br from-emerald to-deep ${className}`}>
       {src ? (
         <>
           <Image src={src} alt="" fill sizes={sizes} className="object-cover" />

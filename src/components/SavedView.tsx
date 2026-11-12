@@ -56,7 +56,7 @@ export function SavedView() {
             {items.length} تلاوة · {formatSize(off.totalSize)}
             {quota && ` · المساحة المتاحة للموقع: ${formatSize(Math.max(0, quota.quota - quota.usage))}`}
           </span>
-          <button type="button" onClick={() => player.playQueue(queue, 0)} className="min-h-11 rounded-full bg-gold px-5 font-semibold text-gold-ink hover:bg-gold-soft">
+          <button type="button" onClick={() => player.playQueue(queue, 0)} className="min-h-11 rounded-full bg-accent px-5 font-semibold text-accent-ink hover:bg-accent-hover">
             تشغيل الكل
           </button>
         </div>
@@ -83,7 +83,7 @@ export function SavedView() {
                   type="button"
                   onClick={() => player.playQueue(queue, i)}
                   aria-label={`${playing ? "إيقاف" : "تشغيل"} ${rec.title}`}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink hover:bg-gold-soft"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink hover:bg-accent-hover"
                 >
                   {playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
                 </button>

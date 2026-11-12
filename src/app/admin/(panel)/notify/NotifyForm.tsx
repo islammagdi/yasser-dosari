@@ -28,7 +28,7 @@ export function NotifyForm({ preset }: { preset: { title: string; body: string; 
       </label>
 
       {/* معاينة شكل الإشعار */}
-      <div className="flex items-start gap-3 rounded-2xl bg-white/5 p-3">
+      <div className="flex items-start gap-3 rounded-2xl bg-fg/5 p-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/icon-192.png" alt="" className="h-10 w-10 rounded-lg" />
         <div className="min-w-0">
@@ -42,7 +42,7 @@ export function NotifyForm({ preset }: { preset: { title: string; body: string; 
           type="button"
           disabled={pending}
           onClick={() => window.confirm("إرسال الإشعار لكل المشتركين؟") && start(async () => setR(await sendPush(title, body, url)))}
-          className="min-h-12 rounded-full bg-gold px-8 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50"
+          className="min-h-12 rounded-full bg-accent px-8 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
         >
           {pending ? "جارٍ الإرسال…" : "إرسال"}
         </button>

@@ -70,6 +70,11 @@ export interface Recording {
   /** ISO date: "2025-03-14" */
   date?: string;
   durationSec?: number;
+  /**
+   * تشغيل جزء من الملف بس (للورد بالأجزاء): من start لحد end بالثواني.
+   * tag بيتبعت في حدث "yd-clip-ended" لما المقطع يخلص.
+   */
+  clip?: { start: number; end?: number; tag?: string };
   audioUrl: string;
   /** لو التسجيل من يوتيوب: بيتشغّل في مشغّل يوتيوب الصغير بدل الصوت */
   youtubeId?: string;

@@ -60,7 +60,7 @@ export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
     setOpen(false);
   };
 
-  const item = "flex min-h-11 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-white/5";
+  const item = "flex min-h-11 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-fg/5";
 
   return (
     <div className="self-start">

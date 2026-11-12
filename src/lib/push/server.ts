@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import webpush from "web-push";
 import { deleteKey, getFresh, listKeys, putJson } from "@/lib/admin/r2";
+import { recordings } from "@/lib/api";
+import { makkahTime, makkahToday, prayerTitle } from "@/lib/imamate";
+import { MAKKAH_LIVE_URL } from "@/lib/site";
 
 /**
  * إشعارات الويب (Web Push): الاشتراكات محفوظة على R2، كل جهاز في ملف لوحده.
@@ -11,7 +14,7 @@ const PREFIX = "push/subs/";
 export interface StoredSub {
   subscription: webpush.PushSubscription;
   /** الأنواع اللي الجهاز مشترك فيها */
-  topics: { recitations?: boolean };
+  topics: { recitations?: boolean; imamate?: boolean };
   createdAt: string;
 }
 
@@ -165,4 +168,39 @@ export async function sendDueWirdReminders(now = new Date()): Promise<{ checked:
     );
   }
   return { checked: keys.length, sent, removed };
+}
+
+// ---------- إمامة الشيخ في الحرم ----------
+// أول ما صلاة بإمامة الشيخ تبدأ (وقت الأذان بتوقيت مكة) بيتبعت إشعار فيه رابط البث المباشر.
+// علامة في push/imamate-sent/ بتمنع إن نفس الصلاة يتبعتلها مرتين لو المهمة اشتغلت أكتر من مرة.
+
+const IMAMATE_SENT_PREFIX = "push/imamate-sent/";
+/** لو المهمة اتأخرت أكتر من كده عن بداية الصلاة، مبنبعتش (الصلاة غالبًا خلصت) */
+const IMAMATE_LATE_MIN = 20;
+
+const toMin = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
+
+export async function sendDueImamateAlerts(now = new Date()): Promise<{ slot?: string; sent: number; removed: number; failed: number }> {
+  const today = makkahToday(now);
+  const nowMin = toMin(makkahTime(now));
+  const slots = await recordings.imamate();
+  const slot = slots.find(
+    (s) => !s.backup && s.date === today && s.start && nowMin >= toMin(s.start) && nowMin - toMin(s.start) <= IMAMATE_LATE_MIN,
+  );
+  if (!slot) return { sent: 0, removed: 0, failed: 0 };
+
+  const marker = `${IMAMATE_SENT_PREFIX}${slot.date}-${slot.prayer}.json`;
+  if (await getFresh(marker)) return { slot: marker, sent: 0, removed: 0, failed: 0 };
+  // العلامة قبل الإرسال: لو مهمتين اشتغلوا مع بعض، التانية مش هتبعت تاني
+  await putJson(marker, { sentAt: now.toISOString() });
+
+  const result = await broadcast("imamate", {
+    title: `بدأت ${prayerTitle(slot.prayer)} بإمامة الشيخ ياسر الدوسري`,
+    body: "تابع البث المباشر من المسجد الحرام الآن",
+    url: MAKKAH_LIVE_URL,
+  });
+  return { slot: marker, ...result };
 }

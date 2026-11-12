@@ -42,7 +42,7 @@ export default async function SurahReadPage({ params }: Props) {
     text = null;
   }
 
-  const nav = "glass-card flex min-h-12 flex-1 items-center gap-2 rounded-2xl px-4 text-sm transition-colors hover:bg-white/5";
+  const nav = "glass-card flex min-h-12 flex-1 items-center gap-2 rounded-2xl px-4 text-sm transition-colors hover:bg-fg/5";
 
   return (
     <>
@@ -65,7 +65,7 @@ export default async function SurahReadPage({ params }: Props) {
           </div>
           <Link
             href={`/mushaf/mushaf-${String(n).padStart(3, "0")}`}
-            className="flex min-h-11 items-center gap-2 rounded-full bg-gold px-5 text-sm font-semibold text-gold-ink transition-opacity hover:opacity-90"
+            className="flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90"
           >
             <span aria-hidden>▶</span>
             استمع بصوت الشيخ

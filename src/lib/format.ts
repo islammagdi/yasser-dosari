@@ -33,3 +33,10 @@ export function normalizeArabic(text: string): string {
     .toLowerCase()
     .trim();
 }
+
+/** "تلاوة واحدة"، "تلاوتين"، "٥ تلاوات"، "١٢ تلاوة" */
+export function recitationsLabel(n: number): string {
+  if (n === 1) return "تلاوة واحدة";
+  if (n === 2) return "تلاوتين";
+  return `${toArabicDigits(n)} ${n >= 3 && n <= 10 ? "تلاوات" : "تلاوة"}`;
+}

@@ -58,7 +58,7 @@ export function DailyRecitation({ pool, pinned }: { pool: Recording[]; pinned: R
           type="button"
           onClick={() => playQueue([r], 0)}
           aria-label={`${playingNow ? "إيقاف" : "تشغيل"} ${title}`}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-gold text-gold-ink transition-colors hover:bg-gold-soft"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover"
         >
           {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
         </button>

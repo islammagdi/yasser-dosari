@@ -79,19 +79,19 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
               onClick={() => setActive(s.slug)}
               className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[15px] font-semibold transition-colors sm:min-h-14 sm:rounded-none sm:border-0 sm:border-b-2 sm:px-1 sm:text-lg ${
                 selected
-                  ? "border-gold bg-gold text-gold-ink sm:border-gold sm:bg-transparent sm:text-text"
+                  ? "border-gold bg-accent text-accent-ink sm:border-gold sm:bg-transparent sm:text-text"
                   : "border-line-strong text-text hover:border-gold/40 sm:border-transparent sm:text-muted sm:hover:text-text"
               }`}
             >
               {s.title}
               {fresh > 0 && (
-                <span className="h-2 w-2 shrink-0 rounded-full bg-gold" title={`${toArabicDigits(fresh)} جديد منذ زيارتك الأخيرة`}>
+                <span className="h-2 w-2 shrink-0 rounded-full bg-accent" title={`${toArabicDigits(fresh)} جديد منذ زيارتك الأخيرة`}>
                   <span className="sr-only">({toArabicDigits(fresh)} جديد)</span>
                 </span>
               )}
               <span
                 className={`rounded-full px-2 text-xs font-medium leading-5 ${
-                  selected ? "bg-gold-ink/10 text-gold-ink sm:bg-gold/15 sm:text-gold-soft" : "bg-white/5 text-muted"
+                  selected ? "bg-accent-ink/10 text-accent-ink sm:bg-gold/15 sm:text-gold-soft" : "bg-fg/5 text-muted"
                 }`}
               >
                 {toArabicDigits(s.total)}

@@ -29,7 +29,7 @@ export function SyncButton({ label }: { label: string }) {
         type="button"
         disabled={pending}
         onClick={() => start(async () => setR(await syncFromPlaylists()))}
-        className="min-h-11 self-start rounded-full bg-gold px-5 text-sm font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50"
+        className="min-h-11 self-start rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
       >
         {pending ? "جارٍ الجلب من يوتيوب… (قد يستغرق دقيقة)" : label}
       </button>
@@ -97,7 +97,7 @@ export function PendingRow({ id, title, duration }: { id: string; title?: string
           type="button"
           disabled={pending}
           onClick={() => start(async () => setR(await classifyPending(id, section, name)))}
-          className="min-h-11 rounded-full bg-gold px-5 text-sm font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50"
+          className="min-h-11 rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
         >
           {pending ? "جارٍ الحفظ…" : "حفظ"}
         </button>
@@ -188,7 +188,7 @@ export function EntryRow({ id, entry }: { id: string; entry: CatalogEntry }) {
                   ),
                 )
               }
-              className="min-h-11 rounded-full bg-gold px-6 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50"
+              className="min-h-11 rounded-full bg-accent px-6 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
             >
               {pending ? "جارٍ الحفظ…" : "حفظ"}
             </button>

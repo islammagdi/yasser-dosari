@@ -23,6 +23,52 @@ export async function pushState(): Promise<PushState> {
   return sub ? "on" : "off";
 }
 
+export interface PushTopics {
+  /** تلاوة جديدة اتضافت */
+  recitations: boolean;
+  /** صلاة بإمامة الشيخ بدأت في الحرم، مع رابط البث */
+  imamate: boolean;
+}
+const TOPICS_KEY = "yd-push-topics";
+
+/** الأنواع اللي الزائر اختارها (الافتراضي: الاتنين) */
+export function pushTopics(): PushTopics {
+  try {
+    const v = JSON.parse(localStorage.getItem(TOPICS_KEY) ?? "null");
+    if (v && typeof v.recitations === "boolean" && typeof v.imamate === "boolean") return v;
+  } catch {
+    /* تجاهل */
+  }
+  return { recitations: true, imamate: true };
+}
+
+/** الزائر اختار الأنواع بنفسه قبل كده؟ (المشتركين قبل إضافة إشعار الإمامة: لأ) */
+export function hasChosenTopics(): boolean {
+  try {
+    return localStorage.getItem(TOPICS_KEY) !== null;
+  } catch {
+    return true;
+  }
+}
+
+/** تغيير الأنواع: بيتحفظ، ولو الجهاز مشترك بيتبعت للسيرفر */
+export async function setPushTopics(topics: PushTopics): Promise<void> {
+  try {
+    localStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+  } catch {
+    /* تجاهل */
+  }
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return;
+  const res = await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscription: sub.toJSON(), topics }),
+  });
+  if (!res.ok) throw new Error("subscribe failed");
+}
+
 export async function enablePush(): Promise<PushState> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
@@ -33,9 +79,14 @@ export async function enablePush(): Promise<PushState> {
   const res = await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ subscription: sub.toJSON(), topics: { recitations: true } }),
+    body: JSON.stringify({ subscription: sub.toJSON(), topics: pushTopics() }),
   });
   if (!res.ok) throw new Error("subscribe failed");
+  try {
+    localStorage.setItem(TOPICS_KEY, JSON.stringify(pushTopics()));
+  } catch {
+    /* تجاهل */
+  }
   return "on";
 }
 

@@ -82,16 +82,16 @@ export function TransferView() {
           <>
             <ul className="flex flex-wrap gap-2 text-sm">
               {mySummary.map((s) => (
-                <li key={s} className="rounded-full bg-white/5 px-3 py-1">{s}</li>
+                <li key={s} className="rounded-full bg-fg/5 px-3 py-1">{s}</li>
               ))}
             </ul>
             <div className="flex flex-wrap gap-2">
               {canShare && (
-                <button type="button" onClick={share} className={`${btn} bg-gold text-gold-ink hover:bg-gold-soft`}>
+                <button type="button" onClick={share} className={`${btn} bg-accent text-accent-ink hover:bg-accent-hover`}>
                   إرسال الكود (واتساب وغيره)
                 </button>
               )}
-              <button type="button" onClick={copy} className={`${btn} ${canShare ? "border border-line-strong text-gold-soft" : "bg-gold text-gold-ink hover:bg-gold-soft"}`}>
+              <button type="button" onClick={copy} className={`${btn} ${canShare ? "border border-line-strong text-gold-soft" : "bg-accent text-accent-ink hover:bg-accent-hover"}`}>
                 {copied ? "تم النسخ ✓" : "نسخ الكود"}
               </button>
               <button type="button" onClick={download} className={`${btn} border border-line-strong text-gold-soft`}>
@@ -125,11 +125,11 @@ export function TransferView() {
             <p className="font-semibold">سيتم نقل:</p>
             <ul className="flex flex-wrap gap-2 text-sm">
               {summarize(incoming).map((s) => (
-                <li key={s} className="rounded-full bg-white/5 px-3 py-1">{s}</li>
+                <li key={s} className="rounded-full bg-fg/5 px-3 py-1">{s}</li>
               ))}
             </ul>
             <p className="text-sm text-muted">ستحلّ هذه البيانات محل الموجود على هذا الجهاز.</p>
-            <button type="button" onClick={apply} className={`${btn} self-start bg-gold text-gold-ink hover:bg-gold-soft`}>
+            <button type="button" onClick={apply} className={`${btn} self-start bg-accent text-accent-ink hover:bg-accent-hover`}>
               نقل البيانات
             </button>
           </div>

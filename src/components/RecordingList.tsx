@@ -76,7 +76,7 @@ function Segmented<T extends string | number>({
               aria-pressed={active}
               onClick={() => onChange(o.value)}
               className={`min-h-11 shrink-0 whitespace-nowrap rounded-full px-5 text-[15px] transition-colors ${
-               active ? "bg-gold font-semibold text-gold-ink" : "text-muted hover:bg-white/5 hover:text-text"
+               active ? "bg-accent font-semibold text-accent-ink" : "text-muted hover:bg-fg/5 hover:text-text"
               }`}
             >
               {o.label}
@@ -295,7 +295,7 @@ export function RecordingList({
                   <li className="hidden p-2 sm:block">
                     <Link
                       href={more.href}
-                      className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-2xl border border-line-strong p-4 text-center transition-colors hover:border-gold/50 hover:bg-white/[0.03]"
+                      className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-2xl border border-line-strong p-4 text-center transition-colors hover:border-gold/50 hover:bg-fg/[0.03]"
                     >
                       {more.remaining > 0 && (
                         <span dir="ltr" className="font-display text-3xl font-bold leading-tight text-text">

@@ -47,7 +47,7 @@ export function FridayKahf({ kahf }: { kahf: Recording | null }) {
         type="button"
         onClick={() => (isCurrent ? p.toggle() : p.playQueue([kahf], 0))}
         aria-label={playingNow ? "إيقاف سورة الكهف" : "تشغيل سورة الكهف"}
-        className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft"
+        className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink shadow-glow transition-colors hover:bg-accent-hover"
       >
         {playingNow ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
       </button>

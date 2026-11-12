@@ -109,7 +109,7 @@ export function FridaysEditor({ initial }: { initial: ImamateFriday[] }) {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={save} disabled={saving} className="min-h-12 rounded-full bg-gold px-8 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50">
+        <button type="button" onClick={save} disabled={saving} className="min-h-12 rounded-full bg-accent px-8 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50">
           {saving ? "جارٍ الحفظ…" : "حفظ الجُمَع"}
         </button>
         {dirty && !result && <span className="text-sm text-gold-soft">توجد تعديلات لم تُحفظ بعد</span>}

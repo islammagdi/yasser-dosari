@@ -36,7 +36,7 @@ export function PlaylistsView() {
           placeholder="اسم القائمة الجديدة"
           className="min-h-12 min-w-0 flex-1 rounded-full border border-line-strong bg-ink px-5 text-text"
         />
-        <button type="submit" disabled={!name.trim()} className="min-h-12 rounded-full bg-gold px-6 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-40">
+        <button type="submit" disabled={!name.trim()} className="min-h-12 rounded-full bg-accent px-6 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-40">
           إنشاء
         </button>
       </form>
@@ -72,7 +72,7 @@ function PlaylistItem({ p, open, onToggle }: { p: Playlist; open: boolean; onTog
           onClick={() => p.items.length && player.playQueue(p.items, 0)}
           disabled={!p.items.length}
           aria-label={`تشغيل ${p.name}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink hover:bg-gold-soft disabled:opacity-40"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink hover:bg-accent-hover disabled:opacity-40"
         >
           {playingHere ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
         </button>
@@ -86,7 +86,7 @@ function PlaylistItem({ p, open, onToggle }: { p: Playlist; open: boolean; onTog
             className="flex min-w-0 flex-1 gap-2"
           >
             <input value={name} onChange={(e) => setName(e.target.value)} autoFocus className="min-h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-ink px-3 text-text" />
-            <button type="submit" className="min-h-11 rounded-xl bg-gold px-3 text-sm font-semibold text-gold-ink">حفظ</button>
+            <button type="submit" className="min-h-11 rounded-xl bg-accent px-3 text-sm font-semibold text-accent-ink">حفظ</button>
           </form>
         ) : (
           <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-w-0 flex-1 flex-col text-start">
@@ -105,7 +105,7 @@ function PlaylistItem({ p, open, onToggle }: { p: Playlist; open: boolean; onTog
           ) : (
             <ol className="flex flex-col gap-1">
               {p.items.map((r, i) => (
-                <li key={r.id} className="flex items-center gap-3 rounded-2xl p-2 hover:bg-white/5">
+                <li key={r.id} className="flex items-center gap-3 rounded-2xl p-2 hover:bg-fg/5">
                   <button type="button" onClick={() => player.playQueue(p.items, i)} aria-label={`تشغيل ${r.title}`} className="shrink-0">
                     <RecordingCover recording={r} sizes="48px" className="h-12 w-12 rounded-xl" />
                   </button>

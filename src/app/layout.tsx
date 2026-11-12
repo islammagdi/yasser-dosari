@@ -5,6 +5,7 @@ import { PlayerProvider } from "@/components/PlayerProvider";
 import { RegisterSW } from "@/components/RegisterSW";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { themeInitScript } from "@/components/ThemeToggle";
 import "./globals.css";
 
 // رابط الموقع الأساسي: مهم عشان صور المشاركة على واتساب تبقى روابط كاملة
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0F1714",
+  themeColor: "#F4EEE1",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -45,12 +46,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${amiri.variable} ${plex.variable} ${amiriQuran.variable} ${ruqaa.variable}`}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${amiri.variable} ${plex.variable} ${amiriQuran.variable} ${ruqaa.variable}`}>
+      <head>
+        {/* لازم يشتغل قبل أول رسم، عشان اللي اختار الغامق ميشوفش وميض فاتح */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         <div aria-hidden className="ambient" />
         <RegisterSW />
         <PlayerProvider>
-          <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-30 focus:rounded-lg focus:bg-gold focus:px-4 focus:py-2 focus:text-gold-ink">
+          <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-30 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-ink">
             تخطَّ إلى المحتوى
           </a>
           <SiteHeader />

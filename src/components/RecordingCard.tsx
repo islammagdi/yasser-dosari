@@ -56,7 +56,7 @@ export function RecordingCard({
     <li
       className={`group relative flex min-w-0 gap-3 rounded-3xl p-2 transition-colors ${
         row ? "flex-row items-center sm:flex-col sm:items-stretch" : "flex-col"
-      } ${isCurrent ? "bg-white/[0.07] ring-1 ring-inset ring-gold/40" : "hover:bg-white/5"}`}
+      } ${isCurrent ? "bg-fg/[0.07] ring-1 ring-inset ring-gold/40" : "hover:bg-fg/5"}`}
     >
       <Link href={`/${recording.category}/${recording.id}`} aria-label={recording.title} className="absolute inset-0 rounded-3xl" />
 
@@ -86,14 +86,14 @@ export function RecordingCard({
         )}
         {/* اتضاف بعد آخر زيارة */}
         {isNew && (
-          <span className="absolute bottom-2 start-2 rounded-full bg-gold px-2 py-0.5 text-[11px] font-bold text-gold-ink sm:text-xs">
+          <span className="absolute bottom-2 start-2 rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-accent-ink sm:text-xs">
             جديد
           </span>
         )}
         {/* شريط التقدّم لو بدأها ومكمّلهاش */}
         {progress > 0 && (
-          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/15">
-            <span className="block h-full bg-gold" style={{ width: `${Math.round(progress * 100)}%` }} />
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-fg/15">
+            <span className="block h-full bg-accent" style={{ width: `${Math.round(progress * 100)}%` }} />
           </span>
         )}
         {playingNow && (
@@ -109,7 +109,7 @@ export function RecordingCard({
           aria-label={playLabel}
           className={`pointer-events-auto absolute bottom-2 end-2 h-12 w-12 items-center justify-center rounded-full shadow-float transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
             row ? "hidden sm:flex" : "flex"
-          } ${isCurrent ? "bg-gold text-gold-ink" : "bg-ink/80 text-text hover:bg-gold hover:text-gold-ink"}`}
+          } ${isCurrent ? "bg-accent text-accent-ink" : "bg-ink/80 text-text hover:bg-accent hover:text-accent-ink"}`}
         >
           {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
         </button>
@@ -154,7 +154,7 @@ export function RecordingCard({
           disabled={unavailable}
           aria-label={playLabel}
           className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:hidden ${
-            isCurrent ? "border-gold bg-gold text-gold-ink" : "border-gold/50 text-gold"
+            isCurrent ? "border-gold bg-accent text-accent-ink" : "border-gold/50 text-gold"
           }`}
         >
           {playingNow ? <PauseIcon className="h-[18px] w-[18px]" /> : <PlayIcon className="h-[18px] w-[18px]" />}

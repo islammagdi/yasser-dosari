@@ -211,10 +211,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const next = useCallback(() => {
     if (index + 1 >= queue.length) return;
     autoplay.current = true;
-    resumeAt.current = getProgressTime(queue[index + 1].id);
+    const nx = queue[index + 1];
+    resumeAt.current = nx.clip ? nx.clip.start : getProgressTime(nx.id);
     setIndex(index + 1);
   }, [index, queue]);
   const handleEnded = () => {
+    // مقطع من الورد خلص: الكارت بيسمع الحدث ده ويعلّم الورد
+    if (current?.clip?.tag) window.dispatchEvent(new CustomEvent("yd-clip-ended", { detail: current.clip.tag }));
     // تايمر "نهاية التلاوة": نقف هنا ومنكمّلش على اللي بعدها
     if (sleep?.kind === "end") {
       setSleep(null);
@@ -224,15 +227,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (repeatLeftRef.current !== Infinity) setLeft(repeatLeftRef.current - 1);
       const m = media();
       if (m) {
-        m.seek(0);
+        const from = current?.clip?.start ?? 0;
+        clipEndedRef.current = false;
+        m.seek(from);
         m.play();
-        setCurrentTime(0);
+        setCurrentTime(from);
       }
     } else if (index < queue.length - 1) next();
     else setIsPlaying(false);
   };
   const endedRef = useRef(handleEnded);
   endedRef.current = handleEnded;
+  // عشان نهاية المقطع متتنادىش أكتر من مرة قبل ما اللي بعده يحمّل
+  const clipEndedRef = useRef(false);
+  useEffect(() => {
+    clipEndedRef.current = false;
+  }, [current]);
 
   // تلاوة جديدة: التكرار بيتلغي (كان للتلاوة اللي قبلها)
   useEffect(() => {
@@ -357,13 +367,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!target) return;
     // نفس التسجيل؟ يبقى toggle
     const m = media();
+    const sameClip = (target.clip?.tag ?? "") === (current?.clip?.tag ?? "");
     if (current && target.id === current.id && m) {
-      if (m.paused()) m.play();
-      else m.pause();
+      if (sameClip) {
+        if (m.paused()) m.play();
+        else m.pause();
+        return;
+      }
+      // نفس الملف بس مقطع تاني (الورد): مفيش تحميل جديد، فبنقفز للبداية بإيدينا
+      setQueue(items);
+      setIndex(startIndex);
+      m.seek(startAt ?? target.clip?.start ?? 0);
+      m.play();
       return;
     }
     autoplay.current = true;
-    resumeAt.current = startAt ?? getProgressTime(target.id);
+    resumeAt.current = startAt ?? (target.clip ? target.clip.start : getProgressTime(target.id));
     setQueue(items);
     setIndex(startIndex);
   }, [current, media]);
@@ -476,14 +495,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         aria-hidden={!videoOpen}
         className={
           videoOpen
-            ? "glass fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] start-3 z-40 rounded-2xl border border-white/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
+            ? "glass fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] start-3 z-40 rounded-2xl border border-fg/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
             : "pointer-events-none fixed bottom-0 left-0 -z-10 w-[min(420px,100vw)] opacity-0"
         }
       >
         {/* الموبايل: مربع صغير في الركن بأقل مقاس يوتيوب بيسمح بيه، والعنوان موجود أصلًا في المشغّل تحت */}
         <div className="flex items-center justify-end gap-2 md:justify-between md:px-4 md:pb-2 md:pt-3">
           <span className="hidden min-w-0 items-center gap-2 text-xs text-muted md:flex">
-            <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+            <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
             يُشغَّل الآن من يوتيوب
           </span>
           <button
@@ -491,7 +510,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             onClick={closeVideo}
             tabIndex={videoOpen ? 0 : -1}
             aria-label="إغلاق الفيديو وإيقاف التلاوة"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/10 hover:text-text md:h-10 md:w-10"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-fg/10 hover:text-text md:h-10 md:w-10"
           >
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -523,7 +542,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             resumeAt.current = null;
           }
         }}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onTimeUpdate={(e) => {
+          const t = e.currentTarget.currentTime;
+          setCurrentTime(t);
+          // نهاية المقطع (الورد بالأجزاء): بنعتبره خلص زي نهاية الملف
+          const end = current?.clip?.end;
+          if (end && t >= end && !clipEndedRef.current) {
+            clipEndedRef.current = true;
+            endedRef.current();
+          }
+        }}
         onEnded={() => endedRef.current()}
         onError={() => {
           if (current?.audioUrl) {

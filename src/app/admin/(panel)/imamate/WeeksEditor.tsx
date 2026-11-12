@@ -24,7 +24,7 @@ function RoleChip({ prayer, role, onClick }: { prayer: ImamatePrayer; role: Role
       onClick={onClick}
       title="اضغط للتبديل: إمام ← احتياطي ← بدون"
       className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors ${
-        role === "imam" ? "bg-gold text-gold-ink" : role === "backup" ? "border border-dashed border-gold text-gold-soft" : "border border-line-strong text-muted hover:text-text"
+        role === "imam" ? "bg-accent text-accent-ink" : role === "backup" ? "border border-dashed border-gold text-gold-soft" : "border border-line-strong text-muted hover:text-text"
       }`}
     >
       {IMAMATE_PRAYER_LABELS[prayer]}
@@ -168,7 +168,7 @@ export function WeeksEditor({ initial }: { initial: ImamateWeek[] }) {
       </section>
 
       <div className="sticky bottom-24 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-ink/95 p-3 backdrop-blur">
-        <button type="button" onClick={save} disabled={saving} className="min-h-12 rounded-full bg-gold px-8 font-semibold text-gold-ink hover:bg-gold-soft disabled:opacity-50">
+        <button type="button" onClick={save} disabled={saving} className="min-h-12 rounded-full bg-accent px-8 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50">
           {saving ? "جارٍ الحفظ…" : "حفظ"}
         </button>
         {dirty && !result && <span className="text-sm text-gold-soft">توجد تعديلات لم تُحفظ بعد</span>}

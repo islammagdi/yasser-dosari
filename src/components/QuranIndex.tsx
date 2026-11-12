@@ -25,7 +25,7 @@ export function QuranIndex({ surahs }: { surahs: SurahInfo[] }) {
       aria-selected={tab === t}
       onClick={() => setTab(t)}
       className={`min-h-11 flex-1 rounded-full px-5 text-[15px] transition-colors sm:flex-none ${
-        tab === t ? "bg-gold font-semibold text-gold-ink" : "text-muted hover:bg-white/5 hover:text-text"
+        tab === t ? "bg-accent font-semibold text-accent-ink" : "text-muted hover:bg-fg/5 hover:text-text"
       }`}
     >
       {label}
@@ -108,7 +108,7 @@ function SurahsTab({ surahs, q, setQ, last }: { surahs: SurahInfo[]; q: string; 
             <li key={s.n}>
               <Link
                 href={`/quran/${s.n}`}
-                className={`glass-card flex min-h-[72px] items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:border-gold/40 hover:bg-white/5 ${
+                className={`glass-card flex min-h-[72px] items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:border-gold/40 hover:bg-fg/5 ${
                   last === s.n ? "border border-gold/40" : ""
                 }`}
               >
@@ -181,7 +181,7 @@ function AyahResults({ q, noSurahs }: { q: string; noSurahs: boolean }) {
             <li key={`${h.surah}:${h.ayah}`}>
               <Link
                 href={readHref(h.surah, h.ayah)}
-                className="glass-card flex flex-col gap-2 rounded-2xl px-5 py-4 transition-colors hover:border-gold/40 hover:bg-white/5"
+                className="glass-card flex flex-col gap-2 rounded-2xl px-5 py-4 transition-colors hover:border-gold/40 hover:bg-fg/5"
               >
                 <span className="text-xs font-semibold text-gold-soft">
                   سورة {surahName(h.surah)} · الآية {toArabicDigits(h.ayah)}
@@ -206,7 +206,7 @@ function JuzTab() {
         <li key={i}>
           <Link
             href={readHref(s, a)}
-            className="glass-card flex min-h-[72px] items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:border-gold/40 hover:bg-white/5"
+            className="glass-card flex min-h-[72px] items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:border-gold/40 hover:bg-fg/5"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gold/30 text-sm font-semibold text-gold-soft">
               {toArabicDigits(i + 1)}

@@ -107,7 +107,7 @@ export function InstallPrompt() {
   return (
     <aside
       aria-label="تثبيت الموقع"
-      className="glass fixed inset-x-3 z-50 mx-auto max-w-md rounded-3xl border border-white/10 p-4 shadow-float"
+      className="glass fixed inset-x-3 z-50 mx-auto max-w-md rounded-3xl border border-fg/10 p-4 shadow-float"
       style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
     >
       <div className="flex items-start gap-3">
@@ -135,7 +135,7 @@ export function InstallPrompt() {
           type="button"
           onClick={dismiss}
           aria-label="إغلاق"
-          className="-me-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted hover:bg-white/10 hover:text-text"
+          className="-me-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted hover:bg-fg/10 hover:text-text"
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <path d="M6 6l12 12M18 6 6 18" />
@@ -144,7 +144,7 @@ export function InstallPrompt() {
       </div>
       {mode === "android" && (
         <div className="mt-3 flex gap-2">
-          <button type="button" onClick={install} className="min-h-11 flex-1 rounded-full bg-gold font-semibold text-gold-ink hover:bg-gold-soft">
+          <button type="button" onClick={install} className="min-h-11 flex-1 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover">
             تثبيت
           </button>
           <button type="button" onClick={dismiss} className="min-h-11 rounded-full px-4 text-sm text-muted hover:text-text">
@@ -159,7 +159,7 @@ export function InstallPrompt() {
 /** أيقونة المشاركة في سفاري: مربع وسهم لفوق */
 function ShareIcon() {
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-gold-soft" aria-label="زر المشاركة">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-fg/10 text-gold-soft" aria-label="زر المشاركة">
       <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3v12M8 7l4-4 4 4" />
         <path d="M6 11v9h12v-9" />
@@ -171,7 +171,7 @@ function ShareIcon() {
 /** أيقونة "إضافة إلى الشاشة الرئيسية": مربع فيه + */
 function AddIcon() {
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-gold-soft" aria-hidden>
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-fg/10 text-gold-soft" aria-hidden>
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
         <rect x="4" y="4" width="16" height="16" rx="3" />
         <path d="M12 8v8M8 12h8" />

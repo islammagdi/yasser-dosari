@@ -92,9 +92,9 @@ export function RecordingDetail({ recording: r, queue }: { recording: Recording;
             type="button"
             onClick={() => (isCurrent ? p.toggle() : p.playQueue(queue, 0, startAt || undefined))}
             disabled={!isPlayable(r)}
-            className="flex min-h-14 items-center gap-3 rounded-full bg-gold pe-7 ps-2 text-lg font-semibold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft disabled:opacity-40 disabled:shadow-none"
+            className="flex min-h-14 items-center gap-3 rounded-full bg-accent pe-7 ps-2 text-lg font-semibold text-accent-ink shadow-glow transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:shadow-none"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gold-ink text-gold">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-ink text-accent">
               {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
             </span>
             {playingNow

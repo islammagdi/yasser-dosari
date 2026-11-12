@@ -6,7 +6,7 @@ import type { Ayah, AyahTiming } from "@/lib/api/quranText";
 import { toArabicDigits } from "@/lib/format";
 import { usePlayer } from "./PlayerProvider";
 
-const selectClass = "min-h-11 rounded-xl border border-white/10 bg-surface px-3 text-text";
+const selectClass = "min-h-11 rounded-xl border border-fg/10 bg-surface px-3 text-text";
 
 const BASMALA = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
 
@@ -142,7 +142,7 @@ export function AyahFollow({
       </div>
 
       {timed.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 p-4">
+        <div className="flex flex-col gap-3 rounded-2xl border border-fg/10 p-4">
           <span className="text-sm font-semibold text-gold-soft">تكرار للحفظ</span>
           {repeat ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -176,7 +176,7 @@ export function AyahFollow({
                   <option value={0}>بلا توقف</option>
                 </select>
               </label>
-              <button type="button" onClick={startRepeat} className="min-h-11 rounded-full bg-gold px-5 font-semibold text-gold-ink transition-opacity hover:opacity-90 sm:ms-auto">
+              <button type="button" onClick={startRepeat} className="min-h-11 rounded-full bg-accent px-5 font-semibold text-accent-ink transition-opacity hover:opacity-90 sm:ms-auto">
                 ابدأ التكرار
               </button>
             </div>

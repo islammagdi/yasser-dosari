@@ -76,7 +76,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
   };
 
   const action =
-    "flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl border border-white/10 px-2 text-xs transition-colors hover:border-gold/40 hover:bg-white/5";
+    "flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl border border-fg/10 px-2 text-xs transition-colors hover:border-gold/40 hover:bg-fg/5";
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center" dir="rtl">
@@ -85,7 +85,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
         role="dialog"
         aria-modal="true"
         aria-label={ref}
-        className="relative flex max-h-[88vh] w-full max-w-xl flex-col gap-5 overflow-y-auto rounded-t-3xl border border-white/10 bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-float sm:rounded-3xl sm:p-7"
+        className="relative flex max-h-[88vh] w-full max-w-xl flex-col gap-5 overflow-y-auto rounded-t-3xl border border-fg/10 bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-float sm:rounded-3xl sm:p-7"
       >
         <div className="flex items-center justify-between gap-3">
           <span className="font-semibold text-gold-soft">{ref}</span>
@@ -94,7 +94,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
             type="button"
             onClick={onClose}
             aria-label="إغلاق"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-muted transition-colors hover:bg-white/5 hover:text-text"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-muted transition-colors hover:bg-fg/5 hover:text-text"
           >
             ✕
           </button>
@@ -125,7 +125,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
               </Link>
             </div>
 
-            <section aria-label="التفسير الميسر" className="flex flex-col gap-2 border-t border-white/10 pt-4">
+            <section aria-label="التفسير الميسر" className="flex flex-col gap-2 border-t border-fg/10 pt-4">
               <h3 className="text-sm font-semibold text-gold-soft">التفسير الميسر</h3>
               {tafsir === null && <p className="text-sm text-muted">جارٍ التحميل…</p>}
               {tafsir === "error" && <p className="text-sm text-muted">تعذّر تحميل التفسير الآن.</p>}
@@ -224,19 +224,19 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
       type="button"
       onClick={() => setFormat(f)}
       aria-pressed={format === f}
-      className={`min-h-11 flex-1 rounded-full text-sm transition-colors ${format === f ? "bg-gold font-semibold text-gold-ink" : "text-muted hover:text-text"}`}
+      className={`min-h-11 flex-1 rounded-full text-sm transition-colors ${format === f ? "bg-accent font-semibold text-accent-ink" : "text-muted hover:text-text"}`}
     >
       {label}
     </button>
   );
 
-  const select = "min-h-11 rounded-xl border border-white/10 bg-ink px-3 text-text";
+  const select = "min-h-11 rounded-xl border border-fg/10 bg-ink px-3 text-text";
   const lo = Math.min(start, end);
   const hi = Math.max(start, end);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-1 rounded-full border border-white/10 p-1">
+      <div className="flex gap-1 rounded-full border border-fg/10 p-1">
         {tab("square", "مربع (بوست)")}
         {tab("story", "طولي (ستوري)")}
       </div>
@@ -275,7 +275,7 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
             </button>
           )}
         </div>
-        <p className="max-h-40 overflow-y-auto rounded-2xl border border-white/10 p-3 font-quran text-xl leading-[2.2]">
+        <p className="max-h-40 overflow-y-auto rounded-2xl border border-fg/10 p-3 font-quran text-xl leading-[2.2]">
           {words.map((w, i) => {
             const on = i >= lo && i <= hi;
             return (
@@ -285,7 +285,7 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
                   onClick={() => tapWord(i)}
                   aria-pressed={on}
                   className={`rounded-md px-0.5 transition-colors ${on ? "text-text" : "text-muted/50"} ${
-                    pick && (i === lo || i === hi) ? "bg-gold/20" : "hover:bg-white/5"
+                    pick && (i === lo || i === hi) ? "bg-gold/20" : "hover:bg-fg/5"
                   }`}
                 >
                   {w.text}
@@ -313,7 +313,7 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
 
       <div className="flex gap-2">
         {canShare && (
-          <button type="button" onClick={share} className="min-h-12 flex-1 rounded-full bg-gold font-semibold text-gold-ink transition-opacity hover:opacity-90">
+          <button type="button" onClick={share} className="min-h-12 flex-1 rounded-full bg-accent font-semibold text-accent-ink transition-opacity hover:opacity-90">
             مشاركة
           </button>
         )}
@@ -322,7 +322,7 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
           onClick={download}
           disabled={!url}
           className={`min-h-12 flex-1 rounded-full font-semibold transition-colors disabled:opacity-40 ${
-            canShare ? "border border-gold/40 text-gold-soft hover:bg-gold/10" : "bg-gold text-gold-ink hover:opacity-90"
+            canShare ? "border border-gold/40 text-gold-soft hover:bg-gold/10" : "bg-accent text-accent-ink hover:opacity-90"
           }`}
         >
           تنزيل

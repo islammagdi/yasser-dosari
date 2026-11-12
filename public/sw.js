@@ -156,6 +156,11 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  // رابط برّه الموقع (البث المباشر على يوتيوب): يفتح في نافذة جديدة على طول
+  if (new URL(url).origin !== self.location.origin) {
+    event.waitUntil(self.clients.openWindow(url));
+    return;
+  }
   event.waitUntil(
     (async () => {
       const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });

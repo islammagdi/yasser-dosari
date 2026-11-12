@@ -144,9 +144,9 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
     const i = PLAYBACK_RATES.indexOf(p.rate as (typeof PLAYBACK_RATES)[number]);
     p.setRate(PLAYBACK_RATES[(i + 1) % PLAYBACK_RATES.length]);
   };
-  const big = "flex items-center justify-center rounded-full text-text transition-colors hover:bg-white/10 disabled:opacity-30";
+  const big = "flex items-center justify-center rounded-full text-text transition-colors hover:bg-fg/10 disabled:opacity-30";
   // أزرار التقديم والتأخير: بإطار ذهبي عشان تبان
-  const skipBtn = "flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 bg-white/5 text-gold-soft transition-colors hover:bg-gold/10 disabled:opacity-30";
+  const skipBtn = "flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 bg-fg/5 text-gold-soft transition-colors hover:bg-gold/10 disabled:opacity-30";
   const REPEATS = [0, 2, 3, 5, Infinity];
   const cycleRepeat = () => p.setRepeat(REPEATS[(REPEATS.indexOf(p.repeat) + 1) % REPEATS.length]);
   const repeatLabel =
@@ -241,7 +241,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={p.toggle}
             aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
-            className="flex h-20 w-20 items-center justify-center rounded-full bg-gold text-gold-ink shadow-glow transition-colors hover:bg-gold-soft"
+            className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-accent-ink shadow-glow transition-colors hover:bg-accent-hover"
           >
             {p.isPlaying ? <PauseIcon className="h-9 w-9" /> : <PlayIcon className="h-9 w-9" />}
           </button>
@@ -264,7 +264,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
             aria-pressed={p.repeat > 0}
             aria-label={`تكرار التلاوة: ${repeatLabel}`}
             className={`flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors ${
-              p.repeat > 0 ? "bg-gold text-gold-ink" : "border border-line-strong text-gold-soft"
+              p.repeat > 0 ? "bg-accent text-accent-ink" : "border border-line-strong text-gold-soft"
             }`}
           >
             <RepeatIcon />

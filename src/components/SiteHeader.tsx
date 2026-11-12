@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -8,7 +7,9 @@ import { CATEGORIES } from "@/lib/categories";
 import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
+import { Logo } from "./Logo";
 import { NotificationsButton } from "./NotificationsButton";
+import { ThemeToggle } from "./ThemeToggle";
 import { HeartIcon, SearchIcon } from "./icons";
 
 /**
@@ -49,17 +50,7 @@ export function SiteHeader() {
       <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:py-3 xl:grid-cols-[1fr_auto_1fr]">
         {/* اللوجو */}
                <Link href="/" className="col-start-1 row-start-1 flex min-h-11 items-center justify-self-start">
-          <Image
-            src="/images/logo.png"
-            alt="الشيخ ياسر الدوسري"
-            width={0}
-            height={0}
-            // ١٤٤px على الموبايل و١٧٦ من sm؛ ومن غير priority عشان صورة الهيرو تاخد النت الأول
-            sizes="(min-width: 640px) 176px, 144px"
-            quality={60}
-            loading="eager"
-            className="h-9 w-auto sm:h-11"
-          />
+          <Logo label="الشيخ ياسر الدوسري" className="w-[144px] sm:w-[176px]" />
         </Link>
 
         {/* الأقسام: ديسكتوب بس */}
@@ -74,7 +65,7 @@ export function SiteHeader() {
                   href={`/${c.slug}`}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
-                    active ? "font-semibold text-text after:bg-gold" : "text-muted after:bg-transparent hover:text-text"
+                    active ? "font-semibold text-text after:bg-accent" : "text-muted after:bg-transparent hover:text-text"
                   }`}
                 >
                   {c.label}
@@ -85,7 +76,7 @@ export function SiteHeader() {
               href="/quran"
               aria-current={onQuran ? "page" : undefined}
               className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
-                onQuran ? "font-semibold text-text after:bg-gold" : "text-muted after:bg-transparent hover:text-text"
+                onQuran ? "font-semibold text-text after:bg-accent" : "text-muted after:bg-transparent hover:text-text"
               }`}
             >
               قراءة
@@ -94,7 +85,7 @@ export function SiteHeader() {
               href="/surah"
               aria-current={onSurah ? "page" : undefined}
               className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
-                onSurah ? "font-semibold text-text after:bg-gold" : "text-muted after:bg-transparent hover:text-text"
+                onSurah ? "font-semibold text-text after:bg-accent" : "text-muted after:bg-transparent hover:text-text"
               }`}
             >
               السور
@@ -112,6 +103,7 @@ export function SiteHeader() {
           >
             <SearchIcon className="h-5 w-5" />
           </Link>
+          <ThemeToggle className={`${iconBtn} !hidden text-muted hover:text-text sm:!flex`} />
           <NotificationsButton className={`${iconBtn} text-muted hover:text-text`} />
           <Link
             href="/favorites"
@@ -121,7 +113,7 @@ export function SiteHeader() {
           >
             <HeartIcon filled={onFavorites} className="h-5 w-5" />
             {ids.length > 0 && (
-              <span className="absolute -top-1 end-0 min-w-5 rounded-full bg-gold px-1.5 text-center text-[11px] font-bold leading-5 text-gold-ink">
+              <span className="absolute -top-1 end-0 min-w-5 rounded-full bg-accent px-1.5 text-center text-[11px] font-bold leading-5 text-accent-ink">
                 {toArabicDigits(ids.length)}
               </span>
             )}
@@ -143,7 +135,7 @@ export function SiteHeader() {
 
       {/* قايمة الموبايل */}
       {open && (
-        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-white/5 xl:hidden">
+        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-fg/5 xl:hidden">
           <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 py-3">
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
@@ -153,11 +145,11 @@ export function SiteHeader() {
                     href={`/${c.slug}`}
                     aria-current={active ? "page" : undefined}
                     className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
-                      active ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-white/5"
+                      active ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-fg/5"
                     }`}
                   >
                     {c.title}
-                    {active && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
+                    {active && <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />}
                   </Link>
                 </li>
               );
@@ -167,11 +159,11 @@ export function SiteHeader() {
                 href="/quran"
                 aria-current={onQuran ? "page" : undefined}
                 className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
-                  onQuran ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-white/5"
+                  onQuran ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-fg/5"
                 }`}
               >
                 قراءة القرآن
-                {onQuran && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
+                {onQuran && <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />}
               </Link>
             </li>
             <li>
@@ -179,26 +171,29 @@ export function SiteHeader() {
                 href="/surah"
                 aria-current={onSurah ? "page" : undefined}
                 className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
-                  onSurah ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-white/5"
+                  onSurah ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-fg/5"
                 }`}
               >
                 التلاوات بالسور
-                {onSurah && <span aria-hidden className="h-2 w-2 rounded-full bg-gold" />}
+                {onSurah && <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />}
               </Link>
             </li>
             <li>
-              <Link href="/playlists" className="flex min-h-12 items-center rounded-2xl px-4 text-lg text-text transition-colors hover:bg-white/5">
+              <Link href="/playlists" className="flex min-h-12 items-center rounded-2xl px-4 text-lg text-text transition-colors hover:bg-fg/5">
                 قوائم التشغيل
               </Link>
             </li>
             <li>
-              <Link href="/saved" className="flex min-h-12 items-center rounded-2xl px-4 text-lg text-text transition-colors hover:bg-white/5">
+              <Link href="/saved" className="flex min-h-12 items-center rounded-2xl px-4 text-lg text-text transition-colors hover:bg-fg/5">
                 المحفوظات (بدون إنترنت)
               </Link>
             </li>
-            <li aria-hidden className="my-2 h-px bg-white/10" />
+            <li aria-hidden className="my-2 h-px bg-fg/10" />
+            <li className="sm:hidden">
+              <ThemeToggle withLabel className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-fg/5 hover:text-text" />
+            </li>
             <li>
-              <Link href="/about" className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-white/5 hover:text-text">
+              <Link href="/about" className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] text-muted transition-colors hover:bg-fg/5 hover:text-text">
                 عن الموقع
               </Link>
             </li>
@@ -206,7 +201,7 @@ export function SiteHeader() {
               <a
                 href={feedbackHref}
                 {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] font-semibold text-gold-soft transition-colors hover:bg-white/5"
+                className="flex min-h-11 items-center rounded-2xl px-4 text-[15px] font-semibold text-gold-soft transition-colors hover:bg-fg/5"
               >
                 اقترح تحسينًا
               </a>

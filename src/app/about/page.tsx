@@ -137,7 +137,7 @@ export default function AboutPage() {
           <a
             href={feedbackHref}
             {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            className="self-start rounded-full bg-gold px-6 py-3 font-semibold text-gold-ink transition-colors hover:bg-gold-soft"
+            className="self-start rounded-full bg-accent px-6 py-3 font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
           >
             أرسل اقتراحك
           </a>

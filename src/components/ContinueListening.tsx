@@ -38,14 +38,14 @@ export function ContinueListening() {
                   type="button"
                   onClick={() => playQueue([rec], 0)}
                   aria-label={`${playingNow ? "إيقاف" : "أكمل"} ${rec.title}`}
-                  className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-gold-ink transition-colors hover:bg-gold-soft"
+                  className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover"
                 >
                   {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <span className="block h-full rounded-full bg-gold" style={{ width: `${Math.round((t / d) * 100)}%` }} />
+                <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-fg/10">
+                  <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round((t / d) * 100)}%` }} />
                 </span>
                 <button
                   type="button"
