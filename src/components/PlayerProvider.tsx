@@ -211,10 +211,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const next = useCallback(() => {
     if (index + 1 >= queue.length) return;
     autoplay.current = true;
-    resumeAt.current = getProgressTime(queue[index + 1].id);
+    const nx = queue[index + 1];
+    resumeAt.current = nx.clip ? nx.clip.start : getProgressTime(nx.id);
     setIndex(index + 1);
   }, [index, queue]);
   const handleEnded = () => {
+    // مقطع من الورد خلص: الكارت بيسمع الحدث ده ويعلّم الورد
+    if (current?.clip?.tag) window.dispatchEvent(new CustomEvent("yd-clip-ended", { detail: current.clip.tag }));
     // تايمر "نهاية التلاوة": نقف هنا ومنكمّلش على اللي بعدها
     if (sleep?.kind === "end") {
       setSleep(null);
@@ -224,15 +227,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (repeatLeftRef.current !== Infinity) setLeft(repeatLeftRef.current - 1);
       const m = media();
       if (m) {
-        m.seek(0);
+        const from = current?.clip?.start ?? 0;
+        clipEndedRef.current = false;
+        m.seek(from);
         m.play();
-        setCurrentTime(0);
+        setCurrentTime(from);
       }
     } else if (index < queue.length - 1) next();
     else setIsPlaying(false);
   };
   const endedRef = useRef(handleEnded);
   endedRef.current = handleEnded;
+  // عشان نهاية المقطع متتنادىش أكتر من مرة قبل ما اللي بعده يحمّل
+  const clipEndedRef = useRef(false);
+  useEffect(() => {
+    clipEndedRef.current = false;
+  }, [current]);
 
   // تلاوة جديدة: التكرار بيتلغي (كان للتلاوة اللي قبلها)
   useEffect(() => {
@@ -357,13 +367,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!target) return;
     // نفس التسجيل؟ يبقى toggle
     const m = media();
+    const sameClip = (target.clip?.tag ?? "") === (current?.clip?.tag ?? "");
     if (current && target.id === current.id && m) {
-      if (m.paused()) m.play();
-      else m.pause();
+      if (sameClip) {
+        if (m.paused()) m.play();
+        else m.pause();
+        return;
+      }
+      // نفس الملف بس مقطع تاني (الورد): مفيش تحميل جديد، فبنقفز للبداية بإيدينا
+      setQueue(items);
+      setIndex(startIndex);
+      m.seek(startAt ?? target.clip?.start ?? 0);
+      m.play();
       return;
     }
     autoplay.current = true;
-    resumeAt.current = startAt ?? getProgressTime(target.id);
+    resumeAt.current = startAt ?? (target.clip ? target.clip.start : getProgressTime(target.id));
     setQueue(items);
     setIndex(startIndex);
   }, [current, media]);
@@ -523,7 +542,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             resumeAt.current = null;
           }
         }}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onTimeUpdate={(e) => {
+          const t = e.currentTarget.currentTime;
+          setCurrentTime(t);
+          // نهاية المقطع (الورد بالأجزاء): بنعتبره خلص زي نهاية الملف
+          const end = current?.clip?.end;
+          if (end && t >= end && !clipEndedRef.current) {
+            clipEndedRef.current = true;
+            endedRef.current();
+          }
+        }}
         onEnded={() => endedRef.current()}
         onError={() => {
           if (current?.audioUrl) {

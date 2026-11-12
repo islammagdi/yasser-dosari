@@ -12,10 +12,10 @@ import { CategoryIcon, MosqueIcon, PauseIcon, PlayIcon } from "./icons";
 
 const KHATMA_TOTAL = 114;
 
-/** وقت الصلاة بتوقيت مكة (UTC+3 ثابت) كـ timestamp، لو الجدول فيه الوقت */
+/** بداية الصلاة (وقت الأذان) بتوقيت مكة (UTC+3 ثابت) كـ timestamp، لو الجدول فيه الوقت */
 function slotTime(slot: ImamateSlot): number | null {
-  if (!slot.time) return null;
-  const t = Date.parse(`${slot.date}T${slot.time}:00+03:00`);
+  if (!slot.start) return null;
+  const t = Date.parse(`${slot.date}T${slot.start}:00+03:00`);
   return Number.isFinite(t) ? t : null;
 }
 
@@ -52,7 +52,7 @@ function ImamateCell({ slots }: { slots: ImamateSlot[] }) {
     : null;
 
   return (
-    <Link href="/imamate" className={`${cell} transition-colors hover:bg-fg/[0.03]`} aria-live="polite">
+    <Link href="/imamate" className={`${cell} flex-wrap transition-colors hover:bg-fg/[0.03] lg:flex-nowrap`} aria-live="polite">
       <span className={iconBox}>
         <MosqueIcon className="h-6 w-6" />
       </span>
@@ -69,7 +69,7 @@ function ImamateCell({ slots }: { slots: ImamateSlot[] }) {
         )}
       </span>
       {parts && !live && (
-        <span className="flex shrink-0 items-baseline gap-1" aria-label={`بعد ${parts[0]} ساعة و${parts[1]} دقيقة`}>
+        <span className="flex shrink-0 basis-full items-baseline gap-1 ps-16 lg:basis-auto lg:ps-0" aria-label={`بعد ${parts[0]} ساعة و${parts[1]} دقيقة`}>
           {parts.map((n, i) => (
             <span key={i} className="flex items-baseline gap-1">
               <b className="rounded-xl bg-fg/5 px-2 pb-0.5 pt-1.5 font-display text-2xl leading-none text-emerald tabular-nums dark:text-gold-soft">

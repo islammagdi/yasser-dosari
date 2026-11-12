@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { disablePush, enablePush, pushState, type PushState } from "@/lib/push/client";
+import { disablePush, enablePush, pushState, pushTopics, setPushTopics, type PushState, type PushTopics } from "@/lib/push/client";
 
-/** زرار الجرس في الهيدر: تفعيل وإيقاف إشعارات التلاوات الجديدة */
-export function NotificationsButton({ className = "" }: { className?: string }) {
+/** زرار الجرس: تفعيل الإشعارات واختيار أنواعها (تلاوات جديدة، بداية صلاة الشيخ) */
+/** label: نص جنب الأيقونة (للكارت في الرئيسية)؛ من غيره زرار أيقونة بس زي الهيدر */
+/** align: ناحية فتح القايمة؛ "end" للهيدر (الزرار على الشمال)، "start" للزرار اللي على اليمين */
+export function NotificationsButton({ className = "", label, align = "end" }: { className?: string; label?: string; align?: "start" | "end" }) {
   const [state, setState] = useState<PushState | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [topics, setTopics] = useState<PushTopics>({ recitations: true, imamate: true });
+  useEffect(() => setTopics(pushTopics()), []);
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,18 +43,48 @@ export function NotificationsButton({ className = "" }: { className?: string }) 
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        aria-label={state === "on" ? "الإشعارات مفعّلة" : "الإشعارات"}
+        aria-label={label ? undefined : state === "on" ? "الإشعارات مفعّلة" : "الإشعارات"}
         className={className}
       >
         <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill={state === "on" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
         </svg>
+        {label && <span>{state === "on" ? "الإشعارات مفعّلة" : label}</span>}
       </button>
 
       {open && (
-        <div className="glass absolute end-0 top-full z-50 mt-2 flex w-72 flex-col gap-3 rounded-2xl border border-fg/10 p-4 text-sm shadow-float">
-          <p className="font-semibold text-gold-soft">إشعارات التلاوات الجديدة</p>
+        <div className={`glass absolute ${align === "start" ? "start-0" : "end-0"} top-full z-50 mt-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-3 rounded-2xl border border-fg/10 p-4 text-sm shadow-float`}>
+          <p className="font-semibold text-gold-soft">الإشعارات</p>
+          {(state === "off" || state === "on") && (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="sr-only">أنواع الإشعارات</legend>
+              {(
+                [
+                  ["recitations", "تلاوة جديدة اتضافت"],
+                  ["imamate", "بداية صلاة الشيخ في الحرم، مع رابط البث المباشر"],
+                ] as const
+              ).map(([key, text]) => (
+                <label key={key} className="flex cursor-pointer items-start gap-2.5 leading-6">
+                  <input
+                    type="checkbox"
+                    checked={topics[key]}
+                    onChange={async (e) => {
+                      const next = { ...topics, [key]: e.target.checked };
+                      setTopics(next);
+                      try {
+                        await setPushTopics(next);
+                      } catch {
+                        setError("تعذّر حفظ الاختيار الآن.");
+                      }
+                    }}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[rgb(var(--c-accent))]"
+                  />
+                  {text}
+                </label>
+              ))}
+            </fieldset>
+          )}
           {state === "unsupported" && <p className="leading-6 text-muted">متصفحك لا يدعم الإشعارات.</p>}
           {state === "needs-install" && (
             <p className="leading-6 text-muted">
@@ -60,7 +94,7 @@ export function NotificationsButton({ className = "" }: { className?: string }) 
           {state === "denied" && <p className="leading-6 text-muted">الإشعارات محظورة لهذا الموقع من إعدادات المتصفح. فعّلها من الإعدادات ثم عُد إلى هنا.</p>}
           {state === "off" && (
             <>
-              <p className="leading-6 text-muted">يصلك إشعار عند إضافة تلاوات جديدة للشيخ، حتى والموقع مغلق.</p>
+              <p className="leading-6 text-muted">بيوصلك الإشعار حتى والموقع مقفول.</p>
               <button type="button" disabled={busy} onClick={() => run(enablePush)} className="min-h-11 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50">
                 {busy ? "جارٍ التفعيل…" : "فعّل الإشعارات"}
               </button>

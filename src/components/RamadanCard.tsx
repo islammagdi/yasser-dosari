@@ -5,6 +5,7 @@ import type { ImamateSlot, NightPart, Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
 import { IMAMATE_PRAYER_LABELS, addDays, daysFromToday, isRamadan, makkahTime, makkahToday, relativeDayLabel } from "@/lib/imamate";
 import { usePlayer } from "./PlayerProvider";
+import { RamadanCountdown } from "./RamadanCountdown";
 import { PauseIcon, PlayIcon } from "./icons";
 
 const PART_SHORT: Record<NightPart, string> = { first: "الأولى", second: "الثانية", last: "الأخيرة مع الوتر" };
@@ -37,17 +38,17 @@ export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recor
   const isPast = (s: ImamateSlot) => s.date < today || (s.date === today && !!s.time && s.time <= time);
 
   const ramadanSlots = slots.filter((s) => s.ramadanNight && s.ramadanYear && s.nightOf);
-  if (!ramadanSlots.length) return null;
+  if (!ramadanSlots.length) return <RamadanCountdown now={now} />;
 
   // السنة اللي فيها ليالي لسه مجتش، ولو كله عدّى نعرض آخر سنة في رمضان نفسه بس
   const forceShow = isRamadan(now);
   const years = [...new Set(ramadanSlots.filter((s) => !isPast(s)).map((s) => s.ramadanYear!))].sort();
   const year = years[0] ?? (forceShow ? Math.max(...ramadanSlots.map((s) => s.ramadanYear!)) : undefined);
-  if (!year) return null;
+  if (!year) return <RamadanCountdown now={now} />;
 
   const ofYear = ramadanSlots.filter((s) => s.ramadanYear === year);
   const firstEvening = ofYear.map((s) => addDays(s.nightOf!, -1)).sort()[0];
-  if (!forceShow && daysFromToday(firstEvening, now) > SHOW_BEFORE_DAYS) return null;
+  if (!forceShow && daysFromToday(firstEvening, now) > SHOW_BEFORE_DAYS) return <RamadanCountdown now={now} />;
 
   const nights: Night[] = Object.values(
     ofYear.reduce<Record<number, ImamateSlot[]>>((acc, s) => {

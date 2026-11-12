@@ -3,6 +3,12 @@ import { loadDaily } from "@/lib/admin/daily";
 import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
+import { HomeCollections } from "@/components/HomeCollections";
+import { ImamateLog } from "@/components/ImamateLog";
+import { SurahMap } from "@/components/SurahMap";
+import { homeCollections, surahStats } from "@/lib/homeCollections";
+import { buildSurahIndex } from "@/lib/surahIndex";
+import { InstallCard } from "@/components/InstallCard";
 import { RamadanCard } from "@/components/RamadanCard";
 import { HomeBrowser, type HomeSection } from "@/components/HomeBrowser";
 import { recordings } from "@/lib/api";
@@ -59,15 +65,29 @@ export default async function HomePage() {
   const wirdItems = mushaf.some((r) => !r.youtubeId) ? mushaf.filter((r) => !r.youtubeId) : mushaf;
   const kahf = mushaf.find((r) => r.surah === 18 && !r.youtubeId) ?? mushaf.find((r) => r.surah === 18) ?? null;
 
+  // سجلّ الإمامة: الفروض في آخر ٣ شهور هجرية فيها تسجيلات بس، عشان منبعتش الأرشيف كله للمتصفح
+  const fardAll = allLists.flat().filter((r) => r.category === "fard" && r.hijriYear && r.hijriMonth && r.hijriDay);
+  const logMonths = [...new Set(fardAll.map((r) => r.hijriYear! * 100 + r.hijriMonth!))].sort((a, b) => b - a).slice(0, 3);
+  const logRecordings = fardAll.filter((r) => logMonths.includes(r.hijriYear! * 100 + r.hijriMonth!));
+
+  // خريطة السور والمجموعات: من نفس الفهرس اللي بيبني صفحة /surah (من وصف يوتيوب)
+  const surahIndex = buildSurahIndex(allLists.flat());
+  const stats = surahStats(surahIndex);
+  const collections = homeCollections(allLists.flat(), surahIndex);
+
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
       <FridayCard slots={imamate} />
       <WirdCard items={wirdItems} dismissible />
+      <SurahMap stats={stats} />
+      <ImamateLog recordings={logRecordings} />
       <RamadanCard slots={imamate} recordings={taraweeh} />
+      <HomeCollections collections={collections} />
       <FridayKahf kahf={kahf} />
       {/* القسم اللي لسه مفيهوش تسجيلات (زي التلاوات النادرة في الأول) مبيظهرش كتاب */}
       <HomeBrowser sections={sections.filter((s) => s.total > 0)} />
+      <InstallCard />
     </div>
   );
 }

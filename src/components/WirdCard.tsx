@@ -9,14 +9,44 @@ import { canSaveOffline, saveOffline, useOffline } from "@/lib/offline";
 import { disableWirdReminder, enableWirdReminder, wirdReminderTime } from "@/lib/push/client";
 import { khatmaCountLabel } from "@/lib/useKhatma";
 import { useWird } from "@/lib/useWird";
-import { WIRD_DURATIONS, localToday, surahPages, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
+import { localToday, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
+import { WIRD_JUZ_DURATIONS, dailyAmountLabel, type WirdPortion } from "@/lib/wirdJuz";
 import { usePlayer } from "./PlayerProvider";
 import { ClockIcon, PlayIcon } from "./icons";
 
 const DISMISS_KEY = "yd-wird-dismissed";
 
 const durationLabel = (d: number) =>
-  d === 7 ? "أسبوع" : d === 30 ? "شهر" : d === 60 ? "شهرين" : `${toArabicDigits(d)} يومًا`;
+  d === 7 ? "أسبوع" : d === 10 ? "١٠ أيام" : d === 30 ? "شهر" : d === 60 ? "شهرين" : `${toArabicDigits(d)} يومًا`;
+
+/**
+ * طابور ورد اليوم: كل سورة في النصيب كتسجيل، والسور الناقصة (أول وآخر النصيب) كمقطع
+ * من وقت أول آية لآخر آية، من توقيت الآيات بتاع mp3quran. لو التوقيت مش متاح بنشغّل السورة كاملة.
+ */
+async function buildQueue(portion: WirdPortion, bySurah: Map<number, Recording>): Promise<Recording[]> {
+  const out: Recording[] = [];
+  const last = portion.segments.length - 1;
+  for (const [i, seg] of portion.segments.entries()) {
+    const rec = bySurah.get(seg.surah);
+    if (!rec) continue;
+    const tag = i === last ? `wird-${portion.index}-end` : `wird-${portion.index}-${i}`;
+    if (seg.whole || rec.youtubeId || !rec.audioUrl) {
+      out.push({ ...rec, clip: { start: 0, tag } });
+      continue;
+    }
+    try {
+      const res = await fetch(`/api/ayahs/${seg.surah}`);
+      const { timings } = (await res.json()) as { timings?: { ayah: number; start: number; end: number }[] };
+      const from = timings?.find((t) => t.ayah === seg.from);
+      const to = timings?.find((t) => t.ayah === seg.to);
+      const isLastAyah = !timings?.some((t) => t.ayah > seg.to);
+      out.push({ ...rec, clip: { start: from ? from.start / 1000 : 0, end: to && !isLastAyah ? to.end / 1000 : undefined, tag } });
+    } catch {
+      out.push({ ...rec, clip: { start: 0, tag } });
+    }
+  }
+  return out;
+}
 
 /**
  * الورد اليومي: لو مفيش خطة بيعرض اختيار المدة، ولو فيه بيعرض سور النهارده وزرار تشغيلها.
@@ -35,6 +65,19 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   const [pushMsg, setPushMsg] = useState("");
   useEffect(() => setPushTime(wirdReminderTime()), []);
   const [saving, setSaving] = useState<string | null>(null);
+  const [loadingQueue, setLoadingQueue] = useState(false);
+
+  // آخر مقطع في ورد اليوم خلص في المشغّل: الورد بيتعلّم لوحده
+  const portionIndex = w.portion?.index;
+  const markDone = w.markDone;
+  useEffect(() => {
+    if (portionIndex === undefined) return;
+    const onEnd = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === `wird-${portionIndex}-end`) markDone();
+    };
+    window.addEventListener("yd-clip-ended", onEnd);
+    return () => window.removeEventListener("yd-clip-ended", onEnd);
+  }, [portionIndex, markDone]);
 
   useEffect(() => {
     try {
@@ -54,14 +97,15 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
 
   const durations = (onPick: (d: number) => void) => (
     <div className="flex flex-wrap gap-2">
-      {WIRD_DURATIONS.map((d) => (
+      {WIRD_JUZ_DURATIONS.map((d) => (
         <button
           key={d}
           type="button"
           onClick={() => onPick(d)}
-          className="min-h-11 rounded-full border border-line-strong px-5 text-[15px] font-semibold text-gold-soft transition-colors hover:border-gold/60 hover:bg-gold/10"
+          className="flex min-h-12 flex-col items-center justify-center rounded-2xl border border-line-strong px-4 py-1.5 transition-colors hover:border-gold/60 hover:bg-gold/10"
         >
-          {durationLabel(d)}
+          <span className="text-[15px] font-semibold text-gold-soft">{durationLabel(d)}</span>
+          <span className="text-xs text-muted">{dailyAmountLabel(d)}</span>
         </button>
       ))}
     </div>
@@ -77,8 +121,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             ورد يومي لختم المصحف
           </h2>
           <p className="leading-7 text-muted">
-            اختر مدة الختمة، ونقسّم لك المصحف على الأيام، وتسمع وردك كل يوم بصوت الشيخ.
-            {w.khatmaCount > 0 && ` السور التي سمعتها (${toArabicDigits(w.khatmaCount)}) محسوبة من ختمتك.`}
+            اختر مدة الختمة، ونقسّم لك الأجزاء الثلاثين على الأيام، وتسمع وردك كل يوم بصوت الشيخ.
           </p>
         </div>
         <p className="text-sm font-semibold">أختم المصحف في:</p>
@@ -132,10 +175,9 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   }
 
   // ---- ورد النهارده ----
-  const pending = w.surahs.filter((n) => !w.doneToday.includes(n));
-  const allDone = w.surahs.length > 0 && pending.length === 0;
-  const pages = Math.round(w.surahs.reduce((s, n) => s + surahPages(n), 0));
-  const queue = pending.map((n) => bySurah.get(n)).filter((r): r is Recording => !!r);
+  const portion = w.portion!;
+  const allDone = w.doneToday && w.behind === 0;
+  const recs = [...new Map(portion.segments.flatMap((sg) => (bySurah.get(sg.surah) ? [[sg.surah, bySurah.get(sg.surah)!]] : []))).values()];
 
   const downloadIcs = () => {
     const url = URL.createObjectURL(wirdIcs(localToday(), w.daysLeft, time, siteUrl));
@@ -144,6 +186,16 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
     a.download = "wird.ics";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const listen = async () => {
+    setLoadingQueue(true);
+    try {
+      const q = await buildQueue(portion, bySurah);
+      if (q.length) p.playQueue(q, 0);
+    } finally {
+      setLoadingQueue(false);
+    }
   };
 
   return (
@@ -159,71 +211,73 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
           </span>
         )}
         <span className="text-sm text-muted">
-          {w.overdue
-            ? `اليوم ${toArabicDigits(w.dayNumber)} · تجاوزت المدة، نكمل بنفس المعدّل`
-            : `اليوم ${toArabicDigits(w.dayNumber)} من ${toArabicDigits(w.plan.days)}`}
+          اليوم {toArabicDigits(portion.index + 1)} من {toArabicDigits(w.plan.days)}
+          {w.behind > 0 && `، متأخر ${w.behind === 1 ? "يوم" : w.behind === 2 ? "يومين" : `${toArabicDigits(w.behind)} أيام`}`}
         </span>
       </div>
 
+      <div className="flex flex-col gap-1">
+        <p className="font-display text-xl font-bold">{allDone ? `الجاي: ${portion.label}` : portion.label}</p>
+        <p className="text-sm text-muted">{portion.range}</p>
+      </div>
+
       <ul aria-label="سور ورد اليوم" className="flex flex-wrap gap-2">
-        {w.surahs.map((n) => {
-          const done = w.doneToday.includes(n);
-          return (
-            <li
-              key={n}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-sm ${
-                done ? "bg-gold/15 text-gold-soft" : "bg-fg/5 text-text"
-              }`}
-            >
-              {done && <span aria-hidden>✓</span>}
-              سورة {surahName(n)}
-              {done && <span className="sr-only">(تم الاستماع)</span>}
-            </li>
-          );
-        })}
+        {portion.segments.map((sg) => (
+          <li key={sg.surah} className="inline-flex min-h-9 items-center rounded-full bg-fg/5 px-3.5 text-sm">
+            سورة {surahName(sg.surah)}
+            {!sg.whole && <span className="ms-1.5 text-xs text-muted">من {toArabicDigits(sg.from)} إلى {toArabicDigits(sg.to)}</span>}
+          </li>
+        ))}
       </ul>
-      {!allDone && <p className="text-sm text-muted">حوالي {toArabicDigits(pages)} صفحة</p>}
 
       <div className="flex flex-col gap-1.5">
         <div
           role="progressbar"
           aria-label="تقدّم الختمة"
           aria-valuemin={0}
-          aria-valuemax={114}
-          aria-valuenow={w.khatmaCount}
+          aria-valuemax={w.plan.days}
+          aria-valuenow={w.doneCount}
           className="h-1.5 overflow-hidden rounded-full bg-fg/10"
         >
-          <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.round((w.khatmaCount / 114) * 100)}%` }} />
+          <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.round((w.doneCount / w.plan.days) * 100)}%` }} />
         </div>
         <p className="text-xs text-muted">
-          الختمة: {toArabicDigits(w.khatmaCount)} من ١١٤ سورة · السورة تُحسب عند سماع ٩٠٪ منها
+          الختمة: {toArabicDigits(w.doneCount)} من {toArabicDigits(w.plan.days)} يومًا، {dailyAmountLabel(w.plan.days)}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        {!allDone && queue.length > 0 && (
+        {recs.length > 0 && (
           <button
             type="button"
-            onClick={() => p.playQueue(queue, 0)}
-            className="flex min-h-11 items-center gap-2 rounded-full bg-accent pe-5 ps-2 text-[15px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
+            onClick={listen}
+            disabled={loadingQueue}
+            className="flex min-h-11 items-center gap-2 rounded-full bg-accent pe-5 ps-2 text-[15px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-70"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-ink text-accent">
               <PlayIcon className="h-4 w-4" />
             </span>
-            {w.doneToday.length ? "أكمل وردك" : "استمع لوردك"}
+            {loadingQueue ? "جارٍ التجهيز…" : allDone ? "اسمع ورد بكرة بدري" : "استمع لوردك"}
           </button>
         )}
+        <button
+          type="button"
+          onClick={w.markDone}
+          className="min-h-11 rounded-full border border-line-strong px-4 text-sm font-semibold text-gold-soft hover:border-gold/50"
+        >
+          ✓ أتممت هذا الورد
+        </button>
 
         {/* حفظ سور ورد اليوم كلها للاستماع بدون إنترنت */}
-        {!allDone && queue.some((r) => canSaveOffline(r)) && (
-          queue.every((r) => off.isSaved(r.id)) ? (
+        {recs.some((r) => canSaveOffline(r)) && (
+          recs.every((r) => off.isSaved(r.id)) ? (
             <span className="text-sm font-semibold text-gold-soft">✓ ورد اليوم محفوظ بدون إنترنت</span>
           ) : (
             <button
               type="button"
               disabled={saving !== null}
               onClick={async () => {
-                const todo = queue.filter((r) => canSaveOffline(r) && !off.isSaved(r.id));
+                const todo = recs.filter((r) => canSaveOffline(r) && !off.isSaved(r.id));
                 try {
                   for (let i = 0; i < todo.length; i++) {
                     setSaving(`${toArabicDigits(i + 1)} من ${toArabicDigits(todo.length)}`);
