@@ -77,3 +77,14 @@ export async function getFresh<T>(key: string): Promise<T | null> {
   if (!res.ok) return null;
   return (await res.json()) as T;
 }
+
+/**
+ * رابط رفع مؤقت (presigned PUT): المتصفح بيرفع الملف على R2 مباشرة من غير ما يعدّي على Vercel،
+ * فمفيش حد لحجم الملف. الرابط بيشتغل لمدة expires ثانية ولمفتاح واحد بس.
+ * محتاج إعداد CORS على الـ bucket يسمح بـ PUT من دومين الموقع.
+ */
+export async function presignPut(key: string, expires = 900): Promise<string> {
+  if (!r2Enabled()) throw new Error("R2 مش متظبط: راجع متغيرات R2_* على Vercel");
+  const signed = await r2().sign(`${url(key)}?X-Amz-Expires=${expires}`, { method: "PUT", aws: { signQuery: true } });
+  return signed.url;
+}

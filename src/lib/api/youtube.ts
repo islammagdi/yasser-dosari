@@ -1,3 +1,5 @@
+import { adminManifest } from "@/lib/admin/manifest";
+import { r2Enabled } from "@/lib/admin/r2";
 import type { Category, LectureType, Prayer, Recording } from "@/types";
 import { hijriDateLabel } from "@/lib/labels";
 import { normalizeArabic } from "@/lib/format";
@@ -274,6 +276,12 @@ export type AudioManifest = Record<string, { file: string; duration?: number; ti
 
 export async function audioManifest(): Promise<AudioManifest> {
   if (!AUDIO_BASE) return {};
+  // من R2 مباشرة لو المفاتيح موجودة: بيتحدّث أول ما لوحة التحكم ترفع تسجيل (revalidateTag)
+  // بدل ما نستنى ساعة أو cache بتاع r2.dev
+  if (r2Enabled()) {
+    const fresh = await adminManifest();
+    if (Object.keys(fresh).length) return fresh;
+  }
   try {
     // بيتقري كل ساعة، فإضافة ملفات جديدة مش محتاجة deploy
     const res = await fetch(`${AUDIO_BASE}/manifest.json`, { next: { revalidate: 3600 } });

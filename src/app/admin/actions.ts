@@ -326,3 +326,87 @@ export async function saveFridays(fridays: unknown): Promise<ActionResult> {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحفظ" };
   }
 }
+
+// ---------- رفع تسجيل من لوحة التحكم ----------
+// المتصفح بيطلب روابط رفع مؤقتة، يرفع الملفات على R2 مباشرة، وبعدين يسجّل التسجيل في الفهرس.
+
+export interface UploadSlot {
+  id: string;
+  audioKey: string;
+  audioUrl: string;
+  imageKey?: string;
+  imageUrl?: string;
+}
+
+const AUDIO_EXT = /\.(mp3|m4a)$/i;
+const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
+
+/** روابط رفع لتسجيل واحد (وغلافه لو موجود). الاسم بيتعمل تلقائي، فاسم الملف عندك ممكن يبقى عربي */
+export async function prepareUpload(audioName: string, imageName?: string): Promise<{ ok: true; slot: UploadSlot } | { ok: false; message: string }> {
+  try {
+    await assertAdmin();
+    const audioExt = audioName.match(AUDIO_EXT)?.[1]?.toLowerCase();
+    if (!audioExt) return { ok: false, message: "الصوت لازم يبقى mp3 أو m4a" };
+    const imageExt = imageName?.match(IMAGE_EXT)?.[1]?.toLowerCase().replace("jpeg", "jpg");
+    if (imageName && !imageExt) return { ok: false, message: "الغلاف لازم يبقى jpg أو png أو webp" };
+
+    const { presignPut } = await import("@/lib/admin/r2");
+    const now = new Date();
+    const stamp = now.toISOString().slice(0, 10).replace(/-/g, "");
+    const name = `rec-${stamp}-${Math.random().toString(36).slice(2, 8)}`;
+    const audioKey = `custom/${name}.${audioExt}`;
+    const imageKey = imageExt ? `custom/${name}.${imageExt}` : undefined;
+    return {
+      ok: true,
+      slot: {
+        id: `custom-${name}`,
+        audioKey,
+        audioUrl: await presignPut(audioKey),
+        ...(imageKey && { imageKey, imageUrl: await presignPut(imageKey) }),
+      },
+    };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر تجهيز الرفع" };
+  }
+}
+
+/**
+ * بعد ما الملفات تترفع: التسجيل بيتضاف للفهرس، ولو اخترت قسم بيتصنّف على طول.
+ * الفهرس بيتقري من غير cache قبل التعديل، عشان منمسحش حاجة اتضافت من مكان تاني.
+ */
+export async function registerUpload(input: {
+  slot: Pick<UploadSlot, "id" | "audioKey" | "imageKey">;
+  title: string;
+  duration?: number;
+  section?: string;
+}): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const { getFresh, putJson } = await import("@/lib/admin/r2");
+    const { id, audioKey, imageKey } = input.slot;
+    if (!id.startsWith("custom-rec-") || !audioKey.startsWith("custom/")) return { ok: false, message: "بيانات الرفع غير صحيحة" };
+    const title = input.title.trim();
+    if (!title) return { ok: false, message: "اكتب عنوان التسجيل" };
+
+    const manifest = (await getFresh<Record<string, unknown>>("manifest.json")) ?? {};
+    manifest[id] = {
+      file: audioKey,
+      ...(input.duration && { duration: Math.round(input.duration) }),
+      title,
+      uploadedAt: new Date().toISOString(),
+      ...(imageKey && { image: imageKey }),
+    };
+    await putJson("manifest.json", manifest);
+    revalidateTag(MANIFEST_TAG);
+    revalidatePath("/admin/recordings");
+
+    if (input.section) {
+      const r = await classifyPending(id, input.section, title);
+      if (!r.ok) return { ok: false, message: `اترفع، بس التصنيف فشل: ${r.message}. صنّفه من صفحة التسجيلات.` };
+      return { ok: true, message: "اترفع واتصنّف، وظاهر على الموقع" };
+    }
+    return { ok: true, message: "اترفع، ومستني التصنيف في صفحة التسجيلات" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر تسجيل الرفع" };
+  }
+}
