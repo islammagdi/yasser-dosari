@@ -7,9 +7,11 @@ import type { Ayah, AyahTiming } from "@/lib/api/quranText";
 import { getCategory } from "@/lib/categories";
 import { formatDuration, toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
-import { PLAYBACK_RATES, usePlayer } from "./PlayerProvider";
+import { canSaveOffline, removeOffline, saveOffline, useOffline } from "@/lib/offline";
+import { AddToPlaylist } from "./AddToPlaylist";
+import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
-import { HeartIcon, NextIcon, PauseIcon, PlayIcon, PrevIcon } from "./icons";
+import { HeartIcon, NextIcon, PauseIcon, PlayIcon, PrevIcon, TimerIcon } from "./icons";
 
 /**
  * وضع الاستماع بملء الشاشة: غلاف كبير وأزرار كبيرة، ونص الآية الحالية في سور المصحف.
@@ -23,6 +25,10 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
   const fav = useFavorites();
   const r = p.current;
   const [text, setText] = useState<{ surah: number; ayahs: Ayah[]; timings: AyahTiming[] } | null>(null);
+  const off = useOffline();
+  const [saving, setSaving] = useState<number | null>(null);
+  const [shareNote, setShareNote] = useState("");
+  const [sleepOpen, setSleepOpen] = useState(false);
 
   // حركة الطلوع والنزول: بيترسم تحت الشاشة، وفي الفريم اللي بعده بيطلع لفوق
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -140,17 +146,41 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
   const pct = max ? (p.currentTime / max) * 100 : 0;
   const atEnd = p.queue.indexOf(r) >= p.queue.length - 1;
   const favorite = fav.isFavorite(r.id);
-  const cycleRate = () => {
-    const i = PLAYBACK_RATES.indexOf(p.rate as (typeof PLAYBACK_RATES)[number]);
-    p.setRate(PLAYBACK_RATES[(i + 1) % PLAYBACK_RATES.length]);
-  };
   const big = "flex items-center justify-center rounded-full text-text transition-colors hover:bg-fg/10 disabled:opacity-30";
   // أزرار التقديم والتأخير: بإطار ذهبي عشان تبان
   const skipBtn = "flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 bg-fg/5 text-gold-soft transition-colors hover:bg-gold/10 disabled:opacity-30";
-  const REPEATS = [0, 2, 3, 5, Infinity];
-  const cycleRepeat = () => p.setRepeat(REPEATS[(REPEATS.indexOf(p.repeat) + 1) % REPEATS.length]);
-  const repeatLabel =
-    p.repeat === 0 ? "تكرار" : p.repeat === Infinity ? "تكرار بلا حد" : p.repeat === 2 ? "تكرار مرتين" : `تكرار ${toArabicDigits(p.repeat)} مرات`;
+  // الصف الثانوي: أيقونة وتحتها كلمة
+  const tool = "flex min-h-14 min-w-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-xs text-muted transition-colors hover:bg-fg/5 hover:text-text disabled:opacity-30";
+  // التكرار: يا شغال يا لأ (بيكرر التلاوة دي لحد ما تقفله)
+  const repeating = p.repeat > 0;
+  const saved = off.isSaved(r.id);
+
+  const toggleOffline = async () => {
+    if (saved) return removeOffline(r.id);
+    setSaving(0);
+    try {
+      await saveOffline(r, (pct) => setSaving(pct));
+    } catch {
+      setShareNote("تعذّر الحفظ دلوقتي");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const share = async () => {
+    const url = `${window.location.origin}/${r.category}/${r.id}`;
+    const title = r.title || r.prayerLabel || "";
+    try {
+      if (navigator.share) await navigator.share({ title, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setShareNote("اتنسخ الرابط");
+        window.setTimeout(() => setShareNote(""), 2000);
+      }
+    } catch {
+      /* المستخدم قفل نافذة المشاركة */
+    }
+  };
 
   // بيترسم في body مباشرة: المشغّل اللي تحت عليه blur، وده بيحبس أي عنصر fixed جواه في حدوده
   return createPortal(
@@ -178,16 +208,11 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
             <path d="M6 9l6 6 6-6" />
           </svg>
         </button>
-        <span className="text-sm text-muted">{getCategory(r.category)?.title}</span>
-        <button
-          type="button"
-          onClick={() => fav.toggle(r.id)}
-          aria-pressed={favorite}
-          aria-label={favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-          className={`${big} h-12 w-12 ${favorite ? "text-[#E5636B]" : "text-muted"}`}
-        >
-          <HeartIcon filled={favorite} className="h-6 w-6" />
-        </button>
+        <Link href={`/${r.category}`} onClick={requestClose} className="flex flex-col items-center leading-tight hover:text-gold-soft">
+          <span className="text-xs text-muted">بتسمع من</span>
+          <span className="text-sm font-semibold">{getCategory(r.category)?.title}</span>
+        </Link>
+        <span aria-hidden className="h-12 w-12" />
       </div>
 
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-6 px-6 pb-6">
@@ -200,12 +225,34 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
           <RecordingCover recording={r} sizes="320px" size="lg" className="aspect-square w-[min(70vw,320px)] rounded-3xl shadow-float" />
         )}
 
-        <div className="flex w-full flex-col items-center gap-1 text-center">
-          <Link href={`/${r.category}/${r.id}`} onClick={requestClose} className="font-display text-2xl font-bold leading-snug hover:text-gold-soft sm:text-3xl">
-            {r.title || r.prayerLabel}
-          </Link>
-          {r.subtitle && <p className="line-clamp-2 text-muted">{r.subtitle}</p>}
-          {p.error && <p className="text-sm text-gold-soft">{p.error}</p>}
+        <div className="flex w-full items-center gap-3">
+          <button
+            type="button"
+            onClick={() => p.setRepeat(repeating ? 0 : Infinity)}
+            aria-pressed={repeating}
+            aria-label={repeating ? "إيقاف تكرار التلاوة" : "تكرار التلاوة"}
+            title={repeating ? "التكرار شغال" : "تكرار"}
+            className={`${big} h-12 w-12 shrink-0 ${repeating ? "bg-accent/15 text-accent dark:text-gold" : "text-muted"}`}
+          >
+            <RepeatIcon />
+          </button>
+          {/* الضغط على العنوان بيفتح صفحة التلاوة */}
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1 text-center">
+            <Link href={`/${r.category}/${r.id}`} onClick={requestClose} className="font-display text-2xl font-bold leading-snug hover:text-gold-soft sm:text-3xl">
+              {r.title || r.prayerLabel}
+            </Link>
+            {r.subtitle && <p className="line-clamp-2 text-muted">{r.subtitle}</p>}
+            {p.error && <p className="text-sm text-gold-soft">{p.error}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={() => fav.toggle(r.id)}
+            aria-pressed={favorite}
+            aria-label={favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+            className={`${big} h-12 w-12 shrink-0 ${favorite ? "text-[#E5636B]" : "text-muted"}`}
+          >
+            <HeartIcon filled={favorite} className="h-6 w-6" />
+          </button>
         </div>
 
         {/* التقدّم */}
@@ -253,27 +300,70 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button type="button" onClick={cycleRate} aria-label={`سرعة التشغيل ${p.rate}x`} className="min-h-11 rounded-full border border-line-strong px-5 text-sm font-semibold text-gold-soft">
-            السرعة {toArabicDigits(p.rate)}×
-          </button>
-          {/* التكرار: كل ضغطة بتغيّر العدد (مرتين، ٣، ٥، بلا حد، إيقاف) */}
-          <button
-            type="button"
-            onClick={cycleRepeat}
-            aria-pressed={p.repeat > 0}
-            aria-label={`تكرار التلاوة: ${repeatLabel}`}
-            className={`flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors ${
-              p.repeat > 0 ? "bg-accent text-accent-ink" : "border border-line-strong text-gold-soft"
-            }`}
-          >
-            <RepeatIcon />
-            {repeatLabel}
+        {/* أدوات ثانوية */}
+        <div className="flex w-full items-start justify-around gap-1 border-t border-fg/10 pt-4">
+          <div className="relative">
+            <button type="button" onClick={() => setSleepOpen((o) => !o)} aria-expanded={sleepOpen} className={`${tool} ${p.sleep ? "text-gold" : ""}`}>
+              <TimerIcon className="h-6 w-6" />
+              {p.sleep ? "التايمر شغال" : "إيقاف بعد"}
+            </button>
+            {sleepOpen && (
+              <div role="menu" className="glass-card absolute bottom-full start-0 z-10 mb-2 w-48 rounded-2xl p-1.5 shadow-float">
+                {SLEEP_OPTIONS.map((o) => (
+                  <button
+                    key={String(o.value)}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      p.setSleepTimer(o.value);
+                      setSleepOpen(false);
+                    }}
+                    className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm hover:bg-fg/5"
+                  >
+                    {o.label}
+                  </button>
+                ))}
+                {p.sleep && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      p.setSleepTimer(null);
+                      setSleepOpen(false);
+                    }}
+                    className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-fg/10 px-3 text-start text-sm text-gold-soft hover:bg-fg/5"
+                  >
+                    إلغاء التايمر
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex min-h-14 min-w-16 flex-col items-center justify-center gap-1 text-xs text-muted">
+            <AddToPlaylist recording={r} up buttonClassName="flex h-6 w-6 items-center justify-center transition-colors hover:text-text" />
+            قايمة تشغيل
+          </div>
+
+          {canSaveOffline(r) && (
+            <button type="button" onClick={toggleOffline} disabled={saving !== null} className={`${tool} ${saved ? "text-gold" : ""}`}>
+              <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                {saved ? <path d="M5 12l5 5L20 7" /> : <path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" />}
+              </svg>
+              {saving !== null ? `${toArabicDigits(Math.round(saving))}٪` : saved ? "محفوظة" : "من غير نت"}
+            </button>
+          )}
+
+          <button type="button" onClick={share} className={tool}>
+            <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="2.5" />
+              <circle cx="6" cy="12" r="2.5" />
+              <circle cx="18" cy="19" r="2.5" />
+              <path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" />
+            </svg>
+            {shareNote || "مشاركة"}
           </button>
         </div>
-        {p.repeat > 0 && p.repeat !== Infinity && (
-          <p className="-mt-3 text-xs text-muted">باقي {toArabicDigits(p.repeatLeft)} {p.repeatLeft === 1 ? "مرة" : "مرات"} بعد هذه</p>
-        )}
       </div>
     </div>
     </>,

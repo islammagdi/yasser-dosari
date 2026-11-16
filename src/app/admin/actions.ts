@@ -379,6 +379,11 @@ export async function registerUpload(input: {
   title: string;
   duration?: number;
   section?: string;
+  /** بيتحفظوا بعد التصنيف (لازم يكون فيه قسم) */
+  subtitle?: string;
+  hijriDay?: number;
+  hijriMonth?: number;
+  hijriYear?: number;
 }): Promise<ActionResult> {
   try {
     await assertAdmin();
@@ -403,10 +408,108 @@ export async function registerUpload(input: {
     if (input.section) {
       const r = await classifyPending(id, input.section, title);
       if (!r.ok) return { ok: false, message: `اترفع، بس التصنيف فشل: ${r.message}. صنّفه من صفحة التسجيلات.` };
+      // الوصف والتاريخ اللي اتكتبوا بإيدك بيغلبوا على اللي اتقرا من العنوان
+      const hasDate = input.hijriYear || input.hijriMonth || input.hijriDay;
+      if (input.subtitle?.trim() || hasDate) {
+        const u = await updateEntry(id, {
+          ...(input.subtitle?.trim() && { subtitle: input.subtitle }),
+          ...(hasDate && { hijriYear: input.hijriYear ?? null, hijriMonth: input.hijriMonth ?? null, hijriDay: input.hijriDay ?? null }),
+        });
+        if (!u.ok) return { ok: false, message: `اترفع واتصنّف، بس الوصف أو التاريخ محفظوش: ${u.message}` };
+      }
       return { ok: true, message: "اترفع واتصنّف، وظاهر على الموقع" };
     }
     return { ok: true, message: "اترفع، ومستني التصنيف في صفحة التسجيلات" };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر تسجيل الرفع" };
+  }
+}
+
+// ---------- الأغلفة: ربط صورة بتسجيل خاص بعد رفعه ----------
+
+/** رابط رفع لغلاف تسجيل موجود. الاسم فيه وقت عشان المتصفح ميعرضش الصورة القديمة من الـ cache */
+export async function prepareCover(id: string, imageName: string): Promise<{ ok: true; key: string; url: string } | { ok: false; message: string }> {
+  try {
+    await assertAdmin();
+    if (!isCustomKey(id)) return { ok: false, message: "الأغلفة للتسجيلات الخاصة بس (فيديوهات يوتيوب ليها صورتها)" };
+    const ext = imageName.match(IMAGE_EXT)?.[1]?.toLowerCase().replace("jpeg", "jpg");
+    if (!ext) return { ok: false, message: "الغلاف لازم يبقى jpg أو png أو webp" };
+    const { presignPut } = await import("@/lib/admin/r2");
+    const key = `custom/${id.slice("custom-".length)}-cover-${Date.now().toString(36)}.${ext}`;
+    return { ok: true, key, url: await presignPut(key) };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر تجهيز الرفع" };
+  }
+}
+
+/** بعد رفع الغلاف: بيتسجّل في الفهرس مكان القديم، والقديم بيتمسح من R2 */
+export async function attachCover(id: string, key: string): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    if (!isCustomKey(id) || !key.startsWith(`custom/${id.slice("custom-".length)}`)) return { ok: false, message: "بيانات الغلاف غير صحيحة" };
+    const { deleteKey, getFresh, putJson } = await import("@/lib/admin/r2");
+    const manifest = (await getFresh<Record<string, { image?: string }>>("manifest.json")) ?? {};
+    const entry = manifest[id];
+    if (!entry) return { ok: false, message: "التسجيل مش موجود في الفهرس" };
+    const old = entry.image;
+    manifest[id] = { ...entry, image: key };
+    await putJson("manifest.json", manifest);
+    if (old && old !== key) await deleteKey(old).catch(() => undefined);
+    revalidateTag(MANIFEST_TAG);
+    refreshCatalog();
+    revalidatePath("/admin/recordings");
+    revalidatePath("/admin/upload");
+    return { ok: true, message: "الغلاف اتحفظ" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر حفظ الغلاف" };
+  }
+}
+
+// ---------- مسح تسجيل لسه متصنّفش ----------
+
+/**
+ * مسح نهائي لتسجيل خاص في "بانتظار التصنيف": الصوت والغلاف من R2، وسطره من الفهرس.
+ * التسجيلات المصنّفة مبتتمسحش من هنا (ليها "إخفاء من الموقع").
+ */
+export async function deletePending(id: string): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    if (!isCustomKey(id)) return { ok: false, message: "المسح للتسجيلات الخاصة بس" };
+    if ((await loadCatalog())?.items[id]) return { ok: false, message: "التسجيل ده متصنّف. استخدم «إخفاء من الموقع» بدل المسح." };
+    const { deleteKey, getFresh, putJson } = await import("@/lib/admin/r2");
+    const manifest = (await getFresh<Record<string, { file?: string; image?: string }>>("manifest.json")) ?? {};
+    const entry = manifest[id];
+    if (!entry) return { ok: false, message: "التسجيل مش موجود" };
+    delete manifest[id];
+    await putJson("manifest.json", manifest);
+    // الملفات بعد الفهرس: لو المسح وقع في النص، الموقع مش هيشاور على ملف مش موجود
+    for (const k of [entry.file, entry.image]) if (k?.startsWith("custom/")) await deleteKey(k).catch(() => undefined);
+    revalidateTag(MANIFEST_TAG);
+    revalidatePath("/admin/recordings");
+    return { ok: true, message: "اتمسح نهائيًا" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر المسح" };
+  }
+}
+
+/**
+ * بعد رفع دفعة تسجيلات: إشعار واحد للمشتركين (عشان ١٠ ملفات متبقاش ١٠ إشعارات).
+ * تسجيل واحد: إشعار باسمه ورابطه. أكتر: "اتضافت ٣ تلاوات جديدة".
+ */
+export async function notifyNewUploads(ids: string[]): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const items = (await loadCatalog())?.items ?? {};
+    const shown = ids.filter((id) => items[id] && !items[id].hidden);
+    if (!shown.length) return { ok: true, message: "مفيش تسجيلات ظاهرة نبعت عنها" };
+    const first = items[shown[0]];
+    const msg =
+      shown.length === 1
+        ? { title: "تلاوة جديدة للشيخ ياسر الدوسري", body: first.title || first.prayerLabel || "", url: `/${first.category}/${shown[0]}` }
+        : { title: "تلاوات جديدة للشيخ ياسر الدوسري", body: `اتضافت ${shown.length.toLocaleString("ar-EG")} تلاوات جديدة`, url: "/" };
+    const r = await broadcast("recitations", msg);
+    return { ok: true, message: `اتبعت الإشعار لـ ${r.sent} مشترك` };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر إرسال الإشعار" };
   }
 }

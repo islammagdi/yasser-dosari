@@ -6,12 +6,11 @@ import { formatDuration, toArabicDigits } from "@/lib/format";
 import { getCategory } from "@/lib/categories";
 import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
-import { PLAYBACK_RATES, usePlayer } from "./PlayerProvider";
+import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { FullscreenPlayer } from "./FullscreenPlayer";
 import { RecordingCover } from "./RecordingCover";
 import {
   Forward10Icon,
-  GaugeIcon,
   HeartIcon,
   NextIcon,
   PauseIcon,
@@ -21,14 +20,6 @@ import {
   TimerIcon,
   VolumeIcon,
 } from "./icons";
-
-const SLEEP_OPTIONS: { value: number | "end"; label: string }[] = [
-  { value: 15, label: "بعد ١٥ دقيقة" },
-  { value: 30, label: "بعد ٣٠ دقيقة" },
-  { value: 45, label: "بعد ٤٥ دقيقة" },
-  { value: 60, label: "بعد ساعة" },
-  { value: "end", label: "مع نهاية التلاوة" },
-];
 
 const iconBtn =
   "relative flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors hover:bg-fg/5 hover:text-gold-soft disabled:opacity-30 disabled:hover:bg-transparent";
@@ -64,10 +55,6 @@ export function PlayerBar() {
   const pct = max ? (p.currentTime / max) * 100 : 0;
   const atEnd = p.queue.indexOf(p.current) >= p.queue.length - 1;
   const favorite = fav.isFavorite(p.current.id);
-  const cycleRate = () => {
-    const i = PLAYBACK_RATES.indexOf(p.rate as (typeof PLAYBACK_RATES)[number]);
-    p.setRate(PLAYBACK_RATES[(i + 1) % PLAYBACK_RATES.length]);
-  };
   const sleepBadge =
     p.sleep?.kind === "minutes"
       ? toArabicDigits(Math.max(1, Math.ceil((p.sleep.until - Date.now()) / 60_000)))
@@ -79,7 +66,13 @@ export function PlayerBar() {
     <div
       role="region"
       aria-label="المشغّل"
-      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-fg/10 pb-[env(safe-area-inset-bottom)]"
+      onClick={(e) => {
+        // الضغط على أي حتة في الشريط بيفتح المشغّل الكبير، ما عدا الأزرار والروابط وشريط التقدّم
+        if (p.current?.youtubeId) return;
+        if ((e.target as HTMLElement).closest("button, a, input, [role=menu]")) return;
+        setFull(true);
+      }}
+      className={`glass fixed inset-x-0 bottom-0 z-40 border-t border-fg/10 pb-[env(safe-area-inset-bottom)] ${p.current.youtubeId ? "" : "cursor-pointer"}`}
     >
       {/* خط التقدّم للموبايل */}
       <div aria-hidden dir="ltr" className="absolute inset-x-0 top-0 h-[2px] bg-fg/5 md:hidden">
@@ -98,9 +91,13 @@ export function PlayerBar() {
             </button>
           )}
           <span className="flex min-w-0 flex-col">
-            <Link href={`/${p.current.category}/${p.current.id}`} className="truncate text-[15px] font-semibold hover:text-gold-soft">
-              {p.current.title}
-            </Link>
+            {p.current.youtubeId ? (
+              <Link href={`/${p.current.category}/${p.current.id}`} className="truncate text-[15px] font-semibold hover:text-gold-soft">
+                {p.current.title}
+              </Link>
+            ) : (
+              <span className="truncate text-[15px] font-semibold">{p.current.title}</span>
+            )}
             <span className={`truncate text-xs ${p.error ? "text-gold-soft" : "text-muted"}`}>{p.error ?? section}</span>
           </span>
           <button
@@ -137,14 +134,6 @@ export function PlayerBar() {
 
         {/* أدوات التحكم: بتفضل LTR زي أي مشغّل */}
         <div dir="ltr" className="flex shrink-0 items-center gap-0.5">
-          <button type="button" onClick={cycleRate} aria-label={`سرعة التشغيل ${p.rate}x`} className={`${iconBtn} hidden md:flex`}>
-            <GaugeIcon className="h-5 w-5" />
-            {p.rate !== 1 && (
-              <span className="absolute -bottom-0.5 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-ink">
-                {p.rate}x
-              </span>
-            )}
-          </button>
           <button type="button" onClick={() => p.skip(-10)} disabled={!max} aria-label="رجوع ١٠ ثواني" className={`${iconBtn} hidden sm:flex`}>
             <Replay10Icon className="h-5 w-5" />
           </button>

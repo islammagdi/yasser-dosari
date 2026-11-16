@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NotificationsButton } from "./NotificationsButton";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 
 export function SiteFooter() {
@@ -14,6 +15,7 @@ export function SiteFooter() {
           >
             اقترح تحسينًا
           </a>
+          <NotificationsButton label="الإشعارات" sheet up align="start" className="flex min-h-11 items-center gap-1.5 hover:text-text" />
           <Link href="/transfer" className="flex min-h-11 items-center hover:text-text">
             نقل بياناتي
           </Link>

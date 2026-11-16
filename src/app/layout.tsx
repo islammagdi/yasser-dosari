@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { NotificationsBanner } from "@/components/NotificationsBanner";
 import { PlayerBar } from "@/components/PlayerBar";
 import { PlayerProvider } from "@/components/PlayerProvider";
 import { RegisterSW } from "@/components/RegisterSW";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </a>
           <SiteHeader />
 <main id="main" className="mx-auto w-full max-w-page px-4 pb-32 pt-6 sm:px-6 sm:pt-10">
+            <NotificationsBanner />
             {children}
           </main>
           <SiteFooter />

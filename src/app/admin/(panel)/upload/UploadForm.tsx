@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { prepareUpload, registerUpload, type ActionResult } from "../../actions";
+import { notifyNewUploads, prepareUpload, registerUpload, type ActionResult } from "../../actions";
 
 const SECTION_OPTIONS = [
   { value: "", label: "سيبه بانتظار التصنيف" },
@@ -22,6 +22,10 @@ interface Row {
   image?: File;
   title: string;
   section: string;
+  subtitle: string;
+  day: string;
+  month: string;
+  year: string;
   status: Status;
   progress: number;
   message?: string;
@@ -64,6 +68,8 @@ export function UploadForm() {
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
+  const [notify, setNotify] = useState(true);
+  const [notifyMsg, setNotifyMsg] = useState("");
   const input = useRef<HTMLInputElement>(null);
 
   // تحذير لو حد حاول يقفل الصفحة والرفع شغال
@@ -89,13 +95,17 @@ export function UploadForm() {
         image: images.find((i) => baseName(i.name) === baseName(audio.name)),
         title: baseName(audio.name).replace(/[_-]+/g, " ").trim(),
         section: "",
+        subtitle: "",
+        day: "",
+        month: "",
+        year: "",
         status: "ready" as Status,
         progress: 0,
       })),
     ]);
   };
 
-  const uploadOne = async (r: Row): Promise<ActionResult> => {
+  const uploadOne = async (r: Row): Promise<ActionResult & { id?: string }> => {
     patch(r.key, { status: "uploading", progress: 0, message: undefined });
     const prep = await prepareUpload(r.audio.name, r.image?.name);
     if (!prep.ok) throw new Error(prep.message);
@@ -107,12 +117,25 @@ export function UploadForm() {
       await put(slot.imageUrl, r.image, (p) => patch(r.key, { progress: (r.audio.size + p * r.image!.size) / total }));
     }
     patch(r.key, { progress: 1 });
-    return registerUpload({ slot: { id: slot.id, audioKey: slot.audioKey, imageKey: slot.imageKey }, title: r.title, duration, section: r.section || undefined });
+    const num = (v: string) => (v.trim() ? Number(v) : undefined);
+    const res = await registerUpload({
+      slot: { id: slot.id, audioKey: slot.audioKey, imageKey: slot.imageKey },
+      title: r.title,
+      duration,
+      section: r.section || undefined,
+      subtitle: r.subtitle,
+      hijriDay: num(r.day),
+      hijriMonth: num(r.month),
+      hijriYear: num(r.year),
+    });
+    return { ...res, id: slot.id };
   };
 
   // واحد ورا التاني: عشان كل تسجيل يتضاف للفهرس بعد اللي قبله من غير ما يمسحه
   const uploadAll = async () => {
     setBusy(true);
+    setNotifyMsg("");
+    const published: string[] = [];
     for (const r of rows) {
       if (r.status === "done") continue;
       if (!r.title.trim()) {
@@ -122,9 +145,15 @@ export function UploadForm() {
       try {
         const res = await uploadOne(r);
         patch(r.key, { status: res.ok ? "done" : "error", message: res.message });
+        if (res.ok && r.section && res.id) published.push(res.id);
       } catch (err) {
         patch(r.key, { status: "error", message: err instanceof Error ? err.message : "تعذّر الرفع" });
       }
+    }
+    // إشعار واحد للدفعة كلها، للتسجيلات اللي اتصنّفت بس
+    if (notify && published.length) {
+      const n = await notifyNewUploads(published);
+      setNotifyMsg(n.message);
     }
     setBusy(false);
   };
@@ -203,6 +232,38 @@ export function UploadForm() {
                   ))}
                 </select>
               </div>
+              {/* الوصف والتاريخ: بيتحفظوا مع التصنيف، فمحتاجين قسم */}
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <input
+                  value={r.subtitle}
+                  onChange={(e) => patch(r.key, { subtitle: e.target.value })}
+                  disabled={!r.section || r.status === "uploading" || r.status === "done"}
+                  placeholder={r.section ? "الوصف، مثلًا: من سورة الرحمن" : "اختار القسم الأول عشان تكتب وصف وتاريخ"}
+                  aria-label="الوصف"
+                  className={`${field} disabled:opacity-50`}
+                />
+                <div className="flex gap-2" role="group" aria-label="التاريخ الهجري">
+                  {(
+                    [
+                      ["day", "اليوم", "w-20"],
+                      ["month", "الشهر", "w-20"],
+                      ["year", "السنة", "w-24"],
+                    ] as const
+                  ).map(([k, label, w]) => (
+                    <input
+                      key={k}
+                      type="number"
+                      inputMode="numeric"
+                      value={r[k]}
+                      onChange={(e) => patch(r.key, { [k]: e.target.value } as Partial<Row>)}
+                      disabled={!r.section || r.status === "uploading" || r.status === "done"}
+                      placeholder={label}
+                      aria-label={label}
+                      className={`${field} ${w} disabled:opacity-50`}
+                    />
+                  ))}
+                </div>
+              </div>
               {(r.status === "uploading" || r.status === "done") && (
                 <div className="h-1.5 overflow-hidden rounded-full bg-fg/10" role="progressbar" aria-valuenow={Math.round(r.progress * 100)} aria-valuemin={0} aria-valuemax={100}>
                   <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${Math.round(r.progress * 100)}%` }} />
@@ -227,7 +288,12 @@ export function UploadForm() {
           <Link href="/admin/recordings" className="min-h-11 px-3 py-2.5 text-sm font-semibold text-gold-soft hover:underline">
             صفحة التسجيلات والتصنيف
           </Link>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} disabled={busy} className="h-5 w-5 accent-[#CDAA62]" />
+            ابعت إشعار للمشتركين بعد الرفع
+          </label>
           {busy && <span className="text-sm text-muted">متقفلش الصفحة لحد ما الرفع يخلص.</span>}
+          {notifyMsg && <span className="text-sm text-gold-soft">{notifyMsg}</span>}
         </div>
       )}
     </div>

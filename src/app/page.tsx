@@ -4,6 +4,7 @@ import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
 import { HomeCollections } from "@/components/HomeCollections";
+import { HomePlaylists } from "@/components/HomePlaylists";
 import { ImamateLog } from "@/components/ImamateLog";
 import { SurahMap } from "@/components/SurahMap";
 import { homeCollections, surahStats } from "@/lib/homeCollections";
@@ -61,8 +62,8 @@ export default async function HomePage() {
   );
 
   // سورة الكهف: الصوت أولًا، ولو مش موجود نسخة الفيديو
-  // الورد: النسخة الصوتية بس لو موجودة، عشان منبعتش قايمة المصحف مرتين للمتصفح
-  const wirdItems = mushaf.some((r) => !r.youtubeId) ? mushaf.filter((r) => !r.youtubeId) : mushaf;
+  // الورد: كل نسخ المصحف (المرتل من mp3quran، والمركز السعودي)، والزائر بيختار يسمع من أنهي واحدة
+  const wirdItems = mushaf;
   const kahf = mushaf.find((r) => r.surah === 18 && !r.youtubeId) ?? mushaf.find((r) => r.surah === 18) ?? null;
 
   // سجلّ الإمامة: الفروض في آخر ٣ شهور هجرية فيها تسجيلات بس، عشان منبعتش الأرشيف كله للمتصفح
@@ -84,6 +85,7 @@ export default async function HomePage() {
       <ImamateLog recordings={logRecordings} />
       <RamadanCard slots={imamate} recordings={taraweeh} />
       <HomeCollections collections={collections} />
+      <HomePlaylists />
       <FridayKahf kahf={kahf} />
       {/* القسم اللي لسه مفيهوش تسجيلات (زي التلاوات النادرة في الأول) مبيظهرش كتاب */}
       <HomeBrowser sections={sections.filter((s) => s.total > 0)} />

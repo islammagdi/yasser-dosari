@@ -8,7 +8,6 @@ import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 import { Logo } from "./Logo";
-import { NotificationsButton } from "./NotificationsButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { HeartIcon, SearchIcon } from "./icons";
 
@@ -40,6 +39,17 @@ export function SiteHeader() {
     return () => {
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  // القايمة مفتوحة: الصفحة اللي ورا متتحركش، والسكرول بيبقى جوه القايمة بس
+  useEffect(() => {
+    if (!open) return;
+    const root = document.documentElement;
+    const prev = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prev;
     };
   }, [open]);
 
@@ -104,7 +114,6 @@ export function SiteHeader() {
             <SearchIcon className="h-5 w-5" />
           </Link>
           <ThemeToggle className={`${iconBtn} !hidden text-muted hover:text-text sm:!flex`} />
-          <NotificationsButton className={`${iconBtn} text-muted hover:text-text`} />
           <Link
             href="/favorites"
             aria-label={`المفضلة${ids.length ? ` (${ids.length})` : ""}`}
@@ -135,8 +144,13 @@ export function SiteHeader() {
 
       {/* قايمة الموبايل */}
       {open && (
-        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-fg/5 xl:hidden">
-          <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 py-3">
+        <nav
+          id="mobile-menu"
+          aria-label="الأقسام"
+          className="max-h-[calc(100dvh-4.75rem-env(safe-area-inset-top))] overflow-y-auto overscroll-contain border-t border-fg/5 xl:hidden"
+        >
+          {/* مسافة تحت عشان آخر عنصر ميستخباش ورا شريط المشغّل */}
+          <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 pb-28 pt-3">
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
               return (

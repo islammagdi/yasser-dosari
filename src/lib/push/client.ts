@@ -41,6 +41,7 @@ export function pushTopics(): PushTopics {
   }
   return { recitations: true, imamate: true };
 }
+// الإشعارات بقت عامة: الأنواع اتشالت من الواجهة، والسيرفر بيبعت كل حاجة لكل مشترك
 
 /** الزائر اختار الأنواع بنفسه قبل كده؟ (المشتركين قبل إضافة إشعار الإمامة: لأ) */
 export function hasChosenTopics(): boolean {

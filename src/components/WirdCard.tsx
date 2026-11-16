@@ -19,6 +19,10 @@ const DISMISS_KEY = "yd-wird-dismissed";
 const durationLabel = (d: number) =>
   d === 7 ? "أسبوع" : d === 10 ? "١٠ أيام" : d === 30 ? "شهر" : d === 60 ? "شهرين" : `${toArabicDigits(d)} يومًا`;
 
+const EDITION_KEY = "yd-wird-edition";
+const MURATTAL = "المصحف المرتل";
+const editionOf = (r: Recording) => r.versionLabel || MURATTAL;
+
 /**
  * طابور ورد اليوم: كل سورة في النصيب كتسجيل، والسور الناقصة (أول وآخر النصيب) كمقطع
  * من وقت أول آية لآخر آية، من توقيت الآيات بتاع mp3quran. لو التوقيت مش متاح بنشغّل السورة كاملة.
@@ -30,7 +34,8 @@ async function buildQueue(portion: WirdPortion, bySurah: Map<number, Recording>)
     const rec = bySurah.get(seg.surah);
     if (!rec) continue;
     const tag = i === last ? `wird-${portion.index}-end` : `wird-${portion.index}-${i}`;
-    if (seg.whole || rec.youtubeId || !rec.audioUrl) {
+    // توقيت الآيات من mp3quran بيطابق ملفاتهم بس: أي نسخة تانية بتتشغّل بالسورة كاملة
+    if (seg.whole || rec.youtubeId || !rec.audioUrl || !rec.id.startsWith("mushaf-")) {
       out.push({ ...rec, clip: { start: 0, tag } });
       continue;
     }
@@ -66,6 +71,23 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   useEffect(() => setPushTime(wirdReminderTime()), []);
   const [saving, setSaving] = useState<string | null>(null);
   const [loadingQueue, setLoadingQueue] = useState(false);
+  // نسخة المصحف اللي الزائر بيسمع منها الورد (محفوظة على جهازه)
+  const [edition, setEditionState] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setEditionState(localStorage.getItem(EDITION_KEY));
+    } catch {
+      /* تجاهل */
+    }
+  }, []);
+  const setEdition = (v: string) => {
+    setEditionState(v);
+    try {
+      localStorage.setItem(EDITION_KEY, v);
+    } catch {
+      /* تجاهل */
+    }
+  };
 
   // آخر مقطع في ورد اليوم خلص في المشغّل: الورد بيتعلّم لوحده
   const portionIndex = w.portion?.index;
@@ -89,11 +111,37 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
 
   if (!w.ready) return null;
 
-  // تسجيل لكل سورة: النسخة الصوتية لو موجودة، وإلا الفيديو
+  // النسخ المتاحة (المرتل الأول)، والنسخة المختارة لو لسه موجودة
+  const editions = [...new Set(items.map(editionOf))].sort((a, b) => Number(b === MURATTAL) - Number(a === MURATTAL));
+  const chosen = edition && editions.includes(edition) ? edition : editions[0];
+
+  // تسجيل لكل سورة من النسخة المختارة، ولو السورة ناقصة فيها ناخدها من أي نسخة تانية (الصوت قبل الفيديو)
   const bySurah = new Map<number, Recording>();
-  for (const r of [...items].sort((a, b) => Number(!!a.youtubeId) - Number(!!b.youtubeId))) {
-    if (r.surah && !bySurah.has(r.surah)) bySurah.set(r.surah, r);
-  }
+  const ordered = [...items].sort(
+    (a, b) => Number(editionOf(b) === chosen) - Number(editionOf(a) === chosen) || Number(!!a.youtubeId) - Number(!!b.youtubeId),
+  );
+  for (const r of ordered) if (r.surah && !bySurah.has(r.surah)) bySurah.set(r.surah, r);
+
+  const editionPicker =
+    editions.length > 1 ? (
+      <div className="flex flex-wrap items-center gap-2 text-sm" role="radiogroup" aria-label="المصحف">
+        <span className="text-muted">بتسمع من:</span>
+        {editions.map((e) => (
+          <button
+            key={e}
+            type="button"
+            role="radio"
+            aria-checked={e === chosen}
+            onClick={() => setEdition(e)}
+            className={`min-h-9 rounded-full px-3.5 font-semibold transition-colors ${
+              e === chosen ? "bg-accent text-accent-ink" : "border border-line-strong text-muted hover:text-text"
+            }`}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+    ) : null;
 
   const durations = (onPick: (d: number) => void) => (
     <div className="flex flex-wrap gap-2">
@@ -231,6 +279,11 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
         <p className="font-display text-xl font-bold">{allDone ? `الجاي: ${portion.label}` : portion.label}</p>
         <p className="text-sm text-muted">{portion.range}</p>
       </div>
+
+      {editionPicker}
+      {chosen !== MURATTAL && (
+        <p className="-mt-2 text-xs text-muted">النسخة دي بتتشغّل بالسورة كاملة، مش من أول آية الجزء بالظبط.</p>
+      )}
 
       <ul aria-label="سور ورد اليوم" className="flex flex-wrap gap-2">
         {portion.segments.map((sg) => (
