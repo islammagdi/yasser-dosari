@@ -31,6 +31,28 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
 
   useEffect(() => setLast(surah), [surah, setLast]);
 
+  // جاي من نتيجة بحث (أو علامة): الآية اللي في الرابط (#ayah-12) بتتعلّم وتنزل الشاشة عليها،
+  // والعلامة بتخف لوحدها بعد شوية
+  const [highlight, setHighlight] = useState<number | null>(null);
+  useEffect(() => {
+    let timer = 0;
+    const apply = () => {
+      const n = Number(window.location.hash.match(/^#ayah-(\d+)$/)?.[1]);
+      if (!n) return;
+      setHighlight(n);
+      // بعد الرسم، عشان المتصفح ممكن يكون نزل قبل ما الخط يتحمّل
+      requestAnimationFrame(() => document.getElementById(`ayah-${n}`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setHighlight(null), 8000);
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => {
+      window.removeEventListener("hashchange", apply);
+      window.clearTimeout(timer);
+    };
+  }, [surah]);
+
   const close = useCallback(() => setOpen(null), []);
   const isBookmarked = (n: number) => bookmark?.surah === surah && bookmark.ayah === n;
 
@@ -109,10 +131,11 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
                 role="button"
                 tabIndex={0}
                 aria-label={`الآية ${toArabicDigits(a.n)}${marked ? "، عليها علامة" : ""}`}
+                aria-current={highlight === a.n ? "true" : undefined}
                 onClick={() => setOpen(a)}
                 onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen(a))}
-                className={`scroll-mt-28 cursor-pointer rounded-lg transition-colors hover:text-gold-soft focus-visible:bg-fg/5 focus-visible:outline-none ${
-                  open?.n === a.n ? "bg-gold/15 text-gold-soft" : ""
+                className={`scroll-mt-28 cursor-pointer rounded-lg transition-colors duration-700 hover:text-gold-soft focus-visible:bg-fg/5 focus-visible:outline-none ${
+                  open?.n === a.n ? "bg-gold/15 text-gold-soft" : highlight === a.n ? "bg-gold/25 shadow-[0_0_0_6px_rgb(var(--c-gold)/0.25)]" : ""
                 } ${marked ? "underline decoration-gold/70 decoration-2 underline-offset-[0.5em]" : ""}`}
               >
                 {a.text} <span className="text-gold/80">﴿{toArabicDigits(a.n)}﴾</span>

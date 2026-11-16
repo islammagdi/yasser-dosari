@@ -6,6 +6,7 @@ import type { Recording } from "@/types";
 import { markSurahListened } from "@/lib/useKhatma";
 import { getProgressTime, saveProgress } from "@/lib/useProgress";
 const STORAGE_KEY = "yd-player-v1";
+/** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 
 interface PlayerContextValue {
@@ -101,6 +102,15 @@ interface Media {
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
 
+/** خيارات تايمر الإيقاف: بيستخدمها الشريط الصغير والمشغّل الكبير */
+export const SLEEP_OPTIONS: { value: number | "end"; label: string }[] = [
+  { value: 15, label: "بعد ١٥ دقيقة" },
+  { value: 30, label: "بعد ٣٠ دقيقة" },
+  { value: 45, label: "بعد ٤٥ دقيقة" },
+  { value: 60, label: "بعد ساعة" },
+  { value: "end", label: "مع نهاية التلاوة" },
+];
+
 export function usePlayer() {
   const ctx = useContext(PlayerContext);
   if (!ctx) throw new Error("usePlayer must be used inside <PlayerProvider>");
@@ -184,7 +194,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (!Array.isArray(saved.queue) || !saved.queue[saved.index]) return;
       setQueue(saved.queue);
       setIndex(saved.index);
-      setRateState(saved.rate || 1);
+      // السرعة اتشالت من المشغّل (مش مناسبة للقرآن): أي سرعة قديمة محفوظة بترجع ١×
+      setRateState(1);
       resumeAt.current = saved.time || 0;
     } catch {
       /* تخزين تالف أو غير متاح — نبدأ من الصفر */

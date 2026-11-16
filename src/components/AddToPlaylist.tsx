@@ -6,7 +6,8 @@ import type { Recording } from "@/types";
 import { usePlaylists } from "@/lib/usePlaylists";
 
 /** زرار "أضف إلى قائمة": بيفتح قايمة بقوائم الزائر، وكل واحدة عليها علامة لو التسجيل فيها */
-export function AddToPlaylist({ recording }: { recording: Recording }) {
+/** up: القايمة تفتح لفوق (لما الزرار في آخر الشاشة). buttonClassName: شكل زرار مختلف */
+export function AddToPlaylist({ recording, up = false, buttonClassName }: { recording: Recording; up?: boolean; buttonClassName?: string }) {
   const pl = usePlaylists();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -35,7 +36,11 @@ export function AddToPlaylist({ recording }: { recording: Recording }) {
         aria-expanded={open}
         aria-label="إضافة إلى قائمة تشغيل"
         title="إضافة إلى قائمة تشغيل"
-        className={`glass-card flex h-14 w-14 items-center justify-center rounded-full transition-colors ${inCount ? "text-gold" : "text-muted hover:text-text"}`}
+        className={
+          buttonClassName
+            ? `${buttonClassName} ${inCount ? "text-gold" : ""}`
+            : `glass-card flex h-14 w-14 items-center justify-center rounded-full transition-colors ${inCount ? "text-gold" : "text-muted hover:text-text"}`
+        }
       >
         <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
           <path d="M4 6h12M4 11h12M4 16h7M17 14v6M14 17h6" />
@@ -43,7 +48,7 @@ export function AddToPlaylist({ recording }: { recording: Recording }) {
       </button>
 
       {open && (
-        <div className="glass absolute end-0 top-full z-30 mt-2 flex w-72 flex-col gap-2 rounded-2xl border border-fg/10 p-3 shadow-float">
+        <div className={`glass absolute z-30 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-2xl border border-fg/10 p-3 shadow-float ${up ? "bottom-full start-1/2 mb-2 -translate-x-1/2 rtl:translate-x-1/2" : "end-0 top-full mt-2"}`}>
           <p className="px-1 text-sm font-semibold text-gold-soft">إضافة إلى قائمة</p>
           {pl.lists.length > 0 && (
             <ul className="flex max-h-60 flex-col gap-1 overflow-y-auto">

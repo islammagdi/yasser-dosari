@@ -180,7 +180,7 @@ function AyahResults({ q, noSurahs }: { q: string; noSurahs: boolean }) {
           {state.hits.map((h) => (
             <li key={`${h.surah}:${h.ayah}`}>
               <Link
-                href={readHref(h.surah, h.ayah)}
+                href={`/quran/${h.surah}#ayah-${h.ayah}`}
                 className="glass-card flex flex-col gap-2 rounded-2xl px-5 py-4 transition-colors hover:border-gold/40 hover:bg-fg/5"
               >
                 <span className="text-xs font-semibold text-gold-soft">

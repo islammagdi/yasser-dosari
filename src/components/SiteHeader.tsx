@@ -43,6 +43,17 @@ export function SiteHeader() {
     };
   }, [open]);
 
+  // القايمة مفتوحة: الصفحة اللي ورا متتحركش، والسكرول بيبقى جوه القايمة بس
+  useEffect(() => {
+    if (!open) return;
+    const root = document.documentElement;
+    const prev = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prev;
+    };
+  }, [open]);
+
   const iconBtn = "glass-card relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-12 md:w-12";
 
   return (
@@ -135,8 +146,13 @@ export function SiteHeader() {
 
       {/* قايمة الموبايل */}
       {open && (
-        <nav id="mobile-menu" aria-label="الأقسام" className="border-t border-fg/5 xl:hidden">
-          <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 py-3">
+        <nav
+          id="mobile-menu"
+          aria-label="الأقسام"
+          className="max-h-[calc(100dvh-4.75rem-env(safe-area-inset-top))] overflow-y-auto overscroll-contain border-t border-fg/5 xl:hidden"
+        >
+          {/* مسافة تحت عشان آخر عنصر ميستخباش ورا شريط المشغّل */}
+          <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 pb-28 pt-3">
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
               return (
