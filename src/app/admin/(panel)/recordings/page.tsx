@@ -73,7 +73,13 @@ export default async function AdminRecordingsPage({ searchParams }: Props) {
           ) : (
             <ul className="flex flex-col gap-2">
               {pending.map(([id, meta]) => (
-                <PendingRow key={id} id={id} title={meta.title} duration={meta.duration} />
+                <PendingRow
+                  key={id}
+                  id={id}
+                  title={meta.title}
+                  duration={meta.duration}
+                  audioUrl={meta.file && AUDIO_BASE ? `${AUDIO_BASE}/${meta.file}` : undefined}
+                />
               ))}
             </ul>
           )}

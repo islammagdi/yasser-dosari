@@ -53,7 +53,8 @@ export function RefreshManifestButton() {
   );
 }
 
-export function PendingRow({ id, title, duration }: { id: string; title?: string; duration?: number }) {
+/** audioUrl: عشان تسمع التسجيل قبل ما تكتب عنوانه وتصنّفه */
+export function PendingRow({ id, title, duration, audioUrl }: { id: string; title?: string; duration?: number; audioUrl?: string }) {
   const [section, setSection] = useState("fard");
   const [name, setName] = useState(title ?? "");
   const [pending, start] = useTransition();
@@ -97,6 +98,10 @@ export function PendingRow({ id, title, duration }: { id: string; title?: string
           )}
         </span>
       </div>
+      {audioUrl && (
+        // preload="none": الصفحة فيها تسجيلات كتير، فمفيش تحميل غير لما تدوس تشغيل
+        <audio controls preload="none" src={audioUrl} className="h-10 w-full max-w-xl" aria-label={`استماع: ${title || id}`} />
+      )}
       {!title && (
         <input
           value={name}
