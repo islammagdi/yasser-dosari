@@ -73,7 +73,10 @@ export async function broadcast(topic: keyof StoredSub["topics"], msg: PushMessa
     await Promise.all(
       keys.slice(i, i + 50).map(async (key) => {
         const s = await getFresh<StoredSub>(key);
-        if (!s?.topics?.[topic]) return;
+        // الإشعارات عامة: أي مشترك بيوصله كل جديد (التلاوات، وبداية صلاة الشيخ، وأي تحديث).
+        // topic بيفضل للتسجيل بس، وعشان لو حبينا نرجّع الاختيار بعدين
+        void topic;
+        if (!s?.subscription) return;
         try {
           await webpush.sendNotification(s.subscription, payload, { TTL: 60 * 60 * 24, urgency: "normal" });
           sent++;

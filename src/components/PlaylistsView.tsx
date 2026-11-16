@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatDuration } from "@/lib/format";
 import { usePlaylists, type Playlist } from "@/lib/usePlaylists";
 import { usePlayer } from "./PlayerProvider";
@@ -13,6 +13,16 @@ export function PlaylistsView() {
   const pl = usePlaylists();
   const [name, setName] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // جاي من كارت قايمة في الرئيسية (/playlists#pl-abc): القايمة دي تتفتح وتنزل الشاشة عليها
+  useEffect(() => {
+    if (!pl.ready) return;
+    const id = window.location.hash.match(/^#pl-(.+)$/)?.[1];
+    if (!id || !pl.lists.some((x) => x.id === id)) return;
+    setOpenId(id);
+    requestAnimationFrame(() => document.getElementById(`pl-${id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pl.ready]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -65,7 +75,7 @@ function PlaylistItem({ p, open, onToggle }: { p: Playlist; open: boolean; onTog
   const playingHere = player.isPlaying && p.items.some((r) => r.id === player.current?.id);
 
   return (
-    <li className="glass-card flex flex-col gap-3 rounded-3xl p-4 sm:p-5">
+    <li id={`pl-${p.id}`} className="glass-card flex scroll-mt-24 flex-col gap-3 rounded-3xl p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"

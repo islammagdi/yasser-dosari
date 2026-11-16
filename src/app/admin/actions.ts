@@ -491,3 +491,25 @@ export async function deletePending(id: string): Promise<ActionResult> {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر المسح" };
   }
 }
+
+/**
+ * بعد رفع دفعة تسجيلات: إشعار واحد للمشتركين (عشان ١٠ ملفات متبقاش ١٠ إشعارات).
+ * تسجيل واحد: إشعار باسمه ورابطه. أكتر: "اتضافت ٣ تلاوات جديدة".
+ */
+export async function notifyNewUploads(ids: string[]): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const items = (await loadCatalog())?.items ?? {};
+    const shown = ids.filter((id) => items[id] && !items[id].hidden);
+    if (!shown.length) return { ok: true, message: "مفيش تسجيلات ظاهرة نبعت عنها" };
+    const first = items[shown[0]];
+    const msg =
+      shown.length === 1
+        ? { title: "تلاوة جديدة للشيخ ياسر الدوسري", body: first.title || first.prayerLabel || "", url: `/${first.category}/${shown[0]}` }
+        : { title: "تلاوات جديدة للشيخ ياسر الدوسري", body: `اتضافت ${shown.length.toLocaleString("ar-EG")} تلاوات جديدة`, url: "/" };
+    const r = await broadcast("recitations", msg);
+    return { ok: true, message: `اتبعت الإشعار لـ ${r.sent} مشترك` };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر إرسال الإشعار" };
+  }
+}

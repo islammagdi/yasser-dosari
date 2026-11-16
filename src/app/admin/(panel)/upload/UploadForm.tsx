@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { prepareUpload, registerUpload, type ActionResult } from "../../actions";
+import { notifyNewUploads, prepareUpload, registerUpload, type ActionResult } from "../../actions";
 
 const SECTION_OPTIONS = [
   { value: "", label: "سيبه بانتظار التصنيف" },
@@ -68,6 +68,8 @@ export function UploadForm() {
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
+  const [notify, setNotify] = useState(true);
+  const [notifyMsg, setNotifyMsg] = useState("");
   const input = useRef<HTMLInputElement>(null);
 
   // تحذير لو حد حاول يقفل الصفحة والرفع شغال
@@ -103,7 +105,7 @@ export function UploadForm() {
     ]);
   };
 
-  const uploadOne = async (r: Row): Promise<ActionResult> => {
+  const uploadOne = async (r: Row): Promise<ActionResult & { id?: string }> => {
     patch(r.key, { status: "uploading", progress: 0, message: undefined });
     const prep = await prepareUpload(r.audio.name, r.image?.name);
     if (!prep.ok) throw new Error(prep.message);
@@ -116,7 +118,7 @@ export function UploadForm() {
     }
     patch(r.key, { progress: 1 });
     const num = (v: string) => (v.trim() ? Number(v) : undefined);
-    return registerUpload({
+    const res = await registerUpload({
       slot: { id: slot.id, audioKey: slot.audioKey, imageKey: slot.imageKey },
       title: r.title,
       duration,
@@ -126,11 +128,14 @@ export function UploadForm() {
       hijriMonth: num(r.month),
       hijriYear: num(r.year),
     });
+    return { ...res, id: slot.id };
   };
 
   // واحد ورا التاني: عشان كل تسجيل يتضاف للفهرس بعد اللي قبله من غير ما يمسحه
   const uploadAll = async () => {
     setBusy(true);
+    setNotifyMsg("");
+    const published: string[] = [];
     for (const r of rows) {
       if (r.status === "done") continue;
       if (!r.title.trim()) {
@@ -140,9 +145,15 @@ export function UploadForm() {
       try {
         const res = await uploadOne(r);
         patch(r.key, { status: res.ok ? "done" : "error", message: res.message });
+        if (res.ok && r.section && res.id) published.push(res.id);
       } catch (err) {
         patch(r.key, { status: "error", message: err instanceof Error ? err.message : "تعذّر الرفع" });
       }
+    }
+    // إشعار واحد للدفعة كلها، للتسجيلات اللي اتصنّفت بس
+    if (notify && published.length) {
+      const n = await notifyNewUploads(published);
+      setNotifyMsg(n.message);
     }
     setBusy(false);
   };
@@ -277,7 +288,12 @@ export function UploadForm() {
           <Link href="/admin/recordings" className="min-h-11 px-3 py-2.5 text-sm font-semibold text-gold-soft hover:underline">
             صفحة التسجيلات والتصنيف
           </Link>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} disabled={busy} className="h-5 w-5 accent-[#CDAA62]" />
+            ابعت إشعار للمشتركين بعد الرفع
+          </label>
           {busy && <span className="text-sm text-muted">متقفلش الصفحة لحد ما الرفع يخلص.</span>}
+          {notifyMsg && <span className="text-sm text-gold-soft">{notifyMsg}</span>}
         </div>
       )}
     </div>
