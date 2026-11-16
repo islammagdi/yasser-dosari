@@ -22,6 +22,10 @@ interface Row {
   image?: File;
   title: string;
   section: string;
+  subtitle: string;
+  day: string;
+  month: string;
+  year: string;
   status: Status;
   progress: number;
   message?: string;
@@ -89,6 +93,10 @@ export function UploadForm() {
         image: images.find((i) => baseName(i.name) === baseName(audio.name)),
         title: baseName(audio.name).replace(/[_-]+/g, " ").trim(),
         section: "",
+        subtitle: "",
+        day: "",
+        month: "",
+        year: "",
         status: "ready" as Status,
         progress: 0,
       })),
@@ -107,7 +115,17 @@ export function UploadForm() {
       await put(slot.imageUrl, r.image, (p) => patch(r.key, { progress: (r.audio.size + p * r.image!.size) / total }));
     }
     patch(r.key, { progress: 1 });
-    return registerUpload({ slot: { id: slot.id, audioKey: slot.audioKey, imageKey: slot.imageKey }, title: r.title, duration, section: r.section || undefined });
+    const num = (v: string) => (v.trim() ? Number(v) : undefined);
+    return registerUpload({
+      slot: { id: slot.id, audioKey: slot.audioKey, imageKey: slot.imageKey },
+      title: r.title,
+      duration,
+      section: r.section || undefined,
+      subtitle: r.subtitle,
+      hijriDay: num(r.day),
+      hijriMonth: num(r.month),
+      hijriYear: num(r.year),
+    });
   };
 
   // واحد ورا التاني: عشان كل تسجيل يتضاف للفهرس بعد اللي قبله من غير ما يمسحه
@@ -202,6 +220,38 @@ export function UploadForm() {
                     </option>
                   ))}
                 </select>
+              </div>
+              {/* الوصف والتاريخ: بيتحفظوا مع التصنيف، فمحتاجين قسم */}
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <input
+                  value={r.subtitle}
+                  onChange={(e) => patch(r.key, { subtitle: e.target.value })}
+                  disabled={!r.section || r.status === "uploading" || r.status === "done"}
+                  placeholder={r.section ? "الوصف، مثلًا: من سورة الرحمن" : "اختار القسم الأول عشان تكتب وصف وتاريخ"}
+                  aria-label="الوصف"
+                  className={`${field} disabled:opacity-50`}
+                />
+                <div className="flex gap-2" role="group" aria-label="التاريخ الهجري">
+                  {(
+                    [
+                      ["day", "اليوم", "w-20"],
+                      ["month", "الشهر", "w-20"],
+                      ["year", "السنة", "w-24"],
+                    ] as const
+                  ).map(([k, label, w]) => (
+                    <input
+                      key={k}
+                      type="number"
+                      inputMode="numeric"
+                      value={r[k]}
+                      onChange={(e) => patch(r.key, { [k]: e.target.value } as Partial<Row>)}
+                      disabled={!r.section || r.status === "uploading" || r.status === "done"}
+                      placeholder={label}
+                      aria-label={label}
+                      className={`${field} ${w} disabled:opacity-50`}
+                    />
+                  ))}
+                </div>
               </div>
               {(r.status === "uploading" || r.status === "done") && (
                 <div className="h-1.5 overflow-hidden rounded-full bg-fg/10" role="progressbar" aria-valuenow={Math.round(r.progress * 100)} aria-valuemin={0} aria-valuemax={100}>

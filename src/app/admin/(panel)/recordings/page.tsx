@@ -3,7 +3,7 @@ import { loadCatalog } from "@/lib/admin/catalog";
 import { adminManifest } from "@/lib/admin/manifest";
 import { fetchYoutubeMushaf } from "@/lib/api/youtube";
 import { normalizeArabic } from "@/lib/format";
-import { EntryRow, PendingRow, RefreshManifestButton, SyncButton } from "./rows";
+import { EntryTableRow, PendingRow, RefreshManifestButton, SyncButton } from "./rows";
 
 // جلب البلاي ليستات من يوتيوب (زرار الإنشاء) ممكن ياخد وقت
 export const maxDuration = 60;
@@ -16,7 +16,9 @@ const SECTIONS = [
   { value: "lectures", label: "الخطب والمحاضرات" },
   { value: "rare", label: "تلاوات نادرة" },
   { value: "hidden", label: "المخفية" },
+  { value: "nocover", label: "من غير غلاف" },
 ];
+const AUDIO_BASE = (process.env.AUDIO_BASE_URL ?? "").replace(/\/$/, "");
 
 interface Props {
   searchParams: { tab?: string; q?: string; cat?: string; page?: string };
@@ -77,7 +79,7 @@ export default async function AdminRecordingsPage({ searchParams }: Props) {
           )}
         </section>
       ) : (
-        <AllTab items={items} searchParams={searchParams} />
+        <AllTab items={items} manifest={manifest} searchParams={searchParams} />
       )}
 
       {catalog && (
@@ -93,14 +95,29 @@ export default async function AdminRecordingsPage({ searchParams }: Props) {
   );
 }
 
-function AllTab({ items, searchParams }: { items: Record<string, import("@/lib/admin/catalog").CatalogEntry>; searchParams: Props["searchParams"] }) {
+function AllTab({
+  items,
+  manifest,
+  searchParams,
+}: {
+  items: Record<string, import("@/lib/admin/catalog").CatalogEntry>;
+  manifest: import("@/lib/api/youtube").AudioManifest;
+  searchParams: Props["searchParams"];
+}) {
+  // الغلاف: صورة يوتيوب للفيديوهات، والصورة المرفوعة للتسجيلات الخاصة
+  const coverOf = (id: string, e: import("@/lib/admin/catalog").CatalogEntry): string | null => {
+    if (id.startsWith("custom-")) return manifest[id]?.image && AUDIO_BASE ? `${AUDIO_BASE}/${manifest[id].image}` : null;
+    return e.imageUrl ?? null;
+  };
   const q = normalizeArabic(searchParams.q ?? "");
   const cat = searchParams.cat ?? "";
   const page = Math.max(1, Number(searchParams.page) || 1);
 
   const rows = Object.entries(items)
     .filter(([id, e]) => {
-      if (cat === "hidden" ? !e.hidden : cat && (e.category !== cat || e.hidden)) return false;
+      if (cat === "nocover") {
+        if (coverOf(id, e)) return false;
+      } else if (cat === "hidden" ? !e.hidden : cat && (e.category !== cat || e.hidden)) return false;
       if (!q) return true;
       return normalizeArabic(`${id} ${e.title} ${e.subtitle ?? ""} ${e.searchText ?? ""}`).includes(q);
     })
@@ -129,11 +146,25 @@ function AllTab({ items, searchParams }: { items: Record<string, import("@/lib/a
         </button>
       </form>
       <p className="text-sm text-muted">{rows.length} نتيجة</p>
-      <ul className="flex flex-col gap-2">
-        {shown.map(([id, e]) => (
-          <EntryRow key={id} id={id} entry={e} />
-        ))}
-      </ul>
+      {/* جدول: على الموبايل بيتسحب بالعرض */}
+      <div className="overflow-x-auto rounded-2xl border border-line">
+        <table className="w-full min-w-[860px] text-sm">
+          <thead className="bg-fg/5 text-start text-xs text-muted">
+            <tr>
+              {["الغلاف", "العنوان", "الوصف", "التاريخ", "القسم", "الحالة", ""].map((h, i) => (
+                <th key={i} scope="col" className="px-3 py-2.5 text-start font-semibold">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map(([id, e]) => (
+              <EntryTableRow key={id} id={id} entry={e} cover={coverOf(id, e)} />
+            ))}
+          </tbody>
+        </table>
+      </div>
       {pages > 1 && (
         <nav className="flex items-center gap-3 text-sm">
           {page > 1 && <Link href={link(page - 1)} className="min-h-11 px-3 py-2.5 text-gold-soft">السابق</Link>}
