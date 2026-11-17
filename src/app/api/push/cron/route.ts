@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendDueImamateAlerts, sendDueWirdReminders } from "@/lib/push/server";
+import { sendDueImamateAlerts, sendDueRamadanReminders, sendDueWirdReminders } from "@/lib/push/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -15,9 +15,9 @@ export async function GET(req: Request) {
   if (!secret || key !== secret) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   try {
     // كل واحدة لوحدها: لو واحدة وقعت التانية تكمّل
-    const [wird, imamate] = await Promise.allSettled([sendDueWirdReminders(), sendDueImamateAlerts()]);
+    const [wird, imamate, ramadan] = await Promise.allSettled([sendDueWirdReminders(), sendDueImamateAlerts(), sendDueRamadanReminders()]);
     const out = (r: PromiseSettledResult<unknown>) => (r.status === "fulfilled" ? r.value : { error: String(r.reason) });
-    return NextResponse.json({ wird: out(wird), imamate: out(imamate) });
+    return NextResponse.json({ wird: out(wird), imamate: out(imamate), ramadan: out(ramadan) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "failed" }, { status: 500 });
   }

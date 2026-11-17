@@ -465,31 +465,44 @@ export async function attachCover(id: string, key: string): Promise<ActionResult
   }
 }
 
-// ---------- مسح تسجيل لسه متصنّفش ----------
+// ---------- مسح تسجيلات لسه متصنّفتش ----------
+// أي تسجيل في "بانتظار التصنيف" (مرفوع منك أو صوت فيديو من يوتيوب): ملفاته من R2 وسطره من الفهرس.
+// التسجيلات المصنّفة مبتتمسحش من هنا (ليها "إخفاء من الموقع").
 
-/**
- * مسح نهائي لتسجيل خاص في "بانتظار التصنيف": الصوت والغلاف من R2، وسطره من الفهرس.
- * التسجيلات المصنّفة مبتتمسحش من هنا (ليها "إخفاء من الموقع").
- */
-export async function deletePending(id: string): Promise<ActionResult> {
+/** ملفات الصوت والصور بس، عشان مستحيل نمسح ملف بيانات بالغلط */
+const DELETABLE = /\.(mp3|m4a|jpe?g|png|webp)$/i;
+
+export async function deletePendingMany(ids: string[]): Promise<ActionResult & { deleted?: string[] }> {
   try {
     await assertAdmin();
-    if (!isCustomKey(id)) return { ok: false, message: "المسح للتسجيلات الخاصة بس" };
-    if ((await loadCatalog())?.items[id]) return { ok: false, message: "التسجيل ده متصنّف. استخدم «إخفاء من الموقع» بدل المسح." };
+    if (!ids.length) return { ok: false, message: "مفيش تسجيلات محددة" };
+    const catalog = (await loadCatalog())?.items ?? {};
     const { deleteKey, getFresh, putJson } = await import("@/lib/admin/r2");
     const manifest = (await getFresh<Record<string, { file?: string; image?: string }>>("manifest.json")) ?? {};
-    const entry = manifest[id];
-    if (!entry) return { ok: false, message: "التسجيل مش موجود" };
-    delete manifest[id];
+    const deleted: string[] = [];
+    const files: string[] = [];
+    for (const id of ids) {
+      const entry = manifest[id];
+      if (!entry || catalog[id]) continue;
+      delete manifest[id];
+      deleted.push(id);
+      for (const k of [entry.file, entry.image]) if (k && DELETABLE.test(k) && !k.startsWith("admin/")) files.push(k);
+    }
+    if (!deleted.length) return { ok: false, message: "التسجيلات دي مش في «بانتظار التصنيف»" };
+    // الفهرس الأول في كتابة واحدة، والملفات بعده: لو المسح وقع في النص، الموقع مش هيشاور على ملف مش موجود
     await putJson("manifest.json", manifest);
-    // الملفات بعد الفهرس: لو المسح وقع في النص، الموقع مش هيشاور على ملف مش موجود
-    for (const k of [entry.file, entry.image]) if (k?.startsWith("custom/")) await deleteKey(k).catch(() => undefined);
+    for (const k of files) await deleteKey(k).catch(() => undefined);
     revalidateTag(MANIFEST_TAG);
     revalidatePath("/admin/recordings");
-    return { ok: true, message: "اتمسح نهائيًا" };
+    revalidatePath("/admin/upload");
+    return { ok: true, deleted, message: deleted.length === 1 ? "اتمسح نهائيًا" : `اتمسح ${deleted.length} تسجيل نهائيًا` };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر المسح" };
   }
+}
+
+export async function deletePending(id: string): Promise<ActionResult> {
+  return deletePendingMany([id]);
 }
 
 /**
