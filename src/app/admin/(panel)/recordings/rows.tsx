@@ -1,8 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { CatalogEntry } from "@/lib/admin/catalog";
-import { classifyPending, deletePending, refreshManifest, syncFromPlaylists, updateEntry, type ActionResult } from "../../actions";
+import { classifyPending, deletePending, deletePendingMany, refreshManifest, syncFromPlaylists, updateEntry, type ActionResult } from "../../actions";
 import { CoverUpload } from "../CoverUpload";
 
 const SECTION_OPTIONS = [
@@ -53,8 +54,25 @@ export function RefreshManifestButton() {
   );
 }
 
-/** audioUrl: عشان تسمع التسجيل قبل ما تكتب عنوانه وتصنّفه */
-export function PendingRow({ id, title, duration, audioUrl }: { id: string; title?: string; duration?: number; audioUrl?: string }) {
+/**
+ * audioUrl: عشان تسمع التسجيل قبل ما تكتب عنوانه وتصنّفه.
+ * checked / onCheck: للتحديد والمسح الجماعي.
+ */
+export function PendingRow({
+  id,
+  title,
+  duration,
+  audioUrl,
+  checked,
+  onCheck,
+}: {
+  id: string;
+  title?: string;
+  duration?: number;
+  audioUrl?: string;
+  checked?: boolean;
+  onCheck?: (on: boolean) => void;
+}) {
   const [section, setSection] = useState("fard");
   const [name, setName] = useState(title ?? "");
   const [pending, start] = useTransition();
@@ -79,9 +97,14 @@ export function PendingRow({ id, title, duration, audioUrl }: { id: string; titl
     );
 
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border border-line p-4">
+    <li className={`flex flex-col gap-3 rounded-2xl border p-4 ${checked ? "border-[#E5636B]/60 bg-[#E5636B]/5" : "border-line"}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-semibold">{title || "بدون عنوان"}</span>
+        <label className="flex min-h-9 cursor-pointer items-center gap-2.5 font-semibold">
+          {onCheck && (
+            <input type="checkbox" checked={!!checked} onChange={(e) => onCheck(e.target.checked)} className="h-5 w-5 accent-[#E5636B]" aria-label={`تحديد ${title || id}`} />
+          )}
+          {title || "بدون عنوان"}
+        </label>
         <span className="text-xs text-muted">
           {mins(duration)} ·{" "}
           {id.startsWith("custom-") ? (
@@ -131,23 +154,21 @@ export function PendingRow({ id, title, duration, audioUrl }: { id: string; titl
         >
           {pending ? "جارٍ الحفظ…" : "حفظ"}
         </button>
-        {id.startsWith("custom-") && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              if (!window.confirm(`مسح «${name || title || id}» نهائيًا؟ الملف هيتمسح من R2 ومش هيرجع.`)) return;
-              start(async () => {
-                const res = await deletePending(id);
-                if (res.ok) setDeleted(true);
-                else setR(res);
-              });
-            }}
-            className="min-h-11 rounded-full border border-[#E5636B]/50 px-5 text-sm font-semibold text-[#E5636B] hover:bg-[#E5636B]/10 disabled:opacity-50"
-          >
-            مسح نهائي
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            if (!window.confirm(`مسح «${name || title || id}» نهائيًا؟ الملف هيتمسح من R2 ومش هيرجع.`)) return;
+            start(async () => {
+              const res = await deletePending(id);
+              if (res.ok) setDeleted(true);
+              else setR(res);
+            });
+          }}
+          className="min-h-11 rounded-full border border-[#E5636B]/50 px-5 text-sm font-semibold text-[#E5636B] hover:bg-[#E5636B]/10 disabled:opacity-50"
+        >
+          مسح نهائي
+        </button>
         <Status r={r} />
       </div>
     </li>
@@ -340,5 +361,65 @@ export function EntryTableRow({ id, entry, cover }: { id: string; entry: Catalog
         </tr>
       )}
     </>
+  );
+}
+
+/** قايمة "بانتظار التصنيف" مع تحديد ومسح جماعي */
+export function PendingList({ items }: { items: { id: string; title?: string; duration?: number; audioUrl?: string }[] }) {
+  const router = useRouter();
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<ActionResult | null>(null);
+  const all = sel.size === items.length && items.length > 0;
+
+  const toggle = (id: string, on: boolean) =>
+    setSel((s) => {
+      const n = new Set(s);
+      if (on) n.add(id);
+      else n.delete(id);
+      return n;
+    });
+
+  const removeSelected = () => {
+    if (!window.confirm(`مسح ${sel.size === 1 ? "التسجيل المحدد" : `الـ ${sel.size} تسجيلات المحددة`} نهائيًا؟ الملفات هتتمسح من R2 ومش هترجع.`)) return;
+    start(async () => {
+      const r = await deletePendingMany([...sel]);
+      setMsg(r);
+      if (r.ok) {
+        setSel(new Set());
+        router.refresh();
+      }
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="sticky top-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-raised/95 p-3 text-sm backdrop-blur">
+        <label className="flex min-h-10 cursor-pointer items-center gap-2 font-semibold">
+          <input
+            type="checkbox"
+            checked={all}
+            onChange={(e) => setSel(e.target.checked ? new Set(items.map((i) => i.id)) : new Set())}
+            className="h-5 w-5 accent-[#E5636B]"
+          />
+          تحديد الكل
+        </label>
+        <span className="text-muted">{sel.size ? `محدد ${sel.size}` : `${items.length} تسجيل`}</span>
+        <button
+          type="button"
+          onClick={removeSelected}
+          disabled={!sel.size || pending}
+          className="min-h-10 rounded-full bg-[#E5636B] px-5 font-semibold text-white disabled:opacity-40"
+        >
+          {pending ? "جارٍ المسح…" : "مسح المحدد"}
+        </button>
+        {msg && <Status r={msg} />}
+      </div>
+      <ul className="flex flex-col gap-2">
+        {items.map((i) => (
+          <PendingRow key={i.id} {...i} checked={sel.has(i.id)} onCheck={(on) => toggle(i.id, on)} />
+        ))}
+      </ul>
+    </div>
   );
 }

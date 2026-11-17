@@ -207,3 +207,37 @@ export async function sendDueImamateAlerts(now = new Date()): Promise<{ slot?: s
   });
   return { slot: marker, ...result };
 }
+
+// ---------- تذكير ليالي رمضان ----------
+// قبل ليلة الشيخ في رمضان بحوالي نص ساعة: "الليلة ١٥: الشيخ هيؤم التراويح الساعة ...".
+// المهمة بتشتغل كل ٥ دقايق، فالتذكير بيتبعت في أول مرة تيجي بين ٣٥ و١٠ دقايق قبل البداية.
+
+const RAMADAN_SENT_PREFIX = "push/ramadan-reminder/";
+const REMIND_FROM_MIN = 35;
+const REMIND_TO_MIN = 10;
+
+export async function sendDueRamadanReminders(now = new Date()): Promise<{ slot?: string; sent: number; removed: number; failed: number }> {
+  const today = makkahToday(now);
+  const nowMin = toMin(makkahTime(now));
+  const slots = await recordings.imamate();
+  const slot = slots.find((s) => {
+    if (!s.ramadanNight || s.backup || s.date !== today || !s.start) return false;
+    const before = toMin(s.start) - nowMin;
+    return before <= REMIND_FROM_MIN && before >= REMIND_TO_MIN;
+  });
+  if (!slot) return { sent: 0, removed: 0, failed: 0 };
+
+  const marker = `${RAMADAN_SENT_PREFIX}${slot.id}.json`;
+  if (await getFresh(marker)) return { slot: marker, sent: 0, removed: 0, failed: 0 };
+  await putJson(marker, { sentAt: now.toISOString() });
+
+  const night = (slot.ramadanNight ?? 0).toLocaleString("ar-EG");
+  const [h, m] = (slot.start ?? "0:0").split(":").map(Number);
+  const time = `${(h % 12 || 12).toLocaleString("ar-EG")}:${m.toString().padStart(2, "0").replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[+d])} ${h < 12 ? "ص" : "م"}`;
+  const result = await broadcast("imamate", {
+    title: `الليلة ${night} من رمضان: الشيخ ياسر الدوسري يؤم ${prayerTitle(slot.prayer)}`,
+    body: `بعد حوالي نص ساعة، الساعة ${time} بتوقيت مكة. وهيوصلك إشعار تاني برابط البث أول ما الصلاة تبدأ.`,
+    url: "/imamate",
+  });
+  return { slot: marker, ...result };
+}

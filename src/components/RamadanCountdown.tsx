@@ -48,7 +48,7 @@ export function RamadanCountdown({ now }: { now: Date }) {
             رمضان {toArabicDigits(year)} هـ
           </h2>
           <p className="text-[15px] leading-7 text-[#A9B7AF]">
-            جدول ليالي الشيخ في التراويح والتهجد هيظهر هنا أول ما يتعلن، ومعاه تذكير قبل كل ليلة.
+            جدول ليالي الشيخ في التراويح والتهجد هيظهر هنا أول ما يتعلن، ولو مفعّل الإشعارات هيوصلك تذكير قبل كل ليلة.
           </p>
           <Link href="/taraweeh" className="mt-2 self-start text-sm font-semibold text-[#E7CD94] underline-offset-4 hover:underline">
             اسمع ليالي رمضان اللي فاتت

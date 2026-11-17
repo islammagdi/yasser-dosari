@@ -3,7 +3,7 @@ import { loadCatalog } from "@/lib/admin/catalog";
 import { adminManifest } from "@/lib/admin/manifest";
 import { fetchYoutubeMushaf } from "@/lib/api/youtube";
 import { normalizeArabic } from "@/lib/format";
-import { EntryTableRow, PendingRow, RefreshManifestButton, SyncButton } from "./rows";
+import { EntryTableRow, PendingList, RefreshManifestButton, SyncButton } from "./rows";
 
 // جلب البلاي ليستات من يوتيوب (زرار الإنشاء) ممكن ياخد وقت
 export const maxDuration = 60;
@@ -71,17 +71,14 @@ export default async function AdminRecordingsPage({ searchParams }: Props) {
           {pending.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-line-strong p-8 text-center text-muted">لا توجد تسجيلات جديدة.</p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {pending.map(([id, meta]) => (
-                <PendingRow
-                  key={id}
-                  id={id}
-                  title={meta.title}
-                  duration={meta.duration}
-                  audioUrl={meta.file && AUDIO_BASE ? `${AUDIO_BASE}/${meta.file}` : undefined}
-                />
-              ))}
-            </ul>
+            <PendingList
+              items={pending.map(([id, meta]) => ({
+                id,
+                title: meta.title,
+                duration: meta.duration,
+                audioUrl: meta.file && AUDIO_BASE ? `${AUDIO_BASE}/${meta.file}` : undefined,
+              }))}
+            />
           )}
         </section>
       ) : (
