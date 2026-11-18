@@ -9,6 +9,8 @@ import { makkahPrayerTimes } from "@/lib/api/prayerTimes";
 import { fetchYoutubeMushaf } from "@/lib/api/youtube";
 import { makkahToday } from "@/lib/imamate";
 import { countSubscriptions, countWirdReminders } from "@/lib/push/server";
+import { getCategory } from "@/lib/categories";
+import { VideoOnlyList, type VideoOnlyItem } from "./VideoOnlyList";
 
 // الفحوصات بتكلّم يوتيوب و R2 وغيرهم، فممكن تاخد ثواني
 export const maxDuration = 60;
@@ -143,6 +145,22 @@ export default async function AdminStatusPage() {
     }),
   ]);
 
+  // التسجيلات اللي لسه فيديو بالتحديد: من الكتالوج (ظاهرة ومش متحوّلة لصوت) + سور المركز السعودي اللي لسه فيديو
+  const videoOnly: VideoOnlyItem[] = await (async () => {
+    try {
+      const [catalog, manifest, ytMushaf] = await Promise.all([loadCatalog(), adminManifest(), fetchYoutubeMushaf().catch(() => [])]);
+      const out: VideoOnlyItem[] = [];
+      for (const [id, e] of Object.entries(catalog?.items ?? {})) {
+        if (e.hidden || id.startsWith("custom-") || manifest[id]) continue;
+        out.push({ id, title: e.title || e.prayerLabel || id, group: getCategory(e.category)?.title ?? e.category });
+      }
+      for (const r of ytMushaf) if (r.youtubeId && !manifest[r.youtubeId]) out.push({ id: r.youtubeId, title: r.title, group: "المصحف (المركز السعودي)" });
+      return out;
+    } catch {
+      return [];
+    }
+  })();
+
   const counts = { ok: 0, warn: 0, error: 0 };
   for (const c of checks) counts[c.level]++;
   const icon = { ok: "✓", warn: "!", error: "✕" };
@@ -178,6 +196,19 @@ export default async function AdminStatusPage() {
           </li>
         ))}
       </ul>
+
+      <section aria-labelledby="video-only-title" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 id="video-only-title" className="font-display text-3xl font-bold">
+            لسه فيديو {videoOnly.length > 0 && <span className="text-xl text-muted">({n(videoOnly.length)})</span>}
+          </h2>
+          <p className="text-sm leading-6 text-muted">
+            التسجيلات دي بتتشغّل من يوتيوب لأن ملهاش ملف صوت. انسخ روابطها أو نزّلها كملف txt، ونزّل الصوت بتاعها هي بس (مثلًا yt-dlp -a video-only.txt)،
+            وبعدين ارفعها بنفس الطريقة اللي بتحوّل بيها الفيديوهات لصوت.
+          </p>
+        </div>
+        <VideoOnlyList items={videoOnly} />
+      </section>
     </div>
   );
 }
