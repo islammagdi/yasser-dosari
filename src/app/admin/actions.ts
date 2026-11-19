@@ -554,7 +554,8 @@ export async function prepareClip(
 export interface ClipInput {
   title: string;
   description?: string;
-  sourceUrl: string;
+  /** فاضي لو المقطع من إنتاجك */
+  sourceUrl?: string;
   sourceName?: string;
   recordingId?: string;
   surah?: number;
@@ -565,11 +566,14 @@ export interface ClipInput {
 function cleanClip(input: ClipInput): ClipInput | string {
   const title = input.title.trim();
   if (!title) return "اكتب عنوان المقطع";
-  let sourceUrl = input.sourceUrl.trim();
-  try {
-    sourceUrl = new URL(sourceUrl).toString();
-  } catch {
-    return "رابط المقطع الأصلي مش صحيح";
+  // المصدر اختياري (المقطع ممكن يكون من إنتاجك)، بس لو اتكتب لازم يبقى رابط صحيح
+  let sourceUrl: string | undefined = input.sourceUrl?.trim() || undefined;
+  if (sourceUrl) {
+    try {
+      sourceUrl = new URL(sourceUrl).toString();
+    } catch {
+      return "رابط المقطع الأصلي مش صحيح";
+    }
   }
   const n = (v?: number) => (v && Number.isFinite(v) && v > 0 ? Math.round(v) : undefined);
   const surah = n(input.surah);

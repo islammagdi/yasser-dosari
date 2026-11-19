@@ -9,8 +9,8 @@ export interface Clip {
   description?: string;
   videoKey: string;
   posterKey?: string;
-  /** رابط المقطع الأصلي (حقوق المصدر)، بيظهر تحت كل مقطع */
-  sourceUrl: string;
+  /** رابط المقطع الأصلي (حقوق المصدر). مش موجود لو المقطع من إنتاج الموقع */
+  sourceUrl?: string;
   sourceName?: string;
   /** التسجيل الكامل اللي المقطع مقتطع منه (تلاوة أو درس أو خطبة) */
   recordingId?: string;
@@ -45,11 +45,12 @@ export async function loadClips(): Promise<Clip[]> {
 export const clipFileUrl = (key?: string) => (key && AUDIO_BASE ? `${AUDIO_BASE}/${key}` : undefined);
 
 /** اسم المصدر للعرض: اللي اتكتب، أو الدومين من الرابط */
-export function sourceLabel(c: Pick<Clip, "sourceName" | "sourceUrl">): string {
+export function sourceLabel(c: Pick<Clip, "sourceName" | "sourceUrl">): string | undefined {
   if (c.sourceName?.trim()) return c.sourceName.trim();
+  if (!c.sourceUrl) return undefined;
   try {
     return new URL(c.sourceUrl).hostname.replace(/^www\./, "");
   } catch {
-    return "المصدر";
+    return undefined;
   }
 }

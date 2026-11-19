@@ -70,8 +70,8 @@ function MetaFields({ v, set, recordings, disabled }: { v: ClipInput; set: (p: P
         <input value={v.description ?? ""} onChange={(e) => set({ description: e.target.value })} disabled={disabled} className={field} />
       </label>
       <label className={label}>
-        رابط المقطع الأصلي
-        <input dir="ltr" value={v.sourceUrl} onChange={(e) => set({ sourceUrl: e.target.value })} disabled={disabled} className={field} placeholder="https://t.me/…" />
+        رابط المقطع الأصلي (فاضي لو المقطع من عندك)
+        <input dir="ltr" value={v.sourceUrl ?? ""} onChange={(e) => set({ sourceUrl: e.target.value })} disabled={disabled} className={field} placeholder="https://t.me/…" />
       </label>
       <label className={label}>
         اسم المصدر (اختياري)
@@ -146,7 +146,7 @@ export function ClipForm({ recordings }: { recordings: Rec[] }) {
 
   const submit = async () => {
     if (!file) return setMsg({ ok: false, message: "اختار فيديو الأول" });
-    if (!meta.title.trim() || !meta.sourceUrl.trim()) return setMsg({ ok: false, message: "العنوان ورابط المقطع الأصلي مطلوبين" });
+    if (!meta.title.trim()) return setMsg({ ok: false, message: "اكتب عنوان المقطع" });
     setBusy(true);
     setMsg(null);
     setProgress(0);

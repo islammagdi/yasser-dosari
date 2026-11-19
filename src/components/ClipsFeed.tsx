@@ -12,8 +12,8 @@ export interface FeedClip {
   description?: string;
   video: string;
   poster?: string;
-  sourceUrl: string;
-  sourceLabel: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
   /** التسجيل الكامل اللي المقطع منه */
   full?: { href: string; title: string };
   ayah?: { text: string; ref: string; href: string };
@@ -337,9 +337,14 @@ function ClipSlide({
               اسمعه كامل
             </Link>
           )}
-          <a href={clip.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-white/75 underline-offset-4 hover:underline">
-            المصدر: {clip.sourceLabel} ↗
-          </a>
+          {/* المصدر: رابط لو موجود، اسم بس لو اتكتب من غير رابط، ولا حاجة لو المقطع من إنتاج الموقع */}
+          {clip.sourceUrl ? (
+            <a href={clip.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-white/75 underline-offset-4 hover:underline">
+              المصدر: {clip.sourceLabel ?? "المقطع الأصلي"} ↗
+            </a>
+          ) : clip.sourceLabel ? (
+            <span className="text-white/75">المصدر: {clip.sourceLabel}</span>
+          ) : null}
         </div>
         {note && <p className="text-sm text-[#E7CD94]">{note}</p>}
         <span className="sr-only">{SITE}</span>
