@@ -58,6 +58,7 @@ export function SiteHeader() {
 
   // ديسكتوب (Figma: Ind Header): عناصر بارتفاع الهيدر كله (٧٢)، والنشط بخلفية accent وخط تحته
   const navItems = [
+    { href: "/", label: "الرئيسية", active: pathname === "/" },
     ...CATEGORIES.map((c) => ({ href: `/${c.slug}`, label: c.label, active: isActive(c.slug) })),
     { href: "/quran", label: "قراءة", active: onQuran },
     { href: "/clips", label: "مقتطفات", active: onClips },
@@ -86,13 +87,16 @@ export function SiteHeader() {
                 key={n.href}
                 href={n.href}
                 aria-current={n.active ? "page" : undefined}
-                className={`relative flex h-[72px] items-center justify-center whitespace-nowrap rounded-sm px-4 text-base leading-6 transition-colors ${
-                  n.active ? "bg-accent font-semibold text-accent-ink" : "font-medium text-text hover:bg-fg/5"
+                className={`relative flex h-[72px] items-center justify-center whitespace-nowrap rounded-sm px-3 text-base leading-6 transition-colors 2xl:px-4 ${
+                  // النشط: في الفاتح أخضر فاتح (عشان ميبقاش تقيل)، وفي الغامق دهبي زي التصميم
+                  n.active
+                    ? "bg-emerald/10 font-semibold text-emerald dark:bg-accent dark:text-accent-ink"
+                    : "font-medium text-text hover:bg-fg/5"
                 }`}
               >
                 {n.label}
                 {n.active && (
-                  <span aria-hidden className="absolute inset-x-2 bottom-0 h-1.5 rounded-full bg-accent-hover" />
+                  <span aria-hidden className="absolute inset-x-2 bottom-0 h-1.5 rounded-full bg-emerald dark:bg-accent-hover" />
                 )}
               </Link>
             ))}
@@ -175,6 +179,18 @@ export function SiteHeader() {
         >
           {/* مسافة تحت عشان آخر عنصر ميستخباش ورا شريط المشغّل */}
           <ul className="mx-auto flex max-w-page flex-col gap-1 px-4 pb-28 pt-3">
+            <li>
+              <Link
+                href="/"
+                aria-current={pathname === "/" ? "page" : undefined}
+                className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
+                  pathname === "/" ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-fg/5"
+                }`}
+              >
+                الرئيسية
+                {pathname === "/" && <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />}
+              </Link>
+            </li>
             {CATEGORIES.map((c) => {
               const active = isActive(c.slug);
               return (
