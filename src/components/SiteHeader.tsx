@@ -22,6 +22,7 @@ export function SiteHeader() {
   const headerRef = useRef<HTMLElement>(null);
   const onFavorites = pathname === "/favorites";
   const onQuran = pathname === "/quran" || pathname.startsWith("/quran/");
+  const onClips = pathname === "/clips";
   const onSurah = pathname === "/surah" || pathname.startsWith("/surah/");
   const onSearch = pathname === "/search";
   const isActive = (slug: string) => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`);
@@ -90,6 +91,15 @@ export function SiteHeader() {
               }`}
             >
               قراءة
+            </Link>
+            <Link
+              href="/clips"
+              aria-current={onClips ? "page" : undefined}
+              className={`relative flex min-h-11 items-center justify-center whitespace-nowrap px-4 text-[15px] transition-colors after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:rounded-full lg:px-5 ${
+                onClips ? "font-semibold text-text after:bg-accent" : "text-muted after:bg-transparent hover:text-text"
+              }`}
+            >
+              مقتطفات
             </Link>
             <Link
               href="/surah"
@@ -178,6 +188,18 @@ export function SiteHeader() {
               >
                 قراءة القرآن
                 {onQuran && <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/clips"
+                aria-current={onClips ? "page" : undefined}
+                className={`flex min-h-12 items-center justify-between rounded-2xl px-4 text-lg transition-colors ${
+                  onClips ? "bg-gold/10 font-semibold text-gold-soft" : "text-text hover:bg-fg/5"
+                }`}
+              >
+                مقتطفات
+                {onClips && <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />}
               </Link>
             </li>
             <li>

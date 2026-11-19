@@ -3,7 +3,9 @@ import { loadDaily } from "@/lib/admin/daily";
 import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
+import { ClipOfDay } from "@/components/ClipOfDay";
 import { HomeCollections } from "@/components/HomeCollections";
+import { clipFileUrl, loadClips } from "@/lib/clips";
 import { HomePlaylists } from "@/components/HomePlaylists";
 import { ImamateLog } from "@/components/ImamateLog";
 import { SurahMap } from "@/components/SurahMap";
@@ -76,10 +78,14 @@ export default async function HomePage() {
   const stats = surahStats(surahIndex);
   const collections = homeCollections(allLists.flat(), surahIndex);
 
+  // مقتطف اليوم: من آخر ٣٠ مقطع، والاختيار بيحصل في المتصفح بتاريخ مكة
+  const clipCards = (await loadClips()).slice(0, 30).map((c) => ({ id: c.id, title: c.title, poster: clipFileUrl(c.posterKey) }));
+
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
       <FridayCard slots={imamate} />
+      <ClipOfDay clips={clipCards} />
       <WirdCard items={wirdItems} dismissible />
       <SurahMap stats={stats} />
       <ImamateLog recordings={logRecordings} />

@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin", label: "الرئيسية" },
   { href: "/admin/status", label: "حالة الموقع" },
   { href: "/admin/upload", label: "رفع تسجيل" },
+  { href: "/admin/clips", label: "مقتطفات" },
   { href: "/admin/recordings", label: "التسجيلات" },
   { href: "/admin/daily", label: "تلاوة اليوم" },
   { href: "/admin/notify", label: "الإشعارات" },

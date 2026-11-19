@@ -1,4 +1,5 @@
 "use server";
+import { CLIPS_KEY, CLIPS_TAG, type Clip } from "@/lib/clips";
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
@@ -524,5 +525,142 @@ export async function notifyNewUploads(ids: string[]): Promise<ActionResult> {
     return { ok: true, message: `اتبعت الإشعار لـ ${r.sent} مشترك` };
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر إرسال الإشعار" };
+  }
+}
+
+// ---------- «مقتطفات»: رفع وإدارة المقاطع القصيرة ----------
+
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v)$/i;
+
+/** روابط رفع مؤقتة للفيديو وصورته المصغّرة */
+export async function prepareClip(
+  videoName: string,
+): Promise<{ ok: true; id: string; videoKey: string; videoUrl: string; posterKey: string; posterUrl: string } | { ok: false; message: string }> {
+  try {
+    await assertAdmin();
+    const ext = videoName.match(VIDEO_EXT)?.[1]?.toLowerCase().replace("m4v", "mp4");
+    if (!ext) return { ok: false, message: "الفيديو لازم يبقى mp4 أو webm أو mov" };
+    const { presignPut } = await import("@/lib/admin/r2");
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const id = `clip-${stamp}-${Math.random().toString(36).slice(2, 8)}`;
+    const videoKey = `clips/${id}.${ext}`;
+    const posterKey = `clips/${id}-poster.jpg`;
+    return { ok: true, id, videoKey, videoUrl: await presignPut(videoKey), posterKey, posterUrl: await presignPut(posterKey) };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر تجهيز الرفع" };
+  }
+}
+
+export interface ClipInput {
+  title: string;
+  description?: string;
+  sourceUrl: string;
+  sourceName?: string;
+  recordingId?: string;
+  surah?: number;
+  ayahFrom?: number;
+  ayahTo?: number;
+}
+
+function cleanClip(input: ClipInput): ClipInput | string {
+  const title = input.title.trim();
+  if (!title) return "اكتب عنوان المقطع";
+  let sourceUrl = input.sourceUrl.trim();
+  try {
+    sourceUrl = new URL(sourceUrl).toString();
+  } catch {
+    return "رابط المقطع الأصلي مش صحيح";
+  }
+  const n = (v?: number) => (v && Number.isFinite(v) && v > 0 ? Math.round(v) : undefined);
+  const surah = n(input.surah);
+  if (surah && surah > 114) return "رقم السورة لازم يبقى من ١ لـ ١١٤";
+  return {
+    title,
+    description: input.description?.trim() || undefined,
+    sourceUrl,
+    sourceName: input.sourceName?.trim() || undefined,
+    recordingId: input.recordingId?.trim() || undefined,
+    surah,
+    ayahFrom: surah ? n(input.ayahFrom) : undefined,
+    ayahTo: surah ? n(input.ayahTo) ?? n(input.ayahFrom) : undefined,
+  };
+}
+
+function refreshClips() {
+  revalidateTag(CLIPS_TAG);
+  revalidatePath("/clips");
+  revalidatePath("/");
+  revalidatePath("/admin/clips");
+}
+
+/** بعد رفع الفيديو: المقطع بيتضاف لـ clips.json، ولو اخترت بيتبعت إشعار */
+export async function saveClip(input: ClipInput & { id: string; videoKey: string; posterKey?: string; notify?: boolean }): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    if (!input.id.startsWith("clip-") || !input.videoKey.startsWith(`clips/${input.id}`)) return { ok: false, message: "بيانات الرفع غير صحيحة" };
+    const meta = cleanClip(input);
+    if (typeof meta === "string") return { ok: false, message: meta };
+    const { getFresh, putJson } = await import("@/lib/admin/r2");
+    const list = (await getFresh<Clip[]>(CLIPS_KEY)) ?? [];
+    const clip: Clip = {
+      id: input.id,
+      ...meta,
+      videoKey: input.videoKey,
+      ...(input.posterKey?.startsWith(`clips/${input.id}`) && { posterKey: input.posterKey }),
+      createdAt: new Date().toISOString(),
+    } as Clip;
+    await putJson(CLIPS_KEY, [...list.filter((c) => c.id !== clip.id), clip]);
+    refreshClips();
+    if (input.notify) {
+      const r = await broadcast("recitations", { title: "مقتطف جديد للشيخ ياسر الدوسري", body: clip.title, url: `/clips?c=${clip.id}` });
+      return { ok: true, message: `اتضاف، واتبعت الإشعار لـ ${r.sent} مشترك` };
+    }
+    return { ok: true, message: "اتضاف للمقتطفات" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر حفظ المقطع" };
+  }
+}
+
+/** تعديل بيانات مقطع موجود (من غير الفيديو)، أو إخفاؤه */
+export async function updateClip(id: string, patch: Partial<ClipInput> & { hidden?: boolean }): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const { getFresh, putJson } = await import("@/lib/admin/r2");
+    const list = (await getFresh<Clip[]>(CLIPS_KEY)) ?? [];
+    const i = list.findIndex((c) => c.id === id);
+    if (i < 0) return { ok: false, message: "المقطع مش موجود" };
+    const cur = list[i];
+    let next: Clip = { ...cur, ...(patch.hidden !== undefined && { hidden: patch.hidden || undefined }) };
+    if (Object.keys(patch).some((k) => k !== "hidden")) {
+      const meta = cleanClip({ ...cur, ...patch } as ClipInput);
+      if (typeof meta === "string") return { ok: false, message: meta };
+      next = { ...next, ...meta };
+    }
+    list[i] = next;
+    await putJson(CLIPS_KEY, list);
+    refreshClips();
+    return { ok: true, message: patch.hidden === true ? "اتخفى من الموقع" : patch.hidden === false ? "ظاهر على الموقع" : "اتحفظ" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر الحفظ" };
+  }
+}
+
+/** مسح مقطع نهائيًا: من القايمة، وملفاته من R2 */
+export async function deleteClip(id: string): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const { deleteKey, getFresh, putJson } = await import("@/lib/admin/r2");
+    const list = (await getFresh<Clip[]>(CLIPS_KEY)) ?? [];
+    const clip = list.find((c) => c.id === id);
+    if (!clip) return { ok: false, message: "المقطع مش موجود" };
+    await putJson(
+      CLIPS_KEY,
+      list.filter((c) => c.id !== id),
+    );
+    for (const k of [clip.videoKey, clip.posterKey]) if (k?.startsWith("clips/")) await deleteKey(k).catch(() => undefined);
+    refreshClips();
+    return { ok: true, message: "اتمسح" };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "تعذّر المسح" };
   }
 }
