@@ -17,41 +17,54 @@ function dayIndex(date: string, n: number) {
   return h % n;
 }
 
-/** «مقتطف اليوم» في الرئيسية: مقطع مختلف كل يوم، والضغط عليه بيفتح المقتطفات عنده */
+/**
+ * المقتطفات في الرئيسية: صف كروت طولية بتتسحب بالعرض (مش كارت واحد واخد السطر كله).
+ * أول كارت «مقتطف اليوم» (بيتغيّر كل يوم بتاريخ مكة)، وبعده الأحدث.
+ */
 export function ClipOfDay({ clips }: { clips: ClipCard[] }) {
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => setToday(makkahToday(new Date())), []);
   if (!clips.length) return null;
-  const c = clips[today ? dayIndex(today, clips.length) : 0];
+  const pick = clips[today ? dayIndex(today, clips.length) : 0];
+  const ordered = [pick, ...clips.filter((c) => c.id !== pick.id)].slice(0, 12);
 
   return (
-    <section aria-labelledby="clip-of-day-title">
-      <Link
-        href={`/clips?c=${c.id}`}
-        className="group relative isolate flex items-center gap-5 overflow-hidden rounded-[28px] bg-gradient-to-l from-[#1E4A3C] to-[#10241D] p-4 text-[#F1EEE6] sm:p-5"
-      >
-        <span aria-hidden className="pattern-stars absolute inset-0 -z-10 opacity-[0.12]" />
-        <span className="relative aspect-[9/16] w-24 shrink-0 overflow-hidden rounded-2xl bg-black/30 sm:w-28">
-          {c.poster && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={c.poster} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          )}
-          <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 backdrop-blur">
-              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
-              </svg>
-            </span>
-          </span>
-        </span>
-        <span className="flex min-w-0 flex-col gap-1.5">
-          <span id="clip-of-day-title" className="text-sm font-semibold text-[#E7CD94]">
-            مقتطف اليوم
-          </span>
-          <span className="line-clamp-2 font-display text-2xl font-bold leading-snug sm:text-3xl">{c.title}</span>
-          <span className="text-sm text-[#A9B7AF]">اضغط واتفرّج، وقلّب على باقي المقتطفات</span>
-        </span>
-      </Link>
+    <section aria-labelledby="home-clips-title" className="flex flex-col gap-4">
+      <div className="flex items-end justify-between gap-4">
+        <h2 id="home-clips-title" className="font-display text-3xl font-bold sm:text-4xl">
+          مقتطفات
+        </h2>
+        <Link
+          href="/clips"
+          className="flex min-h-11 items-center rounded-full border border-line-strong px-5 text-sm font-semibold transition-colors hover:border-gold/60 hover:text-gold-soft"
+        >
+          كل المقتطفات
+        </Link>
+      </div>
+      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+        {ordered.map((c, i) => (
+          <li key={c.id} className="w-32 shrink-0 snap-start sm:w-40">
+            <Link href={`/clips?c=${c.id}`} className="group flex flex-col gap-2">
+              <span className="relative block aspect-[9/16] overflow-hidden rounded-2xl bg-deep">
+                {c.poster && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.poster} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                )}
+                <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                {i === 0 && (
+                  <span className="absolute start-2 top-2 rounded-full bg-[#CDAA62] px-2 py-0.5 text-[11px] font-bold text-[#1A1408]">مقتطف اليوم</span>
+                )}
+                <span className="absolute bottom-2 start-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">
+                  <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                    <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
+                  </svg>
+                </span>
+              </span>
+              <span className="line-clamp-2 text-sm font-medium leading-6 group-hover:text-gold-soft">{c.title}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

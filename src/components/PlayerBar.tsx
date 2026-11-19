@@ -8,15 +8,14 @@ import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
 import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { FullscreenPlayer } from "./FullscreenPlayer";
+import { DownloadIcon, PlayerMenu, RepeatIcon, ShareIcon, usePlayerActions } from "./PlayerMore";
 import { RecordingCover } from "./RecordingCover";
 import {
-  Forward10Icon,
   HeartIcon,
   NextIcon,
   PauseIcon,
   PlayIcon,
   PrevIcon,
-  Replay10Icon,
   TimerIcon,
   VolumeIcon,
 } from "./icons";
@@ -27,6 +26,7 @@ const iconBtn =
 export function PlayerBar() {
   const p = usePlayer();
   const fav = useFavorites();
+  const act = usePlayerActions(p.current);
   const [sleepOpen, setSleepOpen] = useState(false);
   const [full, setFull] = useState(false);
   const sleepRef = useRef<HTMLDivElement>(null);
@@ -79,10 +79,13 @@ export function PlayerBar() {
         <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />
       </div>
 
-      <div className="mx-auto flex max-w-page items-center gap-3 px-4 py-2.5 sm:px-6 md:gap-6">
-        {/* العنوان والمفضلة */}
-        <div className="flex min-w-0 flex-1 items-center gap-1 md:w-64 md:flex-none lg:w-80">
-          {/* الضغط على الغلاف بيفتح وضع ملء الشاشة (للصوت بس: فيديو يوتيوب لازم يفضل ظاهر) */}
+      {/*
+        موبايل: الغلاف والعنوان (بيفتحوا المشغّل الكبير)، والمفضلة، والتشغيل، والتالي.
+        ديسكتوب (زي أنغامي): التسجيل وأدواته | التحكم والتقدّم في النص | الصوت وملء الشاشة
+      */}
+      <div className="mx-auto grid max-w-page grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1fr)] md:gap-6">
+        {/* التسجيل */}
+        <div className="flex min-w-0 items-center gap-1">
           {p.current.youtubeId ? (
             <RecordingCover recording={p.current} sizes="48px" className="me-2 h-12 w-12 shrink-0 rounded-xl border border-gold/30" />
           ) : (
@@ -90,7 +93,7 @@ export function PlayerBar() {
               <RecordingCover recording={p.current} sizes="48px" className="h-12 w-12 rounded-xl border border-gold/30" />
             </button>
           )}
-          <span className="flex min-w-0 flex-col">
+          <span className="flex min-w-0 flex-1 flex-col">
             {p.current.youtubeId ? (
               <Link href={`/${p.current.category}/${p.current.id}`} className="truncate text-[15px] font-semibold hover:text-gold-soft">
                 {p.current.title}
@@ -98,136 +101,151 @@ export function PlayerBar() {
             ) : (
               <span className="truncate text-[15px] font-semibold">{p.current.title}</span>
             )}
-            <span className={`truncate text-xs ${p.error ? "text-gold-soft" : "text-muted"}`}>{p.error ?? section}</span>
+            <span className={`truncate text-xs ${p.error || act.note ? "text-gold-soft" : "text-muted"}`}>{p.error ?? (act.note || section)}</span>
           </span>
           <button
             type="button"
             onClick={() => p.current && fav.toggle(p.current.id)}
             aria-pressed={favorite}
             aria-label={favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-fg/5 ${
-              favorite ? "text-[#E5636B]" : "text-muted hover:text-text"
-            }`}
+            className={`${iconBtn} ${favorite ? "!text-[#E5636B]" : ""}`}
           >
             <HeartIcon filled={favorite} className="h-5 w-5" />
           </button>
-        </div>
-
-        {/* شريط التقدّم */}
-        <div dir="ltr" className="hidden min-w-0 flex-1 items-center gap-3 text-xs text-muted md:flex">
-          <span className="w-11 text-right tabular-nums">{formatDuration(p.currentTime) || "٠:٠٠"}</span>
-          <input
-            type="range"
-            min={0}
-            max={max || 1}
-            step={1}
-            value={Math.min(p.currentTime, max || 1)}
-            onChange={(e) => p.seek(Number(e.target.value))}
-            disabled={!max}
-            aria-label="التقدّم"
-            aria-valuetext={`${formatDuration(p.currentTime)} من ${formatDuration(max)}`}
-            className="progress flex-1"
-            style={{ "--pct": `${pct}%` } as React.CSSProperties}
-          />
-          <span className="w-11 tabular-nums">{formatDuration(max) || "٠:٠٠"}</span>
-        </div>
-
-        {/* أدوات التحكم: بتفضل LTR زي أي مشغّل */}
-        <div dir="ltr" className="flex shrink-0 items-center gap-0.5">
-          <button type="button" onClick={() => p.skip(-10)} disabled={!max} aria-label="رجوع ١٠ ثواني" className={`${iconBtn} hidden sm:flex`}>
-            <Replay10Icon className="h-5 w-5" />
-          </button>
-<button type="button" onClick={p.prev} aria-label="السابق" className={`${iconBtn} hidden text-gold sm:flex`}>
-            <PrevIcon className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={p.toggle}
-            disabled={!isPlayable(p.current)}
-            aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
-            className="mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-ink shadow-glow transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:shadow-none"
-          >
-            {p.isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
-          </button>
-          <button type="button" onClick={p.next} disabled={atEnd} aria-label="التالي" className={`${iconBtn} text-gold`}>
-            <NextIcon className="h-5 w-5" />
-          </button>
-          <button type="button" onClick={() => p.skip(10)} disabled={!max} aria-label="تقديم ١٠ ثواني" className={`${iconBtn} hidden sm:flex`}>
-            <Forward10Icon className="h-5 w-5" />
-          </button>
-
-          {/* تايمر الإيقاف */}
-          <div ref={sleepRef} className="relative hidden md:block">
+          {act.canOffline && (
             <button
               type="button"
-              onClick={() => setSleepOpen((o) => !o)}
-              aria-expanded={sleepOpen}
-              aria-haspopup="true"
-              aria-label="تايمر الإيقاف"
-              className={`${iconBtn} ${p.sleep ? "text-gold" : ""}`}
+              onClick={act.toggleOffline}
+              disabled={act.saving !== null}
+              aria-label={act.saved ? "محفوظة من غير نت (اضغط للمسح)" : "حفظ من غير نت"}
+              title={act.saving !== null ? `${Math.round(act.saving)}%` : undefined}
+              className={`${iconBtn} hidden md:flex ${act.saved ? "!text-gold" : ""}`}
             >
-              <TimerIcon className="h-5 w-5" />
-              {sleepBadge && (
-                <span className="absolute -bottom-0.5 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-ink">
-                  {sleepBadge}
-                </span>
-              )}
+              <DownloadIcon done={act.saved} />
             </button>
-            {sleepOpen && (
-              <div dir="rtl" className="glass-card absolute bottom-full left-1/2 mb-3 w-48 -translate-x-1/2 rounded-2xl p-1.5 shadow-float">
-                <p className="px-3 pb-1 pt-2 text-xs text-muted">إيقاف التشغيل</p>
-                {SLEEP_OPTIONS.map((o) => (
-                  <button
-                    key={String(o.value)}
-                    type="button"
-                    onClick={() => {
-                      p.setSleepTimer(o.value);
-                      setSleepOpen(false);
-                    }}
-                    className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-fg/5"
-                  >
-                    {o.label}
-                  </button>
-                ))}
-                {p.sleep && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      p.setSleepTimer(null);
-                      setSleepOpen(false);
-                    }}
-                    className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-fg/10 px-3 text-start text-sm text-gold-soft transition-colors hover:bg-fg/5"
-                  >
-                    إلغاء التايمر
-                  </button>
+          )}
+          <button type="button" onClick={act.share} aria-label="مشاركة" className={`${iconBtn} hidden md:flex`}>
+            <ShareIcon />
+          </button>
+          <PlayerMenu variant="popover" className="hidden md:block" />
+        </div>
+
+        {/* التحكم: الأزرار فوق، والتقدّم تحتها (ديسكتوب) */}
+        <div className="flex flex-col items-center gap-1">
+          <div dir="ltr" className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => p.setRepeat(p.repeat > 0 ? 0 : Infinity)}
+              aria-pressed={p.repeat > 0}
+              aria-label={p.repeat > 0 ? "إيقاف التكرار" : "تكرار التلاوة"}
+              className={`${iconBtn} hidden md:flex ${p.repeat > 0 ? "!text-gold" : ""}`}
+            >
+              <RepeatIcon />
+            </button>
+            <button type="button" onClick={p.prev} aria-label="السابق" className={`${iconBtn} hidden md:flex`}>
+              <PrevIcon className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={p.toggle}
+              disabled={!isPlayable(p.current)}
+              aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
+              className="mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-40"
+            >
+              {p.isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+            </button>
+            <button type="button" onClick={p.next} disabled={atEnd} aria-label="التالي" className={iconBtn}>
+              <NextIcon className="h-5 w-5" />
+            </button>
+            {/* تايمر الإيقاف */}
+            <div ref={sleepRef} className="relative hidden md:block">
+              <button
+                type="button"
+                onClick={() => setSleepOpen((o) => !o)}
+                aria-expanded={sleepOpen}
+                aria-haspopup="true"
+                aria-label="تايمر الإيقاف"
+                className={`${iconBtn} ${p.sleep ? "!text-gold" : ""}`}
+              >
+                <TimerIcon className="h-5 w-5" />
+                {sleepBadge && (
+                  <span className="absolute -bottom-0.5 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-ink">{sleepBadge}</span>
                 )}
-              </div>
-            )}
+              </button>
+              {sleepOpen && (
+                <div dir="rtl" className="absolute bottom-full left-1/2 mb-3 w-48 -translate-x-1/2 rounded-2xl border border-fg/10 bg-raised p-1.5 shadow-float">
+                  <p className="px-3 pb-1 pt-2 text-xs text-muted">إيقاف التشغيل</p>
+                  {SLEEP_OPTIONS.map((o) => (
+                    <button
+                      key={String(o.value)}
+                      type="button"
+                      onClick={() => {
+                        p.setSleepTimer(o.value);
+                        setSleepOpen(false);
+                      }}
+                      className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-fg/5"
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                  {p.sleep && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        p.setSleepTimer(null);
+                        setSleepOpen(false);
+                      }}
+                      className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-fg/10 px-3 text-start text-sm text-gold-soft transition-colors hover:bg-fg/5"
+                    >
+                      إلغاء التايمر
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* الصوت */}
-          <div className="hidden items-center md:flex">
-            <button
-              type="button"
-              onClick={p.toggleMute}
-              aria-label={p.muted ? "تشغيل الصوت" : "كتم الصوت"}
-              aria-pressed={p.muted}
-              className={`${iconBtn} text-gold`}
-            >
-              <VolumeIcon muted={p.muted || p.volume === 0} className="h-5 w-5" />
-            </button>
+          <div dir="ltr" className="hidden w-full items-center gap-3 text-xs text-muted md:flex">
+            <span className="w-11 text-right tabular-nums">{formatDuration(p.currentTime) || "٠:٠٠"}</span>
             <input
               type="range"
               min={0}
-              max={1}
-              step={0.05}
-              value={p.muted ? 0 : p.volume}
-              onChange={(e) => p.setVolume(Number(e.target.value))}
-              aria-label="مستوى الصوت"
-              className="progress hidden w-20 lg:block"
-              style={{ "--pct": `${(p.muted ? 0 : p.volume) * 100}%` } as React.CSSProperties}
+              max={max || 1}
+              step={1}
+              value={Math.min(p.currentTime, max || 1)}
+              onChange={(e) => p.seek(Number(e.target.value))}
+              disabled={!max}
+              aria-label="التقدّم"
+              aria-valuetext={`${formatDuration(p.currentTime)} من ${formatDuration(max)}`}
+              className="progress flex-1"
+              style={{ "--pct": `${pct}%` } as React.CSSProperties}
             />
+            <span className="w-11 tabular-nums">{formatDuration(max) || "٠:٠٠"}</span>
           </div>
+        </div>
+
+        {/* الصوت وملء الشاشة (ديسكتوب) */}
+        <div className="hidden items-center justify-end gap-1 md:flex">
+          <button type="button" onClick={p.toggleMute} aria-label={p.muted ? "تشغيل الصوت" : "كتم الصوت"} aria-pressed={p.muted} className={iconBtn}>
+            <VolumeIcon muted={p.muted || p.volume === 0} className="h-5 w-5" />
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={p.muted ? 0 : p.volume}
+            onChange={(e) => p.setVolume(Number(e.target.value))}
+            aria-label="مستوى الصوت"
+            className="progress hidden w-24 lg:block"
+            style={{ "--pct": `${(p.muted ? 0 : p.volume) * 100}%` } as React.CSSProperties}
+          />
+          {!p.current.youtubeId && (
+            <button type="button" onClick={() => setFull(true)} aria-label="المشغّل بملء الشاشة" className={iconBtn}>
+              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
             {full && !p.current.youtubeId && <FullscreenPlayer onClose={() => setFull(false)} />}

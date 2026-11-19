@@ -27,8 +27,8 @@
   /* الدهبي الزخرفي (خطوط ونقشة) أفتح من دهبي النص */
   --c-ornament: 184 146 74;
   --logo: rgb(30 74 60);
-  --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 18px 36px -24px rgb(70 52 18 / 0.45);
-  --shadow-float: 0 30px 60px -30px rgb(40 30 10 / 0.45);
+  --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 10px 24px -20px rgb(70 52 18 / 0.28);
+  --shadow-float: 0 20px 44px -28px rgb(40 30 10 / 0.3);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -51,8 +51,8 @@
   --c-accent-ink: 26 20 8;
   --c-ornament: 205 170 98;
   --logo: rgb(246 241 230);
-  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 12px 32px -18px rgb(0 0 0 / 0.6);
-  --shadow-float: 0 24px 60px -16px rgb(0 0 0 / 0.7);
+  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 22px -16px rgb(0 0 0 / 0.45);
+  --shadow-float: 0 18px 44px -20px rgb(0 0 0 / 0.55);
   color-scheme: dark;
 }
 

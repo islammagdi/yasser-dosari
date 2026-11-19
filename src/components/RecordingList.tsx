@@ -180,11 +180,11 @@ export function RecordingList({
     });
 
     if (numbered) list = [...list].sort((a, b) => (a.surah ?? a.night ?? 0) - (b.surah ?? b.night ?? 0));
-    // الفروض جوه الشهر: بالأيام، وجوه اليوم الواحد بترتيب الصلوات
+    // جوه الشهر: الأحدث الأول (آخر يوم فوق)، وجوه اليوم الواحد بترتيب الصلوات (الفجر ثم المغرب ثم العشاء)
     if (groupByMonth) {
       const order = { fajr: 0, maghrib: 1, isha: 2 } as const;
       list = [...list].sort(
-        (a, b) => (a.hijriDay ?? 0) - (b.hijriDay ?? 0) || (a.prayer ? order[a.prayer] : 0) - (b.prayer ? order[b.prayer] : 0),
+        (a, b) => (b.hijriDay ?? 0) - (a.hijriDay ?? 0) || (a.prayer ? order[a.prayer] : 0) - (b.prayer ? order[b.prayer] : 0),
       );
     }
 
@@ -196,8 +196,9 @@ export function RecordingList({
       const m = r.hijriMonth ?? 0;
       byMonth.set(m, [...(byMonth.get(m) ?? []), r]);
     }
+    // الشهور: الأحدث الأول (ذو الحجة فوق ومحرم آخر حاجة)، والشهر غير المحدد في الآخر خالص
     return Array.from(byMonth.entries())
-      .sort(([a], [b]) => a - b)
+      .sort(([a], [b]) => (a === 0 ? 1 : b === 0 ? -1 : b - a))
       .map(([m, recs]) => ({ key: `m-${m}`, title: hijriMonthName(m) || "شهر غير محدد", items: recs }));
 }, [source, searchingAll, query, type, activeYear, activeVersion, numbered, groupByMonth]);
 
@@ -281,6 +282,7 @@ export function RecordingList({
                       recording={r}
                       position={numbered ? r.surah ?? r.night ?? i + 1 : undefined}
                       badge={r.lectureType ? LECTURE_TYPE_LABELS[r.lectureType] : undefined}
+                      badgeTone={r.lectureType}
                       isCurrent={current?.id === r.id}
                       isPlaying={isPlaying}
                       onPlay={() => playQueue(queue, i)}
