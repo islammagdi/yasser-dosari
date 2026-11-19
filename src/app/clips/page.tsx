@@ -7,10 +7,33 @@ import { clipFileUrl, loadClips, sourceLabel } from "@/lib/clips";
 import { surahName } from "@/lib/quran";
 import { toArabicDigits } from "@/lib/format";
 
-export const metadata: Metadata = {
-  title: "مقتطفات",
-  description: "مقاطع قصيرة من تلاوات الشيخ ياسر الدوسري وخطبه ودروسه.",
-};
+const DEFAULT_DESC = "مقاطع قصيرة من تلاوات الشيخ ياسر الدوسري وخطبه ودروسه.";
+
+/**
+ * لما حد يشارك رابط مقطع (/clips?c=...)، المعاينة في واتساب وغيره بتظهر صورة المقطع وعنوانه
+ * بدل صورة الموقع العادية.
+ */
+export async function generateMetadata({ searchParams }: { searchParams: { c?: string } }): Promise<Metadata> {
+  const clip = searchParams.c ? (await loadClips()).find((c) => c.id === searchParams.c) : undefined;
+  if (!clip) return { title: "مقتطفات", description: DEFAULT_DESC };
+  const poster = clipFileUrl(clip.posterKey);
+  const video = clipFileUrl(clip.videoKey);
+  const description = clip.description || `مقتطف للشيخ ياسر الدوسري: ${clip.title}`;
+  return {
+    title: clip.title,
+    description,
+    alternates: { canonical: `/clips?c=${clip.id}` },
+    openGraph: {
+      type: "video.other",
+      title: clip.title,
+      description,
+      url: `/clips?c=${clip.id}`,
+      ...(poster && { images: [{ url: poster, width: 720, height: 1280, alt: clip.title }] }),
+      ...(video && { videos: [{ url: video, type: "video/mp4" }] }),
+    },
+    twitter: { card: poster ? "summary_large_image" : "summary", title: clip.title, description, ...(poster && { images: [poster] }) },
+  };
+}
 
 export default async function ClipsPage({ searchParams }: { searchParams: { c?: string } }) {
   const clips = await loadClips();

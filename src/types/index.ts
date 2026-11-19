@@ -70,6 +70,8 @@ export interface Recording {
   /** ISO date: "2025-03-14" */
   date?: string;
   durationSec?: number;
+  /** السور اللي في التسجيل، مكتوبة بإيد الأدمن: بتغلب على اللي بيتقرا من الوصف */
+  surahs?: number[];
   /**
    * تشغيل جزء من الملف بس (للورد بالأجزاء): من start لحد end بالثواني.
    * tag بيتبعت في حدث "yd-clip-ended" لما المقطع يخلص.

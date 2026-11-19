@@ -163,6 +163,8 @@ export interface EntryPatch {
   hijriMonth?: number | null;
   hijriDay?: number | null;
   hidden?: boolean;
+  /** السور بإيدك؛ مصفوفة فاضية = نرجع نقرا من الوصف */
+  surahs?: number[];
 }
 
 /** تعديل تسجيل موجود في الكتالوج */
@@ -195,7 +197,11 @@ export async function updateEntry(videoId: string, patch: EntryPatch): Promise<A
       ...(patch.hijriMonth !== undefined && { hijriMonth: num(patch.hijriMonth) }),
       ...(patch.hijriDay !== undefined && { hijriDay: num(patch.hijriDay) }),
       ...(patch.hidden !== undefined && { hidden: patch.hidden || undefined }),
+      ...(patch.surahs !== undefined && {
+        surahs: [...new Set(patch.surahs.filter((n) => n >= 1 && n <= 114))].sort((a, b) => a - b),
+      }),
     };
+    if (e.surahs && !e.surahs.length) delete e.surahs;
     items[videoId] = e;
     await saveCatalog(items);
     refreshCatalog();

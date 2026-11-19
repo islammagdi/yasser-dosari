@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { daysBetween, localToday } from "./wird";
+import { hijriOf, hijriToIso } from "./imamate";
 import { WIRD_JUZ_DURATIONS, wirdPortion } from "./wirdJuz";
 
 const KEY = "yd-wird-v2";
@@ -56,6 +57,8 @@ function streaks(days: string[], today: string): { current: number; best: number
 interface Plan {
   /** مدة الختمة بالأيام */
   days: number;
+  /** ختمة رمضان: السنة الهجرية (الخطة بتبدأ لوحدها أول يوم في رمضان) */
+  ramadan?: number;
   /** أول يوم في الخطة */
   start: string;
   /** أرقام أيام الخطة اللي خلصت (من ٠) */
@@ -131,6 +134,10 @@ export function useWird() {
   }, []);
 
   const today = localToday();
+  /** ختمة رمضان لسه مبدأتش: بنعرض العدّاد بدل ورد النهارده */
+  const upcoming = !!plan && plan.start > today;
+  const daysUntil = upcoming && plan ? daysBetween(today, plan.start) : 0;
+  const ramadanOffer = useMemo(() => nextRamadan(new Date()), []);
   const dayNumber = plan ? daysBetween(plan.start, today) + 1 : 0;
   const doneCount = plan ? plan.done.length : 0;
   const finished = !!plan && doneCount >= plan.days;
@@ -155,7 +162,7 @@ export function useWird() {
   /** ورد النهارده خلص: بيتعلّم اليوم، وبيتسجّل في السلسلة، ولو ده آخر يوم بتتحسب ختمة */
   const markDone = useCallback(() => {
     const p = read();
-    if (!p) return;
+    if (!p || p.start > localToday()) return;
     const done = new Set(p.done);
     let i = 0;
     while (i < p.days && done.has(i)) i++;
@@ -192,6 +199,11 @@ export function useWird() {
   }, []);
 
   const start = useCallback((days: number) => write({ days, start: localToday(), done: [] }), []);
+  /** ختمة رمضان: جزء كل ليلة، والخطة بتبدأ أول رمضان (ولو احنا فيه، من أوله) */
+  const startRamadan = useCallback(() => {
+    const r = nextRamadan(new Date());
+    if (r) write({ days: 30, start: r.start, done: [], ramadan: r.year });
+  }, []);
   const stop = useCallback(() => write(null), []);
   const restart = start;
 
@@ -208,10 +220,24 @@ export function useWird() {
     completedKhatmas: khatmas,
     migrated,
     dismissMigrated,
+    upcoming,
+    daysUntil,
+    /** رمضان الجاي (أو الحالي): سنته وأول يومه وكام يوم عليه */
+    ramadanOffer,
+    startRamadan,
     streak,
     markDone,
     start,
     stop,
     restart,
   };
+}
+
+/** رمضان الجاي (أو الحالي لو احنا فيه) بتقويم أم القرى */
+function nextRamadan(now: Date): { year: number; start: string; daysUntil: number } | null {
+  const h = hijriOf(now);
+  const year = h.m <= 9 ? h.y : h.y + 1;
+  const start = hijriToIso(year, 9, 1);
+  if (!start) return null;
+  return { year, start, daysUntil: Math.max(0, daysBetween(localToday(), start)) };
 }
