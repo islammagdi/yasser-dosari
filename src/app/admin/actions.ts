@@ -674,3 +674,31 @@ export async function deleteClip(id: string): Promise<ActionResult> {
     return { ok: false, message: err instanceof Error ? err.message : "تعذّر المسح" };
   }
 }
+
+// ---------- بلاغات الزوار ----------
+
+/** «اتحلّت»: بيمسح كل بلاغات التلاوة دي */
+export async function resolveReports(recordingId: string): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const { deleteReportsFor } = await import("@/lib/admin/reports");
+    const n = await deleteReportsFor(recordingId);
+    revalidatePath("/admin", "layout");
+    return { ok: true, message: `اتمسح ${n} بلاغ.` };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "حصلت مشكلة." };
+  }
+}
+
+/** مسح بلاغ واحد (مثلًا لو مش مشكلة حقيقية) */
+export async function deleteReportAction(key: string): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const { deleteReport } = await import("@/lib/admin/reports");
+    await deleteReport(key);
+    revalidatePath("/admin", "layout");
+    return { ok: true, message: "اتمسح البلاغ." };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "حصلت مشكلة." };
+  }
+}

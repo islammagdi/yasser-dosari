@@ -41,7 +41,8 @@ export default async function AdminStatusPage() {
   const checks = await Promise.all([
     run("التخزين (R2)", async () => {
       if (!r2Enabled()) return { level: "error", message: "متغيرات R2_* ناقصة على Vercel، فاللوحة مش هتقدر تحفظ أي حاجة." };
-      const keys = await listKeys("admin/");
+      // البلاغات ليها صفحتها، فمش بتتحسب هنا مع ملفات الإعدادات
+      const keys = (await listKeys("admin/")).filter((k) => !k.startsWith("admin/reports/"));
       return { level: "ok", message: `متصل، وفيه ${n(keys.length)} ملف إعدادات.` };
     }),
 

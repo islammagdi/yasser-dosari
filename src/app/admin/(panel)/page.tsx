@@ -1,9 +1,18 @@
 import Link from "next/link";
+import { countReports } from "@/lib/admin/reports";
+import { toArabicDigits } from "@/lib/format";
 
-export default function AdminHome() {
+export default async function AdminHome() {
+  const reports = await countReports();
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display text-4xl font-bold">لوحة التحكم</h1>
+      {reports > 0 && (
+        <Link href="/admin/reports" className="flex flex-col gap-1 rounded-3xl border border-[#E5636B]/50 p-5 hover:border-[#E5636B]">
+          <span className="font-display text-2xl font-bold">{reports === 1 ? "فيه بلاغ جديد" : `فيه ${toArabicDigits(reports)} بلاغات جديدة`}</span>
+          <span className="text-sm text-muted">مشاكل بلّغ عنها الزوار في تلاوات. افتحها علشان تسمع وتصلّح.</span>
+        </Link>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <Link href="/admin/status" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
           <span className="font-display text-2xl font-bold text-gold-soft">حالة الموقع</span>

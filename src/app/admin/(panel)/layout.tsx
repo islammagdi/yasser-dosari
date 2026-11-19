@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin/auth";
 import { r2Enabled } from "@/lib/admin/r2";
+import { countReports } from "@/lib/admin/reports";
 import { AdminIdle } from "@/components/AdminIdle";
 import { logout } from "../actions";
 
@@ -13,6 +14,7 @@ const NAV = [
   { href: "/admin/upload", label: "رفع تسجيل" },
   { href: "/admin/clips", label: "مقتطفات" },
   { href: "/admin/recordings", label: "التسجيلات" },
+  { href: "/admin/reports", label: "البلاغات" },
   { href: "/admin/daily", label: "تلاوة اليوم" },
   { href: "/admin/notify", label: "الإشعارات" },
   { href: "/admin/backups", label: "النسخ الاحتياطية" },
@@ -22,6 +24,7 @@ const NAV = [
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   if (!(await isAdmin())) redirect("/admin/login");
+  const reports = await countReports();
   return (
     <>
       <AdminIdle />
@@ -30,6 +33,11 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="min-h-11 rounded-full border border-line-strong px-4 py-2.5 text-sm font-semibold text-gold-soft hover:border-gold/50">
               {n.label}
+              {n.href === "/admin/reports" && reports > 0 && (
+                <span className="ms-2 rounded-full bg-[#E5636B] px-2 py-0.5 text-xs text-[#fff]" aria-label={`${reports} بلاغ جديد`}>
+                  {reports}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
