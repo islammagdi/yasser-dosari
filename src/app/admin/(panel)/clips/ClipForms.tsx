@@ -52,6 +52,21 @@ function put(url: string, body: Blob, type: string, onProgress?: (p: number) => 
   });
 }
 
+/**
+ * لو اللي اتلزق رابط تلاوة من الموقع نفسه (https://…/fard/fard-1446-7-1-isha أو /fard/…)،
+ * بيرجّع الـ id بتاعها (آخر جزء في الرابط). أي حاجة تانية بترجع undefined.
+ */
+function recordingIdFromLink(text: string): string | undefined {
+  const t = text.trim();
+  if (!/^(https?:\/\/|\/)/.test(t)) return undefined;
+  try {
+    const parts = new URL(t, "https://x").pathname.split("/").filter(Boolean);
+    return parts.length >= 2 ? decodeURIComponent(parts[parts.length - 1]) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** خانات بيانات المقطع: مشتركة بين الرفع والتعديل */
 function MetaFields({ v, set, recordings, disabled }: { v: ClipInput; set: (p: Partial<ClipInput>) => void; recordings: Rec[]; disabled?: boolean }) {
   const recTitle = recordings.find((r) => r.id === v.recordingId)?.title ?? "";
@@ -83,20 +98,46 @@ function MetaFields({ v, set, recordings, disabled }: { v: ClipInput; set: (p: P
           list={listId}
           value={recQuery}
           onChange={(e) => {
-            setRecQuery(e.target.value);
-            const hit = recordings.find((r) => r.title === e.target.value);
-            set({ recordingId: hit?.id ?? (e.target.value ? v.recordingId : undefined) });
+            const text = e.target.value;
+            // رابط التلاوة من الموقع: بنربط بيه على طول
+            const fromLink = recordingIdFromLink(text);
+            if (fromLink) {
+              set({ recordingId: fromLink });
+              setRecQuery(recordings.find((r) => r.id === fromLink)?.title ?? text.trim());
+              return;
+            }
+            setRecQuery(text);
+            const hit = recordings.find((r) => r.title === text);
+            set({ recordingId: hit?.id ?? (text ? v.recordingId : undefined) });
           }}
           disabled={disabled}
           className={field}
-          placeholder="ابدأ اكتب العنوان واختار من القايمة"
+          placeholder="الزق رابط التلاوة من الموقع، أو اكتب العنوان واختار من القايمة"
         />
         <datalist id={listId}>
           {recordings.map((r) => (
             <option key={r.id} value={r.title} />
           ))}
         </datalist>
-        {v.recordingId && <span className="text-xs text-gold-soft">مربوط ✓</span>}
+        {v.recordingId && (
+          <span className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-gold-soft">مربوط ✓</span>
+            <span dir="ltr" className="text-muted">
+              {v.recordingId}
+            </span>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                set({ recordingId: undefined });
+                setRecQuery("");
+              }}
+              className="min-h-8 px-1 text-muted underline-offset-4 hover:text-text hover:underline"
+            >
+              إلغاء الربط
+            </button>
+          </span>
+        )}
       </label>
       <div className="grid grid-cols-[minmax(0,1fr)_90px_90px] gap-2 sm:col-span-2">
         <label className={label}>
