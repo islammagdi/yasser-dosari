@@ -262,6 +262,8 @@ export function ClipForm({ recordings }: { recordings: Rec[] }) {
 export function ClipRow({ clip, poster, recordings }: { clip: Clip; poster?: string; recordings: Rec[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // تأكيد المسح جوه الصف بدل window.confirm، لأن الـ confirm بيوقف الصفحة كلها لحد ما تدوس (ده اللي ظهر كـ INP)
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [meta, setMeta] = useState<ClipInput>(clip);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<ActionResult | null>(null);
@@ -297,14 +299,35 @@ export function ClipRow({ clip, poster, recordings }: { clip: Clip; poster?: str
           <button type="button" disabled={pending} onClick={() => run(() => updateClip(clip.id, { hidden: !clip.hidden }))} className="min-h-10 rounded-full border border-line-strong px-4 text-sm hover:border-gold/60">
             {clip.hidden ? "إظهار" : "إخفاء"}
           </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => window.confirm(`مسح «${clip.title}» نهائيًا؟`) && run(() => deleteClip(clip.id))}
-            className="min-h-10 rounded-full border border-[#E5636B]/50 px-4 text-sm text-[#E5636B] hover:bg-[#E5636B]/10"
-          >
-            مسح
-          </button>
+          {confirmDelete ? (
+            <>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(() => deleteClip(clip.id))}
+                className="min-h-10 rounded-full bg-[#E5636B] px-4 text-sm font-semibold text-[#fff] hover:bg-[#d4545c] disabled:opacity-60"
+              >
+                {pending ? "بيتمسح…" : "متأكد، امسح نهائيًا"}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setConfirmDelete(false)}
+                className="min-h-10 rounded-full border border-line-strong px-4 text-sm hover:border-gold/60"
+              >
+                لا
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setConfirmDelete(true)}
+              className="min-h-10 rounded-full border border-[#E5636B]/50 px-4 text-sm text-[#E5636B] hover:bg-[#E5636B]/10"
+            >
+              مسح
+            </button>
+          )}
         </div>
       </div>
       {open && (
