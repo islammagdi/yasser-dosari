@@ -6,6 +6,7 @@ import type { CatalogEntry } from "@/lib/admin/catalog";
 import { classifyPending, deletePending, deletePendingMany, refreshManifest, syncFromPlaylists, updateEntry, type ActionResult } from "../../actions";
 import { CoverUpload } from "../CoverUpload";
 import { SURAH_NAMES } from "@/lib/quran";
+import { ask } from "@/lib/confirm";
 
 const SECTION_OPTIONS = [
   { value: "fard", label: "الفروض" },
@@ -158,8 +159,8 @@ export function PendingRow({
         <button
           type="button"
           disabled={pending}
-          onClick={() => {
-            if (!window.confirm(`مسح «${name || title || id}» نهائيًا؟ الملف هيتمسح من R2 ومش هيرجع.`)) return;
+          onClick={async () => {
+            if (!(await ask(`مسح «${name || title || id}» نهائيًا؟ الملف هيتمسح من R2 ومش هيرجع.`, { confirm: "مسح نهائي", danger: true }))) return;
             start(async () => {
               const res = await deletePending(id);
               if (res.ok) setDeleted(true);
@@ -384,8 +385,8 @@ export function PendingList({ items }: { items: { id: string; title?: string; du
       return n;
     });
 
-  const removeSelected = () => {
-    if (!window.confirm(`مسح ${sel.size === 1 ? "التسجيل المحدد" : `الـ ${sel.size} تسجيلات المحددة`} نهائيًا؟ الملفات هتتمسح من R2 ومش هترجع.`)) return;
+  const removeSelected = async () => {
+    if (!(await ask(`مسح ${sel.size === 1 ? "التسجيل المحدد" : `الـ ${sel.size} تسجيلات المحددة`} نهائيًا؟ الملفات هتتمسح من R2 ومش هترجع.`, { confirm: "مسح نهائي", danger: true }))) return;
     start(async () => {
       const r = await deletePendingMany([...sel]);
       setMsg(r);

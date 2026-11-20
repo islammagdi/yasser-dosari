@@ -6,6 +6,7 @@ import { surahName } from "@/lib/quran";
 import { khatmaCountLabel, useKhatma } from "@/lib/useKhatma";
 import { usePlayer } from "./PlayerProvider";
 import { PlayIcon } from "./icons";
+import { ask } from "@/lib/confirm";
 
 /** متابعة الختمة في صفحة المصحف: كام سورة اتسمعت، وزرار "كمّل" */
 export function KhatmaProgress({ items }: { items: Recording[] }) {
@@ -65,7 +66,7 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
         {k.count > 0 && (
           <button
             type="button"
-            onClick={() => window.confirm("تبدأ ختمة جديدة؟ هيتمسح التقدّم الحالي.") && k.reset()}
+            onClick={async () => (await ask("تبدأ ختمة جديدة؟ هيتمسح التقدّم الحالي.", { confirm: "ابدأ من جديد", danger: true })) && k.reset()}
             className="flex min-h-11 items-center rounded-full border border-fg/15 px-5 text-[15px] text-muted transition-colors hover:text-text"
           >
             ختمة جديدة

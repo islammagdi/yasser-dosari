@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { sendPush, type ActionResult } from "../../actions";
+import { ask } from "@/lib/confirm";
 
 const field = "min-h-11 rounded-xl border border-line-strong bg-ink px-3 text-text";
 
@@ -41,7 +42,7 @@ export function NotifyForm({ preset }: { preset: { title: string; body: string; 
         <button
           type="button"
           disabled={pending}
-          onClick={() => window.confirm("إرسال الإشعار لكل المشتركين؟") && start(async () => setR(await sendPush(title, body, url)))}
+          onClick={async () => (await ask("إرسال الإشعار لكل المشتركين؟", { confirm: "إرسال" })) && start(async () => setR(await sendPush(title, body, url)))}
           className="min-h-12 rounded-full bg-accent px-8 font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
         >
           {pending ? "جارٍ الإرسال…" : "إرسال"}

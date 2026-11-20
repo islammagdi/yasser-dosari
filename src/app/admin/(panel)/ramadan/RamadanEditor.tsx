@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import type { NightPart, RamadanNight } from "@/types";
 import { hijriOf } from "@/lib/imamate";
 import { saveRamadanYear, type ActionResult } from "../../actions";
+import { ask } from "@/lib/confirm";
 
 type Col = { prayer: RamadanNight["prayer"]; part: NightPart; label: string };
 // نفس ترتيب جدول الحرم: كل صلاة ٣ أجزاء
@@ -37,8 +38,8 @@ export function RamadanEditor({ initial }: { initial: RamadanNight[] }) {
   const [result, setResult] = useState<ActionResult | null>(null);
   const [saving, startSaving] = useTransition();
 
-  const changeYear = (y: number) => {
-    if (dirty && !window.confirm("توجد تعديلات لم تُحفظ على هذه السنة، وتغيير السنة سيلغيها. هل تريد المتابعة؟")) return;
+  const changeYear = async (y: number) => {
+    if (dirty && !(await ask("توجد تعديلات لم تُحفظ على هذه السنة، وتغيير السنة سيلغيها. هل تريد المتابعة؟", { confirm: "غيّر السنة", danger: true }))) return;
     setYear(y);
     setChecked(new Set(all.filter((n) => n.year === y).map((n) => key(n.night, n))));
     setDirty(false);

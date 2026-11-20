@@ -5,6 +5,7 @@ import type { ImamatePrayer, ImamateWeek } from "@/types";
 import { IMAMATE_PRAYER_LABELS, addDays, hijriDayLabel, hijriOf, hijriToIso, prayersList } from "@/lib/imamate";
 import { saveWeeks, type ActionResult } from "../../actions";
 import { MONTHS, WEEK_PRAYERS, hijriIso, labelOf, notifyLink, pad, shortLabel } from "./shared";
+import { ask } from "@/lib/confirm";
 
 /** دور الشيخ في الصلاة: إمام، أو احتياطي، أو مفيش */
 type Role = "imam" | "backup" | undefined;
@@ -156,7 +157,7 @@ export function WeeksEditor({ initial }: { initial: ImamateWeek[] }) {
                 ))}
                 <button
                   type="button"
-                  onClick={() => window.confirm("حذف هذا الأسبوع؟") && update(weeks.filter((x) => x.from !== w.from))}
+                  onClick={async () => (await ask("حذف هذا الأسبوع؟", { confirm: "حذف", danger: true })) && update(weeks.filter((x) => x.from !== w.from))}
                   className="min-h-10 px-3 text-sm text-[#E5636B] hover:underline"
                 >
                   حذف

@@ -13,6 +13,7 @@ import { localToday, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
 import { WIRD_JUZ_DURATIONS, dailyAmountLabel, type WirdPortion } from "@/lib/wirdJuz";
 import { usePlayer } from "./PlayerProvider";
 import { ClockIcon, PlayIcon } from "./icons";
+import { ask } from "@/lib/confirm";
 
 const DISMISS_KEY = "yd-wird-dismissed";
 
@@ -460,8 +461,8 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
 
         <button
           type="button"
-          onClick={() => {
-            if (window.confirm("إيقاف خطة الورد؟ تقدّم الختمة سيبقى محفوظًا.")) w.stop();
+          onClick={async () => {
+            if (await ask("إيقاف خطة الورد؟ تقدّم الختمة سيبقى محفوظًا.", { confirm: "إيقاف" })) w.stop();
           }}
           className="ms-auto text-sm text-muted underline-offset-4 hover:text-text hover:underline"
         >
