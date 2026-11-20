@@ -1,6 +1,7 @@
 import { loadCatalog } from "@/lib/admin/catalog";
 import { clipFileUrl, loadAllClips } from "@/lib/clips";
-import { ClipForm, ClipRow } from "./ClipForms";
+import { ClipForm } from "./ClipForms";
+import { ClipsTable } from "./ClipsTable";
 
 export const metadata = { title: "مقتطفات" };
 
@@ -28,15 +29,10 @@ export default async function AdminClipsPage() {
         <h2 id="clips-list-title" className="font-display text-3xl font-bold">
           المقاطع {clips.length > 0 && <span className="text-xl text-muted">({clips.length})</span>}
         </h2>
-        {clips.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-line-strong p-6 text-center text-muted">لسه مفيش مقاطع.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {clips.map((c) => (
-              <ClipRow key={c.id} clip={c} poster={clipFileUrl(c.posterKey)} recordings={recordings} />
-            ))}
-          </ul>
-        )}
+        <ClipsTable
+          clips={clips.map((c) => ({ ...c, posterUrl: clipFileUrl(c.posterKey), videoUrl: clipFileUrl(c.videoKey) }))}
+          recordings={recordings}
+        />
       </section>
     </div>
   );

@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Clip } from "@/lib/clips";
 import { SURAH_NAMES } from "@/lib/quran";
-import { deleteClip, prepareClip, saveClip, updateClip, type ActionResult, type ClipInput } from "../../actions";
+import { prepareClip, saveClip, type ActionResult, type ClipInput } from "../../actions";
 
-type Rec = { id: string; title: string };
+export type Rec = { id: string; title: string };
 const field = "min-h-11 w-full rounded-xl border border-line-strong bg-ink px-3 text-text";
 const label = "flex flex-col gap-1.5 text-sm font-medium";
 
@@ -68,7 +68,7 @@ function recordingIdFromLink(text: string): string | undefined {
 }
 
 /** خانات بيانات المقطع: مشتركة بين الرفع والتعديل */
-function MetaFields({ v, set, recordings, disabled }: { v: ClipInput; set: (p: Partial<ClipInput>) => void; recordings: Rec[]; disabled?: boolean }) {
+export function MetaFields({ v, set, recordings, disabled }: { v: ClipInput; set: (p: Partial<ClipInput>) => void; recordings: Rec[]; disabled?: boolean }) {
   const recTitle = recordings.find((r) => r.id === v.recordingId)?.title ?? "";
   const [recQuery, setRecQuery] = useState(recTitle);
   useEffect(() => setRecQuery(recTitle), [recTitle]);
@@ -255,92 +255,5 @@ export function ClipForm({ recordings }: { recordings: Rec[] }) {
         {msg && <span className={`text-sm ${msg.ok ? "text-gold-soft" : "text-[#E5636B]"}`}>{msg.message}</span>}
       </div>
     </div>
-  );
-}
-
-/** صف مقطع موجود: تعديل البيانات، إخفاء، مسح */
-export function ClipRow({ clip, poster, recordings }: { clip: Clip; poster?: string; recordings: Rec[] }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  // تأكيد المسح جوه الصف بدل window.confirm، لأن الـ confirm بيوقف الصفحة كلها لحد ما تدوس (ده اللي ظهر كـ INP)
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [meta, setMeta] = useState<ClipInput>(clip);
-  const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<ActionResult | null>(null);
-
-  const run = (fn: () => Promise<ActionResult>) =>
-    start(async () => {
-      const r = await fn();
-      setMsg(r);
-      if (r.ok) router.refresh();
-    });
-
-  return (
-    <li className={`flex flex-col gap-3 rounded-2xl border p-3 ${clip.hidden ? "border-dashed border-line opacity-70" : "border-line"}`}>
-      <div className="flex items-center gap-3">
-        {poster ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={poster} alt="" loading="lazy" className="aspect-[9/16] w-14 shrink-0 rounded-lg object-cover" />
-        ) : (
-          <span className="flex aspect-[9/16] w-14 shrink-0 items-center justify-center rounded-lg bg-fg/5 text-xs text-muted">—</span>
-        )}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate font-semibold">{clip.title}</span>
-          <span className="truncate text-xs text-muted">
-            {clip.hidden ? "مخفي · " : ""}
-            {new Date(clip.createdAt).toLocaleDateString("ar-EG")}
-            {clip.recordingId ? " · مربوط بتسجيل" : ""}
-          </span>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <button type="button" onClick={() => setOpen(!open)} className="min-h-10 rounded-full border border-line-strong px-4 text-sm font-semibold hover:border-gold/60">
-            {open ? "إغلاق" : "تعديل"}
-          </button>
-          <button type="button" disabled={pending} onClick={() => run(() => updateClip(clip.id, { hidden: !clip.hidden }))} className="min-h-10 rounded-full border border-line-strong px-4 text-sm hover:border-gold/60">
-            {clip.hidden ? "إظهار" : "إخفاء"}
-          </button>
-          {confirmDelete ? (
-            <>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => run(() => deleteClip(clip.id))}
-                className="min-h-10 rounded-full bg-[#E5636B] px-4 text-sm font-semibold text-[#fff] hover:bg-[#d4545c] disabled:opacity-60"
-              >
-                {pending ? "بيتمسح…" : "متأكد، امسح نهائيًا"}
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => setConfirmDelete(false)}
-                className="min-h-10 rounded-full border border-line-strong px-4 text-sm hover:border-gold/60"
-              >
-                لا
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => setConfirmDelete(true)}
-              className="min-h-10 rounded-full border border-[#E5636B]/50 px-4 text-sm text-[#E5636B] hover:bg-[#E5636B]/10"
-            >
-              مسح
-            </button>
-          )}
-        </div>
-      </div>
-      {open && (
-        <div className="flex flex-col gap-3 border-t border-line pt-3">
-          <MetaFields v={meta} set={(p) => setMeta((m) => ({ ...m, ...p }))} recordings={recordings} disabled={pending} />
-          <div className="flex items-center gap-3">
-            <button type="button" disabled={pending} onClick={() => run(() => updateClip(clip.id, meta))} className="min-h-11 rounded-full bg-accent px-6 font-semibold text-accent-ink disabled:opacity-50">
-              {pending ? "جارٍ الحفظ…" : "حفظ"}
-            </button>
-          </div>
-        </div>
-      )}
-      {msg && <p className={`text-sm ${msg.ok ? "text-gold-soft" : "text-[#E5636B]"}`}>{msg.message}</p>}
-    </li>
   );
 }
