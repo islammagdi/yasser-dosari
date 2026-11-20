@@ -36,19 +36,34 @@ export function QuranReader({ surah, ayahs, basmala }: { surah: number; ayahs: A
   const [highlight, setHighlight] = useState<number | null>(null);
   useEffect(() => {
     let timer = 0;
+    let done = 0; // آخر آية اتعلّمت، عشان المحاولات المتكررة متعيدش العلامة
+    const tries: number[] = [];
     const apply = () => {
       const n = Number(window.location.hash.match(/^#ayah-(\d+)$/)?.[1]);
-      if (!n) return;
+      const el = n ? document.getElementById(`ayah-${n}`) : null;
+      if (!n || !el) return;
+      // السكرول بيتكرر في كل محاولة (لو الـ Next رجّع الصفحة لفوق بعدنا)، والعلامة بتتحط مرة واحدة
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (done === n) return;
+      done = n;
       setHighlight(n);
-      // بعد الرسم، عشان المتصفح ممكن يكون نزل قبل ما الخط يتحمّل
-      requestAnimationFrame(() => document.getElementById(`ayah-${n}`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
       window.clearTimeout(timer);
       timer = window.setTimeout(() => setHighlight(null), 8000);
     };
-    apply();
-    window.addEventListener("hashchange", apply);
+    // لما بنيجي من البحث بـ Link، الـ Next بيحدّث الرابط ويرجّع الصفحة لفوق بعد ما الصفحة تتعرض،
+    // فلو علّمنا مرة واحدة على طول بيلاقي الرابط لسه من غير #ayah، أو السكرول بتاعنا بيتلغي.
+    // فبنحاول كذا مرة في أول ثانية
+    for (const ms of [0, 120, 350, 800]) tries.push(window.setTimeout(apply, ms));
+    const onHash = () => {
+      done = 0;
+      apply();
+    };
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onHash);
     return () => {
-      window.removeEventListener("hashchange", apply);
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onHash);
+      tries.forEach((t) => window.clearTimeout(t));
       window.clearTimeout(timer);
     };
   }, [surah]);
