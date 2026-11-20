@@ -157,7 +157,8 @@ function ClipSlide({
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState<"share" | "download" | null>(null);
   const [note, setNote] = useState("");
-  const [heartBurst, setHeartBurst] = useState(false);
+  // قلب الضغطتين: بيظهر مكان الصباع، والـ key بيخلّي كل ضغطتين يعملوا قلب جديد
+  const [heart, setHeart] = useState<{ x: number; y: number; key: number } | null>(null);
   const fav = useFavorites();
   const favKey = clip.id; // المفضلة نفس قايمة التلاوات، والـ id بيبدأ بـ clip-
   const saved = fav.isFavorite(favKey);
@@ -185,12 +186,19 @@ function ClipSlide({
   };
 
   // ضغطة: تشغيل/إيقاف (أو تشغيل الصوت أول مرة). ضغطتين: حفظ في المفضلة زي الريلز
-  const onTap = () => {
+  const onTap = (e?: React.MouseEvent) => {
     const now = Date.now();
     if (now - lastTap.current < 300) {
-      if (!saved) fav.toggle(favKey);
-      setHeartBurst(true);
-      window.setTimeout(() => setHeartBurst(false), 700);
+      // زي انستجرام: الضغطتين بيحفظوا بس، ومش بيشيلوا من المفضلة
+      if (!saved) {
+        fav.toggle(favKey);
+        flash("اتحفظ في المفضلة");
+      }
+      const box = e?.currentTarget.closest("section")?.getBoundingClientRect();
+      const x = e && box ? e.clientX - box.left : (box?.width ?? 0) / 2;
+      const y = e && box ? e.clientY - box.top : (box?.height ?? 0) / 2;
+      setHeart({ x, y, key: now });
+      window.setTimeout(() => setHeart((h) => (h?.key === now ? null : h)), 900);
       lastTap.current = 0;
       return;
     }
@@ -268,24 +276,26 @@ function ClipSlide({
         playsInline
         preload={near ? "auto" : "none"}
         onClick={onTap}
-        className="h-full w-full object-contain"
+        className="h-full w-full touch-manipulation select-none object-contain"
       />
 
       {(paused || muted) && active && (
         <button
           type="button"
           onClick={onTap}
-          className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/45 px-5 py-3 text-sm font-semibold backdrop-blur"
+          className="absolute left-1/2 top-1/2 z-10 touch-manipulation -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/45 px-5 py-3 text-sm font-semibold backdrop-blur"
         >
           {muted ? "اضغط لتشغيل الصوت 🔊" : "▶ تشغيل"}
         </button>
       )}
-      {heartBurst && (
-        <HeartIcon filled className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-24 w-24 -translate-x-1/2 -translate-y-1/2 animate-ping text-[#E5636B]" />
+      {heart && (
+        <span key={heart.key} aria-hidden className="clip-heart pointer-events-none absolute z-20" style={{ left: heart.x, top: heart.y }}>
+          <HeartIcon filled className="h-24 w-24 text-[#E5636B] drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]" />
+        </span>
       )}
 
-      {/* الأزرار على الجنب */}
-      <div className="absolute bottom-[calc(9rem+env(safe-area-inset-bottom))] end-3 z-10 flex flex-col items-center gap-4">
+      {/* الأزرار على اليمين */}
+      <div className="absolute bottom-[calc(9rem+env(safe-area-inset-bottom))] right-3 z-10 flex flex-col items-center gap-4">
         <button type="button" onClick={() => fav.toggle(favKey)} aria-pressed={saved} aria-label={saved ? "إزالة من المفضلة" : "حفظ في المفضلة"} className={act}>
           <span className={actIcon}>
             <HeartIcon filled={saved} className={`h-6 w-6 ${saved ? "text-[#E5636B]" : ""}`} />
@@ -319,7 +329,7 @@ function ClipSlide({
       </div>
 
       {/* الكلام تحت */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pe-20 pt-16">
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/85 via-black/50 to-transparent pb-[calc(1.25rem+env(safe-area-inset-bottom))] pl-4 pr-20 pt-16">
         {clip.ayah && (
           <Link href={clip.ayah.href} className="block rounded-2xl bg-black/30 px-3 py-2 backdrop-blur-sm">
             <span className="line-clamp-3 font-quran text-xl leading-[2.1]">{clip.ayah.text}</span>

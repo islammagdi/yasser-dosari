@@ -261,3 +261,16 @@
 @media (prefers-reduced-motion: reduce) {
   .eq-bar, .rise { animation: none; }
 }
+/* قلب الضغطتين في المقتطفات: بيكبر وبيرجع وبعدين بيطلع ويختفي، زي انستجرام */
+@keyframes clip-heart {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-12deg); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.25) rotate(-12deg); }
+  30% { transform: translate(-50%, -50%) scale(0.95) rotate(-12deg); }
+  45% { transform: translate(-50%, -50%) scale(1.05) rotate(-12deg); }
+  75% { opacity: 1; transform: translate(-50%, -60%) scale(1) rotate(-12deg); }
+  100% { opacity: 0; transform: translate(-50%, -120%) scale(0.7) rotate(-12deg); }
+}
+.clip-heart { animation: clip-heart 0.9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .clip-heart { animation-duration: 0.6s; }
+}
