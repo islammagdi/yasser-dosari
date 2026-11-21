@@ -8,6 +8,7 @@ import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
 import { deleteClip, updateClip, type ActionResult, type ClipInput } from "../../actions";
 import { MetaFields, type Rec } from "./ClipForms";
+import { lockScroll } from "@/lib/scrollLock";
 
 export type ClipItem = Clip & { posterUrl?: string; videoUrl?: string };
 
@@ -277,10 +278,9 @@ function EditClipDialog({ clip, recordings, onClose, onSaved }: { clip: ClipItem
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
     panel.current?.querySelector<HTMLElement>("input,select,textarea")?.focus();
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockScroll();
     return () => {
-      document.body.style.overflow = overflow;
+      unlockScroll();
       back?.focus?.();
     };
   }, []);

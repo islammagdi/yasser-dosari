@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { formatDuration } from "@/lib/format";
 import { NOTE_MAX, REPORT_REASONS, type ReportReason } from "@/lib/reportReasons";
+import { lockScroll } from "@/lib/scrollLock";
 
 const STORE = "yd-reported-v1";
 const DAY = 24 * 60 * 60 * 1000;
@@ -71,11 +72,10 @@ export function ReportProblem({ id, category, position }: { id: string; category
     firstOption.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("keydown", esc);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockScroll();
     return () => {
       document.removeEventListener("keydown", esc);
-      document.body.style.overflow = overflow;
+      unlockScroll();
     };
   }, [open, close]);
 

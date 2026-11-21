@@ -11,6 +11,7 @@ import { DownloadIcon, PlayerMenu, ShareIcon, usePlayerActions } from "./PlayerM
 import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { HeartIcon, NextIcon, PauseIcon, PlayIcon } from "./icons";
+import { lockScroll } from "@/lib/scrollLock";
 
 /**
  * وضع الاستماع بملء الشاشة: غلاف كبير وأزرار كبيرة، ونص الآية الحالية في سور المصحف.
@@ -108,11 +109,10 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && requestClose();
     document.addEventListener("keydown", esc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockScroll();
     return () => {
       document.removeEventListener("keydown", esc);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [requestClose]);
 
@@ -163,7 +163,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-label="المشغّل بملء الشاشة"
-      className={`fixed inset-0 z-[60] flex h-[100dvh] flex-col overflow-hidden bg-ink transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none ${
+      className={`fixed inset-0 z-[60] flex h-[100dvh] flex-col overflow-hidden overscroll-contain bg-ink transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none ${
         shown ? "translate-y-0" : "translate-y-full"
       }`}
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}

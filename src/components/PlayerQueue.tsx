@@ -7,6 +7,7 @@ import type { Recording } from "@/types";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { EqualizerIcon } from "./icons";
+import { lockScroll } from "@/lib/scrollLock";
 
 /** ارتفاع الصف: ثابت، عشان السحب يحسب المكان الجديد من المسافة */
 const ROW = 64;
@@ -78,6 +79,7 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
     panel.current?.focus();
+    const unlockScroll = lockScroll();
     // Escape بيقفل القايمة بس، مش المشغّل الكبير اللي تحتها (capture بيسبق مستمع المشغّل)
     const esc = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -87,6 +89,7 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", esc, true);
     return () => {
       window.removeEventListener("keydown", esc, true);
+      unlockScroll();
       back?.focus?.();
     };
   }, [close]);

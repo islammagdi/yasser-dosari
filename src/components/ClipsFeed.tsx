@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFavorites } from "@/lib/useFavorites";
 import { usePlayer } from "./PlayerProvider";
 import { HeartIcon } from "./icons";
+import { lockScroll } from "@/lib/scrollLock";
 
 export interface FeedClip {
   id: string;
@@ -70,13 +71,7 @@ export function ClipsFeed({ clips, startId }: { clips: FeedClip[]; startId?: str
   }, [clips]);
 
   // الصفحة واخدة الشاشة كلها: السكرول بتاع الموقع ورا يتقفل
-  useEffect(() => {
-    const prev = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = prev;
-    };
-  }, []);
+  useEffect(() => lockScroll(), []);
 
   // لو فيه تلاوة شغالة في المشغّل، تقف أول ما مقطع يشتغل بصوت
   const pausePlayer = useCallback(() => {
