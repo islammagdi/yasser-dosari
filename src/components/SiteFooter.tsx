@@ -37,7 +37,7 @@ export function SiteFooter() {
           </a>
         </nav>
 
-        <p className="max-w-xl text-sm leading-7 text-muted">موقع تطوعي غير رسمي، لا يتبع الشيخ ولا أي جهة رسمية.</p>
+        <p className="max-w-xl text-sm leading-7 text-muted">موقع تطوعي غير رسمي، لا يتبع الشيخ ولا أي جهة رسمية. وهدفه هو تجميع تلاوات الشيخ في مكان واحد وليس الربح.</p>
       </div>
     </footer>
   );
