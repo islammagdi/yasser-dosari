@@ -19,6 +19,14 @@ interface PlayerContextValue {
   rate: number;
   error: string | null;
   playQueue: (items: Recording[], startIndex: number, startAt?: number) => void;
+  /** مكان التلاوة الحالية في قايمة الاستماع */
+  queueIndex: number;
+  /** تشغيل تلاوة من قايمة الاستماع بمكانها */
+  playFromQueue: (i: number) => void;
+  /** تغيير ترتيب قايمة الاستماع (التلاوات الجاية بس، الحالية مبتتحركش) */
+  moveInQueue: (from: number, to: number) => void;
+  /** شيل تلاوة جاية من قايمة الاستماع */
+  removeFromQueue: (i: number) => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
@@ -398,6 +406,30 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setIndex(startIndex);
   }, [current, media]);
 
+  const playFromQueue = useCallback((i: number) => {
+    if (i === index || !queue[i]) return;
+    autoplay.current = true;
+    resumeAt.current = queue[i].clip ? queue[i].clip!.start : getProgressTime(queue[i].id);
+    setIndex(i);
+  }, [index, queue]);
+
+  const moveInQueue = useCallback((from: number, to: number) => {
+    // اللي فات والحالية ثابتين: الترتيب بيتغيّر في الجاي بس، فمكان الحالية مبيتغيّرش
+    if (from === to || from <= index || to <= index) return;
+    setQueue((q) => {
+      if (!q[from] || to >= q.length) return q;
+      const nq = [...q];
+      const [item] = nq.splice(from, 1);
+      nq.splice(to, 0, item);
+      return nq;
+    });
+  }, [index]);
+
+  const removeFromQueue = useCallback((i: number) => {
+    if (i <= index) return;
+    setQueue((q) => q.filter((_, k) => k !== i));
+  }, [index]);
+
   const toggle = useCallback(() => {
     const m = media();
     if (!m) return;
@@ -492,9 +524,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<PlayerContextValue>(() => ({
     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
-    playQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
+    playQueue, queueIndex: index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
     volume, muted, setVolume, toggleMute, sleep, setSleepTimer,
-  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
+  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
 
   return (
     <PlayerContext.Provider value={value}>

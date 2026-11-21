@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import type { Ayah, AyahTiming } from "@/lib/api/quranText";
 import { formatDuration, toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
-import { AddToPlaylist } from "./AddToPlaylist";
+import { PlayerQueue } from "./PlayerQueue";
 import { DownloadIcon, PlayerMenu, ShareIcon, usePlayerActions } from "./PlayerMore";
 import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
@@ -261,7 +261,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* الصف اللي تحت: التايمر، وقايمة التشغيل، والتحميل */}
+        {/* الصف اللي تحت: التايمر، وقايمة الاستماع (التالي)، والتحميل. الإضافة لقايمة تشغيل في ⋮ */}
         <div className="flex shrink-0 items-center justify-between">
           <div className="relative">
             <button type="button" onClick={() => setSleepOpen((o) => !o)} aria-expanded={sleepOpen} className={`${tool} ${p.sleep ? "text-gold" : ""}`}>
@@ -300,10 +300,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
-            <AddToPlaylist recording={r} up buttonClassName="flex h-11 w-9 items-center justify-center transition-colors hover:text-text" />
-            قايمة تشغيل
-          </div>
+          <PlayerQueue className={tool} />
           {act.canOffline && (
             <button type="button" onClick={act.toggleOffline} disabled={act.saving !== null} className={`${tool} ${act.saved ? "text-gold" : ""}`}>
               <DownloadIcon done={act.saved} />

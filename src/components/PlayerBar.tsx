@@ -8,6 +8,7 @@ import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
 import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { FullscreenPlayer } from "./FullscreenPlayer";
+import { PlayerQueue } from "./PlayerQueue";
 import { DownloadIcon, PlayerMenu, RepeatIcon, ShareIcon, usePlayerActions } from "./PlayerMore";
 import { RecordingCover } from "./RecordingCover";
 import {
@@ -239,6 +240,7 @@ export function PlayerBar() {
             className="progress hidden w-24 lg:block"
             style={{ "--pct": `${(p.muted ? 0 : p.volume) * 100}%` } as React.CSSProperties}
           />
+          <PlayerQueue label={false} className={iconBtn} />
           {!p.current.youtubeId && (
             <button type="button" onClick={() => setFull(true)} aria-label="المشغّل بملء الشاشة" className={iconBtn}>
               <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

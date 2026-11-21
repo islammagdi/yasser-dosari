@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Recording } from "@/types";
-import { getCategory, SLEEP_LABEL } from "@/lib/playerLabels";
+import { getCategory } from "@/lib/playerLabels";
 import { toArabicDigits } from "@/lib/format";
 import { canSaveOffline, removeOffline, saveOffline, useOffline } from "@/lib/offline";
 import { usePlaylists } from "@/lib/usePlaylists";
-import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
+import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 
 /** المشاركة والتحميل من غير نت: مشتركين بين المشغّل الكبير وشريط الديسكتوب */
@@ -87,7 +87,8 @@ export const MoreIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
 );
 
 /**
- * زرار ⋮ في المشغّل (زي أنغامي): التكرار، وقايمة التشغيل، والتايمر، وصفحة التلاوة والقسم.
+ * زرار ⋮ في المشغّل (زي أنغامي): التكرار، والإضافة لقايمة تشغيل، وصفحة التلاوة والقسم.
+ * التايمر والتالي ليهم أزرار في المشغّل نفسه، فمش بيتكرروا هنا.
  * sheet: لوحة من تحت (المشغّل الكبير). popover: قايمة صغيرة لفوق (شريط الديسكتوب).
  */
 export function PlayerMenu({
@@ -104,7 +105,7 @@ export function PlayerMenu({
   const pl = usePlaylists();
   const r = p.current;
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"main" | "playlists" | "sleep">("main");
+  const [view, setView] = useState<"main" | "playlists">("main");
   const [newName, setNewName] = useState("");
   const box = useRef<HTMLDivElement>(null);
 
@@ -153,22 +154,19 @@ export function PlayerMenu({
 
       {view === "main" && (
         <>
+          {variant === "sheet" && (
           <button type="button" role="menuitemcheckbox" aria-checked={repeating} onClick={() => p.setRepeat(repeating ? 0 : Infinity)} className={row}>
             <RepeatIcon className={`h-5 w-5 ${repeating ? "text-gold" : "text-muted"}`} />
             <span className="flex-1">تكرار التلاوة</span>
             <span className={`text-xs font-semibold ${repeating ? "text-gold" : "text-muted"}`}>{repeating ? "شغال" : "مقفول"}</span>
           </button>
+          )}
           <button type="button" role="menuitem" onClick={() => setView("playlists")} className={row}>
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M4 6h11M4 11h11M4 16h7M17 13v6M14 16h6" />
             </svg>
             <span className="flex-1">إضافة لقايمة تشغيل</span>
             {inLists > 0 && <span className="text-xs text-gold">في {toArabicDigits(inLists)}</span>}
-          </button>
-          <button type="button" role="menuitem" onClick={() => setView("sleep")} className={row}>
-            <span className="w-5 text-center text-sm font-bold text-muted">zZ</span>
-            <span className="flex-1">إيقاف بعد</span>
-            {p.sleep && <span className="text-xs text-gold">شغال</span>}
           </button>
           <div className="my-1 h-px bg-fg/10" />
           <Link href={`/${r.category}/${r.id}`} role="menuitem" onClick={go} className={row}>
@@ -225,41 +223,6 @@ export function PlayerMenu({
         </div>
       )}
 
-      {view === "sleep" && (
-        <div className="flex flex-col gap-1">
-          <button type="button" onClick={() => setView("main")} className="flex min-h-10 items-center gap-2 px-3 text-sm text-muted hover:text-text">
-            ← رجوع
-          </button>
-          <p className="px-3 text-xs text-muted">{SLEEP_LABEL}</p>
-          {SLEEP_OPTIONS.map((o) => (
-            <button
-              key={String(o.value)}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                p.setSleepTimer(o.value);
-                setOpen(false);
-              }}
-              className={row}
-            >
-              {o.label}
-            </button>
-          ))}
-          {p.sleep && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                p.setSleepTimer(null);
-                setOpen(false);
-              }}
-              className={`${row} text-gold-soft`}
-            >
-              إلغاء التايمر
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 
