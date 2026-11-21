@@ -35,7 +35,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { c?: s
   };
 }
 
-// الترتيب العشوائي محتاج الصفحة تتعمل مع كل زيارة
+// مع كل زيارة: المقاطع الجديدة بتظهر علطول
 export const dynamic = "force-dynamic";
 
 export default async function ClipsPage({ searchParams }: { searchParams: { c?: string } }) {
@@ -88,20 +88,7 @@ export default async function ClipsPage({ searchParams }: { searchParams: { c?: 
     ];
   });
 
-  // ترتيب عشوائي في كل زيارة، عشان الزائر ميشوفش نفس الأول كل مرة. لو الرابط فيه مقطع معيّن
-  // (مشاركة أو «مقطع اليوم»)، هو بيبقى الأول والباقي عشوائي
-  const first = feed.find((c) => c.id === searchParams.c);
-  const ordered = [...(first ? [first] : []), ...shuffle(feed.filter((c) => c !== first))];
-
-  return <ClipsFeed clips={ordered} startId={searchParams.c} />;
-}
-
-/** خلط عشوائي (Fisher–Yates) */
-function shuffle<T>(list: T[]): T[] {
-  const a = [...list];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+  // الترتيب العشوائي بيتعمل في ClipsFeed مع كل فتحة للتاب.
+  // الـ key بيتغيّر مع كل مرة السيرفر يعرض الصفحة (زي الرجوع من مقطع مشارك لـ /clips)، فالفيد بيتخلط من جديد
+  return <ClipsFeed key={Date.now()} clips={feed} startId={searchParams.c} />;
 }

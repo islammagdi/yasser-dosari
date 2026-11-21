@@ -35,23 +35,42 @@ async function fetchFile(c: FeedClip): Promise<File> {
  * «مقتطفات»: شاشة كاملة بتتقلّب لفوق ولتحت زي الريلز.
  * المقطع اللي قدامك بس هو اللي بيشتغل، وأول ضغطة على الصوت بتفضل لكل المقاطع.
  */
-export function ClipsFeed({ clips, startId }: { clips: FeedClip[]; startId?: string }) {
+/** خلط عشوائي (Fisher–Yates) */
+function shuffle<T>(list: T[]): T[] {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export function ClipsFeed({ clips: source, startId }: { clips: FeedClip[]; startId?: string }) {
+  /**
+   * الترتيب العشوائي بيتعمل هنا في المتصفح، مع كل فتحة للتاب.
+   * لو اتعمل في السيرفر بس، الـ Next بيحتفظ بالصفحة في الذاكرة شوية (Router Cache)،
+   * فالرجوع للتاب من الهيدر كان بيرجّع نفس الترتيب.
+   * لو الرابط فيه مقطع معيّن (مشاركة أو «مقطع اليوم») بيفضل هو الأول، والباقي عشوائي.
+   */
+  const [clips, setClips] = useState<FeedClip[] | null>(null);
+  useEffect(() => {
+    const first = source.find((c) => c.id === startId);
+    setClips([...(first ? [first] : []), ...shuffle(source.filter((c) => c !== first))]);
+    // startId مقصود إنه ميعيدش الخلط: الرابط بيتحدّث وإنت بتقلّب
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source]);
   const box = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [muted, setMuted] = useState(true);
   const player = usePlayer();
 
   // أول ما الصفحة تفتح: لو الرابط فيه مقطع معيّن (?c=...) ننزل عليه
-  useEffect(() => {
-    if (!startId) return;
-    const i = clips.findIndex((c) => c.id === startId);
-    if (i > 0) box.current?.children[i]?.scrollIntoView({ block: "start" });
-  }, [startId, clips]);
+  // المقطع اللي في الرابط بقى أول واحد بعد الخلط، فمفيش داعي ننزل عليه
 
   // المقطع الظاهر في الشاشة هو "النشط"، والرابط بيتحدّث عشان المشاركة
   useEffect(() => {
     const root = box.current;
-    if (!root) return;
+    if (!root || !clips) return;
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -78,7 +97,7 @@ export function ClipsFeed({ clips, startId }: { clips: FeedClip[]; startId?: str
     if (player.isPlaying) player.toggle();
   }, [player]);
 
-  if (!clips.length) {
+  if (!source.length) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
         <p className="font-display text-3xl font-bold">مقتطفات</p>
@@ -113,8 +132,9 @@ export function ClipsFeed({ clips, startId }: { clips: FeedClip[]; startId?: str
         </button>
       </div>
 
+      {/* لحد ما الترتيب يتخلط (لحظة): شاشة سودا بدل ما يظهر الترتيب القديم ويتبدّل */}
       <div ref={box} className="h-[100dvh] snap-y snap-mandatory overflow-y-scroll overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {clips.map((c, i) => (
+        {clips?.map((c, i) => (
           <ClipSlide
             key={c.id}
             clip={c}
