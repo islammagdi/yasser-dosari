@@ -88,15 +88,15 @@ export function SiteHeader() {
                 href={n.href}
                 aria-current={n.active ? "page" : undefined}
                 className={`relative flex h-[72px] items-center justify-center whitespace-nowrap rounded-sm px-3 text-base leading-6 transition-colors 2xl:px-4 ${
-                  // النشط: في الفاتح أخضر فاتح (عشان ميبقاش تقيل)، وفي الغامق دهبي زي التصميم
+                  // النشط: في الفاتح الأخضر الأساسي والكلمة بيضا، وفي الغامق دهبي زي التصميم
                   n.active
-                    ? "bg-emerald/10 font-semibold text-emerald dark:bg-accent dark:text-accent-ink"
+                    ? "bg-accent font-semibold text-[#fff] dark:text-accent-ink"
                     : "font-medium text-text hover:bg-fg/5"
                 }`}
               >
                 {n.label}
                 {n.active && (
-                  <span aria-hidden className="absolute inset-x-2 bottom-0 h-1.5 rounded-full bg-emerald dark:bg-accent-hover" />
+                  <span aria-hidden className="absolute inset-x-2 bottom-0 h-1.5 rounded-full bg-[#fff]/45 dark:bg-accent-hover" />
                 )}
               </Link>
             ))}
