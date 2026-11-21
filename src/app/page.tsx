@@ -84,6 +84,8 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-12">
       <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
+      {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
+      <FridayKahf kahf={kahf} />
       <FridayCard slots={imamate} />
       <ClipOfDay clips={clipCards} />
       <WirdCard items={wirdItems} dismissible />
@@ -92,7 +94,6 @@ export default async function HomePage() {
       <RamadanCard slots={imamate} recordings={taraweeh} />
       <HomeCollections collections={collections} />
       <HomePlaylists />
-      <FridayKahf kahf={kahf} />
       {/* القسم اللي لسه مفيهوش تسجيلات (زي التلاوات النادرة في الأول) مبيظهرش كتاب */}
       <HomeBrowser sections={sections.filter((s) => s.total > 0)} />
       <InstallCard />

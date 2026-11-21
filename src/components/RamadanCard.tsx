@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import type { ImamateSlot, NightPart, Recording } from "@/types";
 import { toArabicDigits } from "@/lib/format";
-import { IMAMATE_PRAYER_LABELS, addDays, daysFromToday, isRamadan, makkahTime, makkahToday, relativeDayLabel } from "@/lib/imamate";
+import { IMAMATE_PRAYER_LABELS, addDays, daysFromToday, isRamadan, makkahTime, makkahToday, relativeDayLabel, NIGHT_PART_LABELS } from "@/lib/imamate";
 import { usePlayer } from "./PlayerProvider";
 import { RamadanCountdown } from "./RamadanCountdown";
 import { PauseIcon, PlayIcon } from "./icons";
 
-const PART_SHORT: Record<NightPart, string> = { first: "الأولى", second: "الثانية", last: "الأخيرة مع الوتر" };
+// نفس أسماء الأجزاء في الموقع كله (lib/imamate)
+const PART_SHORT = NIGHT_PART_LABELS;
 const PART_ORDER: Record<NightPart, number> = { first: 0, second: 1, last: 2 };
 
 /** الكارت بيظهر في رمضان، أو قبله بشهر لو الجدول اتعلن */
