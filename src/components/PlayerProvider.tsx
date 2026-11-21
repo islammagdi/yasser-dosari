@@ -5,6 +5,7 @@ import type { Recording } from "@/types";
 
 import { markSurahListened } from "@/lib/useKhatma";
 import { getProgressTime, saveProgress } from "@/lib/useProgress";
+import { playbackUrl } from "@/lib/offline";
 const STORAGE_KEY = "yd-player-v1";
 /** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -156,6 +157,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [sleep, setSleep] = useState<SleepTimer>(null);
   const resumeAt = useRef<number | null>(null);
   const autoplay = useRef(false);
+  /** محاولات إعادة التحميل لو الاتصال قطع في نص التلاوة */
+  const retriesRef = useRef(0);
 
   const current = index >= 0 ? queue[index] ?? null : null;
   const isYouTube = Boolean(current?.youtubeId);
@@ -332,7 +335,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setError("هذا التسجيل غير متاح بعد.");
       return;
     }
-    audio.src = current.audioUrl;
+    retriesRef.current = 0;
+    audio.src = playbackUrl(current.audioUrl);
     audio.playbackRate = rate;
     if (autoplay.current) {
       audio.play().catch(() => setIsPlaying(false));
@@ -577,6 +581,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         onPause={() => setIsPlaying(false)}
         onWaiting={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
+        onPlaying={() => {
+          retriesRef.current = 0;
+        }}
         onLoadedMetadata={(e) => {
           const a = e.currentTarget;
           if (Number.isFinite(a.duration)) setDuration(a.duration);
@@ -596,7 +603,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
         }}
         onEnded={() => endedRef.current()}
-        onError={() => {
+        onError={(e) => {
+          const a = e.currentTarget;
+          // النت قطع أو السيرفر وقف في نص التلاوة: بنحمّل تاني ونكمّل من نفس الثانية (مرتين بالكتير)
+          if (current?.audioUrl && a.currentTime > 0 && retriesRef.current < 2) {
+            retriesRef.current++;
+            resumeAt.current = a.currentTime;
+            const wasPlaying = !a.paused || isPlaying;
+            setIsLoading(true);
+            window.setTimeout(() => {
+              a.load();
+              if (wasPlaying) a.play().catch(() => setIsPlaying(false));
+            }, 1500 * retriesRef.current);
+            return;
+          }
           if (current?.audioUrl) {
             setIsLoading(false);
             setIsPlaying(false);

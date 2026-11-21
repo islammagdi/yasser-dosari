@@ -2,6 +2,7 @@
 // ١) التلاوات المحفوظة للاستماع بدون إنترنت: بتتشغّل من الجهاز (مع دعم التقديم والتأخير).
 // ٢) الصفحات: من السيرفر دايمًا لو فيه نت (فمفيش نسخ قديمة)، ومن آخر نسخة محفوظة لو مفيش.
 // ٣) ملفات الموقع الثابتة (JS و CSS والأيقونات): أساميها بتتغير مع كل تحديث، فتخزينها آمن.
+// v2 للـ service worker نفسه (التلاوات العادية مبقتش بتعدّي عليه)، والكاش زي ما هو
 const AUDIO = "yd-audio-v1";
 const PAGES = "yd-pages-v1";
 const STATIC = "yd-static-v1";
@@ -60,8 +61,11 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  if (req.destination === "audio" || /\.(mp3|m4a)(\?|$)/i.test(url.pathname)) {
-    event.respondWith(audio(req));
+  // التلاوات: بنتدخّل بس في المحفوظة للاستماع بدون إنترنت (عليها علامة yd-offline).
+  // الباقي بيتحمّل من السيرفر مباشرة: لو عدّى على الـ service worker، المتصفح ممكن يوقفه
+  // في نص تلاوة طويلة (أو مع تحديث الموقع) فالصوت يقف فجأة
+  if (url.searchParams.get("yd-offline") === "1") {
+    event.respondWith(audio(req, url));
     return;
   }
   if (req.mode === "navigate" && url.origin === self.location.origin && !url.pathname.startsWith("/admin")) {
@@ -78,15 +82,19 @@ self.addEventListener("fetch", (event) => {
 });
 
 /** تلاوة محفوظة؟ بنرجّعها من الجهاز، وبنقطع منها الجزء المطلوب لو المشغّل طلب Range */
-async function audio(req) {
+async function audio(req, url) {
+  url.searchParams.delete("yd-offline");
   const cache = await caches.open(AUDIO);
-  const hit = await cache.match(req.url, { ignoreSearch: true });
-  if (!hit) return fetch(req);
+  const hit = await cache.match(url.href, { ignoreSearch: true });
+  // مش موجودة (اتمسحت): من السيرفر بالرابط الأصلي
+  if (!hit) return fetch(new Request(url.href, { headers: req.headers, mode: req.mode, credentials: req.credentials }));
 
   const range = req.headers.get("range");
   if (!range) return hit;
-  const buf = await hit.arrayBuffer();
-  const size = buf.byteLength;
+  // Blob بيتقطّع من الملف على الجهاز، من غير ما التلاوة كلها تتحمّل في الذاكرة مع كل طلب
+  // (arrayBuffer كان بيحمّل ٤٠ ميجا كل شوية، والموبايل كان بيقفل الصفحة)
+  const blob = await hit.blob();
+  const size = blob.size;
   const m = /bytes=(\d*)-(\d*)/.exec(range);
   let start = m && m[1] ? Number(m[1]) : 0;
   let end = m && m[2] ? Number(m[2]) : size - 1;
@@ -95,7 +103,7 @@ async function audio(req) {
     end = size - 1;
   }
   end = Math.min(end, size - 1);
-  return new Response(buf.slice(start, end + 1), {
+  return new Response(blob.slice(start, end + 1), {
     status: 206,
     headers: {
       "Content-Type": hit.headers.get("Content-Type") || "audio/mpeg",

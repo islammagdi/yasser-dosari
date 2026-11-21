@@ -18,6 +18,18 @@ export interface SavedItem {
   savedAt: string;
 }
 
+/**
+ * علامة في رابط التلاوة المحفوظة: الـ service worker بيتدخّل في الطلبات اللي عليها العلامة دي بس،
+ * والتلاوات العادية بتتحمّل من السيرفر مباشرة من غير ما تعدّي عليه.
+ */
+export const OFFLINE_FLAG = "yd-offline=1";
+
+/** رابط التشغيل: لو التلاوة محفوظة بنضيف العلامة، وإلا الرابط زي ما هو */
+export function playbackUrl(url: string): string {
+  if (typeof window === "undefined" || !read().some((x) => x.url === url)) return url;
+  return url + (url.includes("?") ? "&" : "?") + OFFLINE_FLAG;
+}
+
 export const canSaveOffline = (r: Recording) =>
   typeof window !== "undefined" && "caches" in window && "serviceWorker" in navigator && !r.youtubeId && !!r.audioUrl;
 
@@ -46,23 +58,25 @@ export async function saveOffline(r: Recording, onProgress?: (pct: number) => vo
   const res = await fetch(r.audioUrl, { mode: "cors", cache: "no-store" });
   if (!res.ok || !res.body) throw new Error(`تعذّر التحميل (${res.status})`);
   const total = Number(res.headers.get("Content-Length")) || 0;
-  const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const type = res.headers.get("Content-Type") || "audio/mpeg";
+  // الملف بيعدّي على طول للتخزين على الجهاز وإحنا بنعدّ الحجم، من غير ما يتجمّع كله في الذاكرة
+  // (ملف ٤٠ ميجا في الذاكرة كان ممكن يخلّي الموبايل يقفل الصفحة)
   let got = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    got += value.length;
-    if (total) onProgress?.(Math.round((got / total) * 100));
-  }
-  const blob = new Blob(chunks, { type: res.headers.get("Content-Type") || "audio/mpeg" });
+  const counted = res.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, ctrl) {
+        got += chunk.length;
+        if (total) onProgress?.(Math.round((got / total) * 100));
+        ctrl.enqueue(chunk);
+      },
+    }),
+  );
   const cache = await caches.open(AUDIO_CACHE);
   await cache.put(
     r.audioUrl,
-    new Response(blob, { headers: { "Content-Type": blob.type, "Content-Length": String(blob.size), "Accept-Ranges": "bytes" } }),
+    new Response(counted, { headers: { "Content-Type": type, ...(total && { "Content-Length": String(total) }), "Accept-Ranges": "bytes" } }),
   );
-  write([...read().filter((x) => x.rec.id !== r.id), { rec: r, url: r.audioUrl, size: blob.size, savedAt: new Date().toISOString() }]);
+  write([...read().filter((x) => x.rec.id !== r.id), { rec: r, url: r.audioUrl, size: got || total, savedAt: new Date().toISOString() }]);
   // نتأكد إن صفحة المحفوظات نفسها هتفتح من غير نت
   navigator.serviceWorker?.controller?.postMessage("warm-offline");
 }
