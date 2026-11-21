@@ -274,3 +274,28 @@
 @media (prefers-reduced-motion: reduce) {
   .clip-heart { animation-duration: 0.6s; }
 }
+
+/*
+ * الموبايل: أي خانة كتابة خطها أصغر من 16px، الآيفون بيعمل زووم على الصفحة أول ما تدوس عليها،
+ * والصفحة بتفضل مكبّرة بعد ما تقفل الكيبورد، فبتتسحب يمين وشمال.
+ * ده كان بيحصل من خانة «اسم قايمة جديدة» في قايمة المشغّل (text-sm = 14px).
+ */
+@media (pointer: coarse) {
+  input:not([type]),
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* أمان زيادة: الصفحة نفسها متتسحبش بالعرض، حتى لو عنصر خرج برا الشاشة بالغلط */
+html {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
