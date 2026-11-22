@@ -172,7 +172,7 @@ export function expandFridays(fridays: ImamateFriday[], times: PrayerTimes = {})
 export const NIGHT_PART_LABELS: Record<NightPart, string> = {
   first: "التسليمات الأولى",
   second: "التسليمات الثانية",
-  last: "التسليمة الأخيرة مع الوتر",
+  last: "التسليمات الأخيرة مع الوتر",
 };
 export const NIGHT_PARTS: NightPart[] = ["first", "second", "last"];
 

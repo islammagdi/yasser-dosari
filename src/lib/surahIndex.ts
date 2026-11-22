@@ -26,6 +26,11 @@ function nameAt(text: string): { n: number; len: number } | null {
 export function surahsMentioned(r: Recording): number[] {
   const found = new Set<number>();
   if (r.category === "mushaf" && r.surah) found.add(r.surah);
+  // الأدمن كتب السور بإيده: ناخدها زي ما هي من غير تخمين من الوصف
+  if (r.surahs?.length) {
+    for (const n of r.surahs) if (n >= 1 && n <= 114) found.add(n);
+    return [...found].sort((a, b) => a - b);
+  }
 
   const text = normalizeArabic(`${r.title} ${r.subtitle ?? ""} ${r.searchText ?? ""}`);
   for (const m of text.matchAll(MARKER)) {

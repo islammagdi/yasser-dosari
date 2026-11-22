@@ -5,6 +5,7 @@ import type { Recording } from "@/types";
 
 import { markSurahListened } from "@/lib/useKhatma";
 import { getProgressTime, saveProgress } from "@/lib/useProgress";
+import { playbackUrl } from "@/lib/offline";
 const STORAGE_KEY = "yd-player-v1";
 /** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -19,6 +20,14 @@ interface PlayerContextValue {
   rate: number;
   error: string | null;
   playQueue: (items: Recording[], startIndex: number, startAt?: number) => void;
+  /** مكان التلاوة الحالية في قايمة الاستماع */
+  queueIndex: number;
+  /** تشغيل تلاوة من قايمة الاستماع بمكانها */
+  playFromQueue: (i: number) => void;
+  /** تغيير ترتيب قايمة الاستماع (التلاوات الجاية بس، الحالية مبتتحركش) */
+  moveInQueue: (from: number, to: number) => void;
+  /** شيل تلاوة جاية من قايمة الاستماع */
+  removeFromQueue: (i: number) => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
@@ -148,6 +157,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [sleep, setSleep] = useState<SleepTimer>(null);
   const resumeAt = useRef<number | null>(null);
   const autoplay = useRef(false);
+  /** محاولات إعادة التحميل لو الاتصال قطع في نص التلاوة */
+  const retriesRef = useRef(0);
 
   const current = index >= 0 ? queue[index] ?? null : null;
   const isYouTube = Boolean(current?.youtubeId);
@@ -324,7 +335,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setError("هذا التسجيل غير متاح بعد.");
       return;
     }
-    audio.src = current.audioUrl;
+    retriesRef.current = 0;
+    audio.src = playbackUrl(current.audioUrl);
     audio.playbackRate = rate;
     if (autoplay.current) {
       audio.play().catch(() => setIsPlaying(false));
@@ -397,6 +409,30 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setQueue(items);
     setIndex(startIndex);
   }, [current, media]);
+
+  const playFromQueue = useCallback((i: number) => {
+    if (i === index || !queue[i]) return;
+    autoplay.current = true;
+    resumeAt.current = queue[i].clip ? queue[i].clip!.start : getProgressTime(queue[i].id);
+    setIndex(i);
+  }, [index, queue]);
+
+  const moveInQueue = useCallback((from: number, to: number) => {
+    // اللي فات والحالية ثابتين: الترتيب بيتغيّر في الجاي بس، فمكان الحالية مبيتغيّرش
+    if (from === to || from <= index || to <= index) return;
+    setQueue((q) => {
+      if (!q[from] || to >= q.length) return q;
+      const nq = [...q];
+      const [item] = nq.splice(from, 1);
+      nq.splice(to, 0, item);
+      return nq;
+    });
+  }, [index]);
+
+  const removeFromQueue = useCallback((i: number) => {
+    if (i <= index) return;
+    setQueue((q) => q.filter((_, k) => k !== i));
+  }, [index]);
 
   const toggle = useCallback(() => {
     const m = media();
@@ -492,9 +528,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<PlayerContextValue>(() => ({
     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
-    playQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
+    playQueue, queueIndex: index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
     volume, muted, setVolume, toggleMute, sleep, setSleepTimer,
-  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
+  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
 
   return (
     <PlayerContext.Provider value={value}>
@@ -506,7 +542,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         aria-hidden={!videoOpen}
         className={
           videoOpen
-            ? "glass fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] start-3 z-40 rounded-2xl border border-fg/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
+            ? "glass fixed bottom-[calc(5rem+var(--tabbar))] start-3 z-40 rounded-2xl border border-fg/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+var(--tabbar))] xl:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
             : "pointer-events-none fixed bottom-0 left-0 -z-10 w-[min(420px,100vw)] opacity-0"
         }
       >
@@ -545,6 +581,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         onPause={() => setIsPlaying(false)}
         onWaiting={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
+        onPlaying={() => {
+          retriesRef.current = 0;
+        }}
         onLoadedMetadata={(e) => {
           const a = e.currentTarget;
           if (Number.isFinite(a.duration)) setDuration(a.duration);
@@ -564,7 +603,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
         }}
         onEnded={() => endedRef.current()}
-        onError={() => {
+        onError={(e) => {
+          const a = e.currentTarget;
+          // النت قطع أو السيرفر وقف في نص التلاوة: بنحمّل تاني ونكمّل من نفس الثانية (مرتين بالكتير)
+          if (current?.audioUrl && a.currentTime > 0 && retriesRef.current < 2) {
+            retriesRef.current++;
+            resumeAt.current = a.currentTime;
+            const wasPlaying = !a.paused || isPlaying;
+            setIsLoading(true);
+            window.setTimeout(() => {
+              a.load();
+              if (wasPlaying) a.play().catch(() => setIsPlaying(false));
+            }, 1500 * retriesRef.current);
+            return;
+          }
           if (current?.audioUrl) {
             setIsLoading(false);
             setIsPlaying(false);

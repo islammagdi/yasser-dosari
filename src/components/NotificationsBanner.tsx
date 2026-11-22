@@ -57,7 +57,7 @@ export function NotificationsBanner() {
   };
 
   return (
-    <div role="region" aria-label="تفعيل الإشعارات" className="relative mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-gold/30 bg-gold/10 py-3 pe-12 ps-4 text-sm sm:mb-8">
+    <div role="region" aria-label="تفعيل الإشعارات" className="relative z-20 mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-gold/30 bg-surface py-3 pe-12 ps-4 text-sm shadow-soft sm:mb-8">
       <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-gold" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />

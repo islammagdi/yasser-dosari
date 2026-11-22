@@ -14,6 +14,8 @@ interface Props {
   /** رقم يظهر على الغلاف (رقم السورة أو الليلة) */
   position?: number;
   badge?: string;
+  /** لون التاج حسب النوع: خطبة الجمعة ولا درس */
+  badgeTone?: "khutbah" | "lesson";
   isCurrent: boolean;
   isPlaying: boolean;
   onPlay: () => void;
@@ -34,6 +36,7 @@ export function RecordingCard({
   recording,
   position,
   badge,
+  badgeTone,
   isCurrent,
   isPlaying,
   onPlay,
@@ -75,7 +78,15 @@ export function RecordingCard({
         {/* تعتيم خفيف يهدّي الكلام المحروق في صور يوتيوب ويوضّح الأزرار */}
         {wide && <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/10 to-ink/20" />}
         {badge && (
-          <span className={`absolute start-2 top-2 rounded-full bg-ink/75 px-2.5 py-1 text-xs font-medium text-gold-soft ${row ? "hidden sm:inline" : ""}`}>
+          <span
+            className={`absolute start-2 top-2 rounded-full px-2.5 py-1 text-xs font-medium ${
+              badgeTone === "khutbah"
+                ? "bg-[#1E4A3C]/90 text-[#E7CD94]"
+                : badgeTone === "lesson"
+                  ? "bg-[#6B3F1D]/90 text-[#F6E3C6]"
+                  : "bg-ink/75 text-gold-soft"
+            } ${row ? "hidden sm:inline" : ""}`}
+          >
             {badge}
           </span>
         )}

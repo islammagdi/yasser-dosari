@@ -4,16 +4,18 @@ import { useMemo, useState, useTransition } from "react";
 import type { NightPart, RamadanNight } from "@/types";
 import { hijriOf } from "@/lib/imamate";
 import { saveRamadanYear, type ActionResult } from "../../actions";
+import { ask } from "@/lib/confirm";
+import { NIGHT_PART_LABELS } from "@/lib/imamate";
 
 type Col = { prayer: RamadanNight["prayer"]; part: NightPart; label: string };
 // نفس ترتيب جدول الحرم: كل صلاة ٣ أجزاء
 const COLS: Col[] = [
-  { prayer: "taraweeh", part: "first", label: "تراويح: الأولى" },
-  { prayer: "taraweeh", part: "second", label: "تراويح: الثانية" },
-  { prayer: "taraweeh", part: "last", label: "تراويح: الأخيرة مع الوتر" },
-  { prayer: "tahajjud", part: "first", label: "تهجد: الأولى" },
-  { prayer: "tahajjud", part: "second", label: "تهجد: الثانية" },
-  { prayer: "tahajjud", part: "last", label: "تهجد: الأخيرة مع الوتر" },
+  { prayer: "taraweeh", part: "first", label: `تراويح: ${NIGHT_PART_LABELS.first}` },
+  { prayer: "taraweeh", part: "second", label: `تراويح: ${NIGHT_PART_LABELS.second}` },
+  { prayer: "taraweeh", part: "last", label: `تراويح: ${NIGHT_PART_LABELS.last}` },
+  { prayer: "tahajjud", part: "first", label: `تهجد: ${NIGHT_PART_LABELS.first}` },
+  { prayer: "tahajjud", part: "second", label: `تهجد: ${NIGHT_PART_LABELS.second}` },
+  { prayer: "tahajjud", part: "last", label: `تهجد: ${NIGHT_PART_LABELS.last}` },
 ];
 const key = (night: number, c: Pick<Col, "prayer" | "part">) => `${night}-${c.prayer}-${c.part}`;
 
@@ -37,8 +39,8 @@ export function RamadanEditor({ initial }: { initial: RamadanNight[] }) {
   const [result, setResult] = useState<ActionResult | null>(null);
   const [saving, startSaving] = useTransition();
 
-  const changeYear = (y: number) => {
-    if (dirty && !window.confirm("توجد تعديلات لم تُحفظ على هذه السنة، وتغيير السنة سيلغيها. هل تريد المتابعة؟")) return;
+  const changeYear = async (y: number) => {
+    if (dirty && !(await ask("توجد تعديلات لم تُحفظ على هذه السنة، وتغيير السنة سيلغيها. هل تريد المتابعة؟", { confirm: "غيّر السنة", danger: true }))) return;
     setYear(y);
     setChecked(new Set(all.filter((n) => n.year === y).map((n) => key(n.night, n))));
     setDirty(false);

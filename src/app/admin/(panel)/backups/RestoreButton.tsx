@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { restoreBackupAction, type ActionResult } from "../../actions";
+import { ask } from "@/lib/confirm";
 
 export function RestoreButton({ name, backupKey, label }: { name: string; backupKey: string; label: string }) {
   const [pending, start] = useTransition();
@@ -12,8 +13,8 @@ export function RestoreButton({ name, backupKey, label }: { name: string; backup
       <button
         type="button"
         disabled={pending}
-        onClick={() =>
-          window.confirm(`استرجاع الشكل اللي كان قبل حفظ ${label}؟ الشكل الحالي هيتحفظ نسخة احتياطية الأول.`) &&
+        onClick={async () =>
+          (await ask(`استرجاع الشكل اللي كان قبل حفظ ${label}؟ الشكل الحالي هيتحفظ نسخة احتياطية الأول.`, { confirm: "استرجاع" })) &&
           start(async () => setR(await restoreBackupAction(name, backupKey)))
         }
         className="min-h-10 rounded-full border border-gold/50 px-4 font-semibold text-gold-soft hover:bg-gold/10 disabled:opacity-50"

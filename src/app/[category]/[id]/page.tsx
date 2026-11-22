@@ -6,7 +6,7 @@ import { RecordingDetail } from "@/components/RecordingDetail";
 import { surahText, surahTimings, type AyahTiming, type SurahText } from "@/lib/api/quranText";
 import { RecordingList } from "@/components/RecordingList";
 import { recordings } from "@/lib/api";
-import { CATEGORY_COVERS, getCategory, type CategoryInfo } from "@/lib/categories";
+import { getCategory, type CategoryInfo } from "@/lib/categories";
 import { siteUrl } from "@/lib/site";
 
 interface Props {
@@ -102,15 +102,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await load(params);
   if (!data) return {};
   const { recording: r, category } = data;
-  const image = r.imageUrl ?? CATEGORY_COVERS[r.category] ?? "/images/sheikh.jpg";
   const description = [r.subtitle, `${category.title} بصوت الشيخ ياسر الدوسري`].filter(Boolean).join("، ");
   return {
     title: r.title,
     description,
     // الرابط الأساسي من غير ?t= وغيره، عشان روابط "شارك من الدقيقة" متتحسبش صفحات مكررة
     alternates: { canonical: `/${r.category}/${encodeURIComponent(r.id)}` },
-    openGraph:{ title: r.title, description, images: [{ url: image }], type: "website" },
-    twitter: { card: "summary_large_image", title: r.title, description, images: [image] },
+    // الصورة نفسها بتتولد من opengraph-image.tsx اللي جنب الصفحة
+    openGraph: { title: r.title, description, type: "website" },
+    twitter: { card: "summary_large_image", title: r.title, description },
   };
 }
 

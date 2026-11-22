@@ -5,6 +5,8 @@ import { useState, useTransition } from "react";
 import type { CatalogEntry } from "@/lib/admin/catalog";
 import { classifyPending, deletePending, deletePendingMany, refreshManifest, syncFromPlaylists, updateEntry, type ActionResult } from "../../actions";
 import { CoverUpload } from "../CoverUpload";
+import { SURAH_NAMES } from "@/lib/quran";
+import { ask } from "@/lib/confirm";
 
 const SECTION_OPTIONS = [
   { value: "fard", label: "الفروض" },
@@ -157,8 +159,8 @@ export function PendingRow({
         <button
           type="button"
           disabled={pending}
-          onClick={() => {
-            if (!window.confirm(`مسح «${name || title || id}» نهائيًا؟ الملف هيتمسح من R2 ومش هيرجع.`)) return;
+          onClick={async () => {
+            if (!(await ask(`مسح «${name || title || id}» نهائيًا؟ الملف هيتمسح من R2 ومش هيرجع.`, { confirm: "مسح نهائي", danger: true }))) return;
             start(async () => {
               const res = await deletePending(id);
               if (res.ok) setDeleted(true);
@@ -196,6 +198,7 @@ export function EntryRow({
   const [y, setY] = useState(entry.hijriYear ?? "");
   const [m, setM] = useState(entry.hijriMonth ?? "");
   const [d, setD] = useState(entry.hijriDay ?? "");
+  const [surahs, setSurahs] = useState<number[]>(entry.surahs ?? []);
   const [hidden, setHidden] = useState(!!entry.hidden);
   const [pending, start] = useTransition();
   const [r, setR] = useState<ActionResult | null>(null);
@@ -261,6 +264,7 @@ export function EntryRow({
               <input type="number" value={y} onChange={(e) => setY(e.target.value)} className={`${field} w-28`} />
             </label>
           </div>
+          <SurahsPicker value={surahs} onChange={setSurahs} />
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={hidden} onChange={(e) => setHidden(e.target.checked)} className="h-5 w-5 accent-[#CDAA62]" />
             إخفاء من الموقع
@@ -281,6 +285,7 @@ export function EntryRow({
                       hijriMonth: toNum(m),
                       hijriDay: toNum(d),
                       hidden,
+                      surahs,
                     }),
                   ),
                 )
@@ -380,8 +385,8 @@ export function PendingList({ items }: { items: { id: string; title?: string; du
       return n;
     });
 
-  const removeSelected = () => {
-    if (!window.confirm(`مسح ${sel.size === 1 ? "التسجيل المحدد" : `الـ ${sel.size} تسجيلات المحددة`} نهائيًا؟ الملفات هتتمسح من R2 ومش هترجع.`)) return;
+  const removeSelected = async () => {
+    if (!(await ask(`مسح ${sel.size === 1 ? "التسجيل المحدد" : `الـ ${sel.size} تسجيلات المحددة`} نهائيًا؟ الملفات هتتمسح من R2 ومش هترجع.`, { confirm: "مسح نهائي", danger: true }))) return;
     start(async () => {
       const r = await deletePendingMany([...sel]);
       setMsg(r);
@@ -420,6 +425,51 @@ export function PendingList({ items }: { items: { id: string; title?: string; du
           <PendingRow key={i.id} {...i} checked={sel.has(i.id)} onCheck={(on) => toggle(i.id, on)} />
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * السور اللي في التسجيل بإيدك: لما وصف يوتيوب مش بيقول اسم السورة.
+ * لو فاضية، الموقع بيقرا السور من العنوان والوصف زي الأول.
+ */
+function SurahsPicker({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span>
+        السور اللي في التسجيل <span className="text-xs text-muted">(لو فاضية، بتتقري من الوصف تلقائي)</span>
+      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        {value.map((n) => (
+          <span key={n} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-gold/15 pe-1.5 ps-3 text-sm">
+            {SURAH_NAMES[n - 1]}
+            <button
+              type="button"
+              onClick={() => onChange(value.filter((x) => x !== n))}
+              aria-label={`شيل سورة ${SURAH_NAMES[n - 1]}`}
+              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-fg/10"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <select
+          value=""
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (n && !value.includes(n)) onChange([...value, n].sort((a, b) => a - b));
+          }}
+          aria-label="إضافة سورة"
+          className="min-h-9 rounded-full border border-line-strong bg-ink px-3 text-sm"
+        >
+          <option value="">+ إضافة سورة</option>
+          {SURAH_NAMES.map((name, i) => (
+            <option key={i} value={i + 1} disabled={value.includes(i + 1)}>
+              {i + 1}. {name}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }

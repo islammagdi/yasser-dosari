@@ -11,6 +11,7 @@ import { useKhatma } from "@/lib/useKhatma";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCard } from "./RecordingCard";
 import { SearchIcon } from "./icons";
+import { newestAdded } from "@/lib/sort";
 
 interface Props {
   items: Recording[];
@@ -21,6 +22,8 @@ interface Props {
   groupByMonth?: boolean;
   /** ترقيم برقم السورة أو الليلة (المصحف والتراويح) */
   numbered?: boolean;
+  /** المضاف حديثًا الأول (التراويح والخطب والدروس والنادرة) */
+  newest?: boolean;
   /** فلتر خطب الجمعة والدروس (المحاضرات) */
   typeFilter?: boolean;
   /** عنوان الصفحة: لو موجود بيظهر h1 والبحث جنبه في نفس الصف */
@@ -94,6 +97,7 @@ export function RecordingList({
   yearTabs = false,
   groupByMonth = false,
   numbered = false,
+  newest = false,
   typeFilter = false,
   title,
   versionTabs = false,
@@ -179,12 +183,13 @@ export function RecordingList({
       return true;
     });
 
-    if (numbered) list = [...list].sort((a, b) => (a.surah ?? a.night ?? 0) - (b.surah ?? b.night ?? 0));
-    // الفروض جوه الشهر: بالأيام، وجوه اليوم الواحد بترتيب الصلوات
+    if (newest) list = newestAdded(list);
+    else if (numbered) list = [...list].sort((a, b) => (a.surah ?? a.night ?? 0) - (b.surah ?? b.night ?? 0));
+    // جوه الشهر: الأحدث الأول (آخر يوم فوق)، وجوه اليوم الواحد بترتيب الصلوات (الفجر ثم المغرب ثم العشاء)
     if (groupByMonth) {
       const order = { fajr: 0, maghrib: 1, isha: 2 } as const;
       list = [...list].sort(
-        (a, b) => (a.hijriDay ?? 0) - (b.hijriDay ?? 0) || (a.prayer ? order[a.prayer] : 0) - (b.prayer ? order[b.prayer] : 0),
+        (a, b) => (b.hijriDay ?? 0) - (a.hijriDay ?? 0) || (a.prayer ? order[a.prayer] : 0) - (b.prayer ? order[b.prayer] : 0),
       );
     }
 
@@ -196,10 +201,11 @@ export function RecordingList({
       const m = r.hijriMonth ?? 0;
       byMonth.set(m, [...(byMonth.get(m) ?? []), r]);
     }
+    // الشهور: الأحدث الأول (ذو الحجة فوق ومحرم آخر حاجة)، والشهر غير المحدد في الآخر خالص
     return Array.from(byMonth.entries())
-      .sort(([a], [b]) => a - b)
+      .sort(([a], [b]) => (a === 0 ? 1 : b === 0 ? -1 : b - a))
       .map(([m, recs]) => ({ key: `m-${m}`, title: hijriMonthName(m) || "شهر غير محدد", items: recs }));
-}, [source, searchingAll, query, type, activeYear, activeVersion, numbered, groupByMonth]);
+}, [source, searchingAll, query, type, activeYear, activeVersion, numbered, newest, groupByMonth]);
 
   // قايمة التشغيل = كل اللي ظاهر بنفس ترتيب العرض
   const queue = useMemo(() => groups.flatMap((g) => g.items), [groups]);
@@ -281,6 +287,7 @@ export function RecordingList({
                       recording={r}
                       position={numbered ? r.surah ?? r.night ?? i + 1 : undefined}
                       badge={r.lectureType ? LECTURE_TYPE_LABELS[r.lectureType] : undefined}
+                      badgeTone={r.lectureType}
                       isCurrent={current?.id === r.id}
                       isPlaying={isPlaying}
                       onPlay={() => playQueue(queue, i)}

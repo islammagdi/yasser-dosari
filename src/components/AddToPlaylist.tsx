@@ -48,7 +48,7 @@ export function AddToPlaylist({ recording, up = false, buttonClassName }: { reco
       </button>
 
       {open && (
-        <div className={`glass absolute z-30 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-2xl border border-fg/10 p-3 shadow-float ${up ? "bottom-full start-1/2 mb-2 -translate-x-1/2 rtl:translate-x-1/2" : "end-0 top-full mt-2"}`}>
+        <div className={`glass absolute z-30 flex w-72 max-w-[calc(100vw-2.5rem)] flex-col gap-2 rounded-2xl border border-fg/10 p-3 shadow-float ${up ? "bottom-full start-1/2 mb-2 -translate-x-1/2 rtl:translate-x-1/2" : "end-0 top-full mt-2"}`}>
           <p className="px-1 text-sm font-semibold text-gold-soft">إضافة إلى قائمة</p>
           {pl.lists.length > 0 && (
             <ul className="flex max-h-60 flex-col gap-1 overflow-y-auto">

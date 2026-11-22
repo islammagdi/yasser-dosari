@@ -7,6 +7,7 @@ import type { Ayah } from "@/lib/api/quranText";
 import { renderAyahImage, selectionText, wordsOf, type ImageFormat } from "@/lib/ayahImage";
 import { toArabicDigits } from "@/lib/format";
 import { surahName } from "@/lib/quran";
+import { lockScroll } from "@/lib/scrollLock";
 
 /** التفسير بيتحمّل مرة لكل سورة ويفضل في الذاكرة طول الزيارة */
 const tafsirCache = new Map<number, Promise<string[]>>();
@@ -57,11 +58,10 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
+      unlockScroll();
     };
   }, [onClose]);
 

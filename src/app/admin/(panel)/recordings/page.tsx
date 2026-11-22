@@ -15,13 +15,26 @@ const SECTIONS = [
   { value: "taraweeh", label: "التراويح" },
   { value: "lectures", label: "الخطب والمحاضرات" },
   { value: "rare", label: "تلاوات نادرة" },
-  { value: "hidden", label: "المخفية" },
   { value: "nocover", label: "من غير غلاف" },
 ];
+const STATUSES = [
+  { value: "", label: "ظاهر ومخفي" },
+  { value: "visible", label: "الظاهر بس" },
+  { value: "hidden", label: "المخفي بس" },
+];
+const SORTS = [
+  { value: "", label: "المضاف حديثًا" },
+  { value: "oldest", label: "المضاف قديمًا" },
+  { value: "date", label: "تاريخ الصلاة (الأحدث)" },
+  { value: "title", label: "العنوان (أ–ي)" },
+];
+/** رقم من التاريخ الهجري للترتيب (التراويح: الليلة في رمضان) */
+const hijriKey = (e: { hijriYear?: number; hijriMonth?: number; hijriDay?: number; night?: number }) =>
+  e.hijriYear ? e.hijriYear * 10000 + (e.hijriMonth ?? (e.night ? 9 : 0)) * 100 + (e.hijriDay ?? e.night ?? 0) : 0;
 const AUDIO_BASE = (process.env.AUDIO_BASE_URL ?? "").replace(/\/$/, "");
 
 interface Props {
-  searchParams: { tab?: string; q?: string; cat?: string; page?: string };
+  searchParams: { tab?: string; q?: string; cat?: string; status?: string; sort?: string; page?: string };
 }
 
 export default async function AdminRecordingsPage({ searchParams }: Props) {
@@ -113,21 +126,34 @@ function AllTab({
     return e.imageUrl ?? null;
   };
   const q = normalizeArabic(searchParams.q ?? "");
-  const cat = searchParams.cat ?? "";
+  // cat=hidden من اللينكات القديمة بقت status=hidden
+  const legacyHidden = searchParams.cat === "hidden";
+  const cat = legacyHidden ? "" : searchParams.cat ?? "";
+  const status = legacyHidden ? "hidden" : searchParams.status ?? "";
+  const sort = searchParams.sort ?? "";
   const page = Math.max(1, Number(searchParams.page) || 1);
 
   const rows = Object.entries(items)
     .filter(([id, e]) => {
+      if (status === "hidden" && !e.hidden) return false;
+      if (status === "visible" && e.hidden) return false;
       if (cat === "nocover") {
         if (coverOf(id, e)) return false;
-      } else if (cat === "hidden" ? !e.hidden : cat && (e.category !== cat || e.hidden)) return false;
+      } else if (cat && e.category !== cat) return false;
       if (!q) return true;
       return normalizeArabic(`${id} ${e.title} ${e.subtitle ?? ""} ${e.searchText ?? ""}`).includes(q);
     })
-    .sort(([, a], [, b]) => (b.addedAt ?? "").localeCompare(a.addedAt ?? ""));
+    .sort(([, a], [, b]) => {
+      const added = (b.addedAt ?? "").localeCompare(a.addedAt ?? "");
+      if (sort === "oldest") return -added;
+      if (sort === "date") return hijriKey(b) - hijriKey(a) || added;
+      if (sort === "title") return a.title.localeCompare(b.title, "ar");
+      return added;
+    });
   const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const shown = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const link = (p: number) => `/admin/recordings?tab=all&q=${encodeURIComponent(searchParams.q ?? "")}&cat=${cat}&page=${p}`;
+  const link = (p: number) =>
+    `/admin/recordings?tab=all&q=${encodeURIComponent(searchParams.q ?? "")}&cat=${cat}&status=${status}&sort=${sort}&page=${p}`;
 
   return (
     <section className="flex flex-col gap-3">
@@ -141,6 +167,16 @@ function AllTab({
         />
         <select name="cat" defaultValue={cat} className="min-h-11 rounded-xl border border-line-strong bg-ink px-3 text-text">
           {SECTIONS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+        <select name="status" defaultValue={status} aria-label="الحالة" className="min-h-11 rounded-xl border border-line-strong bg-ink px-3 text-text">
+          {STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+        <select name="sort" defaultValue={sort} aria-label="الترتيب" className="min-h-11 rounded-xl border border-line-strong bg-ink px-3 text-text">
+          {SORTS.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>

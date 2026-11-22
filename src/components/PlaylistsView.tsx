@@ -7,6 +7,7 @@ import { usePlaylists, type Playlist } from "@/lib/usePlaylists";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { PauseIcon, PlayIcon } from "./icons";
+import { ask } from "@/lib/confirm";
 
 /** صفحة قوائم التشغيل: كل قائمة بتتفتح وتتشغّل وتترتّب وتتعدّل */
 export function PlaylistsView() {
@@ -144,7 +145,7 @@ function PlaylistItem({ p, open, onToggle }: { p: Playlist; open: boolean; onTog
             </button>
             <button
               type="button"
-              onClick={() => window.confirm(`حذف قائمة «${p.name}»؟`) && pl.remove(p.id)}
+              onClick={async () => (await ask(`حذف قائمة «${p.name}»؟`, { confirm: "حذف", danger: true })) && pl.remove(p.id)}
               className="min-h-10 text-[#E5636B] hover:underline"
             >
               حذف القائمة

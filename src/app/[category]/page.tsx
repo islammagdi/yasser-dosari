@@ -38,6 +38,7 @@ export default async function CategoryPage({ params }: Props) {
         yearTabs={category.slug === "fard" || category.slug === "taraweeh"}
         groupByMonth={category.slug === "fard"}
         numbered={category.slug === "taraweeh" || category.slug === "mushaf"}
+        newest={category.slug === "taraweeh" || category.slug === "lectures" || category.slug === "rare"}
         typeFilter={category.slug === "lectures"}
         versionTabs={category.slug === "mushaf"}
         yearSource={byYear && years.length ? { category: category.slug, years } : undefined}

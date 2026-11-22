@@ -15,6 +15,7 @@ import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { AddToPlaylist } from "./AddToPlaylist";
 import { SaveOffline } from "./SaveOffline";
+import { ReportProblem } from "./ReportProblem";
 import { ShareBox } from "./ShareBox";
 import { HeartIcon, PauseIcon, PlayIcon } from "./icons";
 
@@ -121,6 +122,8 @@ export function RecordingDetail({ recording: r, queue }: { recording: Recording;
         <SaveOffline recording={r} />
 
         <ShareBox id={r.id} title={r.title} path={`/${r.category}/${r.id}`} />
+        {/* الدقيقة: من المشغّل لو التلاوة شغالة، أو آخر مكان وقف عنده */}
+        <ReportProblem id={r.id} category={r.category} position={() => (isCurrent ? p.currentTime : resumeSec ?? 0)} />
       </div>
     </article>
   );

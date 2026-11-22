@@ -27,9 +27,18 @@
   /* الدهبي الزخرفي (خطوط ونقشة) أفتح من دهبي النص */
   --c-ornament: 184 146 74;
   --logo: rgb(30 74 60);
-  --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 18px 36px -24px rgb(70 52 18 / 0.45);
-  --shadow-float: 0 30px 60px -30px rgb(40 30 10 / 0.45);
+  --shadow-soft: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 10px 24px -20px rgb(70 52 18 / 0.28);
+  --shadow-float: 0 20px 44px -28px rgb(40 30 10 / 0.3);
   color-scheme: light;
+}
+/* ارتفاع شريط التابات اللي تحت (موبايل وتابلت). من ١٢٨٠px الهيدر اللي فوق بيرجع، فالشريط مش موجود */
+:root {
+  --tabbar: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 1280px) {
+  :root {
+    --tabbar: 0px;
+  }
 }
 :root[data-theme="dark"] {
   --c-ink: 13 21 18;
@@ -51,8 +60,8 @@
   --c-accent-ink: 26 20 8;
   --c-ornament: 205 170 98;
   --logo: rgb(246 241 230);
-  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 12px 32px -18px rgb(0 0 0 / 0.6);
-  --shadow-float: 0 24px 60px -16px rgb(0 0 0 / 0.7);
+  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 22px -16px rgb(0 0 0 / 0.45);
+  --shadow-float: 0 18px 44px -20px rgb(0 0 0 / 0.55);
   color-scheme: dark;
 }
 
@@ -108,6 +117,27 @@
       radial-gradient(900px 600px at 85% -10%, rgb(30 74 60 / 0.6), transparent 65%),
       radial-gradient(700px 520px at 5% 55%, rgb(30 74 60 / 0.4), transparent 70%),
       radial-gradient(640px 420px at 75% 105%, rgb(205 170 98 / 0.12), transparent 70%);
+  }
+  /*
+   * خلفية المشغّل الكبير بلون غلاف التلاوة: اللون فوق وبيسيح لحد لون الصفحة تحت.
+   * الفاتح: اللون فاتح جدًا (الكلام غامق يفضل واضح)، الغامق: اللون غامق (الكلام الفاتح يفضل واضح).
+   * التشبّع متحدد عشان الألوان الصارخة متبقاش مزعجة.
+   */
+  .player-tint {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: hsl(var(--tint-h, 158) min(var(--tint-s, 42%), 55%) 82%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.75) 40%, transparent 92%);
+    mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.75) 40%, transparent 92%);
+    transition: background-color 700ms ease;
+  }
+  :root[data-theme="dark"] .player-tint {
+    background-color: hsl(var(--tint-h, 158) min(var(--tint-s, 42%), 50%) 22%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .player-tint { transition: none; }
   }
   /* اللوجو PNG أبيض، فبنستخدمه كـ mask ونلوّنه بلون الوضع الحالي */
   .logo-mask {
@@ -260,4 +290,42 @@
 
 @media (prefers-reduced-motion: reduce) {
   .eq-bar, .rise { animation: none; }
+}
+/* قلب الضغطتين في المقتطفات: بيكبر وبيرجع وبعدين بيطلع ويختفي، زي انستجرام */
+@keyframes clip-heart {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-12deg); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.25) rotate(-12deg); }
+  30% { transform: translate(-50%, -50%) scale(0.95) rotate(-12deg); }
+  45% { transform: translate(-50%, -50%) scale(1.05) rotate(-12deg); }
+  75% { opacity: 1; transform: translate(-50%, -60%) scale(1) rotate(-12deg); }
+  100% { opacity: 0; transform: translate(-50%, -120%) scale(0.7) rotate(-12deg); }
+}
+.clip-heart { animation: clip-heart 0.9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .clip-heart { animation-duration: 0.6s; }
+}
+
+/*
+ * الموبايل: أي خانة كتابة خطها أصغر من 16px، الآيفون بيعمل زووم على الصفحة أول ما تدوس عليها،
+ * والصفحة بتفضل مكبّرة بعد ما تقفل الكيبورد، فبتتسحب يمين وشمال.
+ * ده كان بيحصل من خانة «اسم قايمة جديدة» في قايمة المشغّل (text-sm = 14px).
+ */
+@media (pointer: coarse) {
+  input:not([type]),
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* أمان زيادة: الصفحة نفسها متتسحبش بالعرض، حتى لو عنصر خرج برا الشاشة بالغلط */
+html {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }

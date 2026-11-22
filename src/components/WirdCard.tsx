@@ -13,6 +13,7 @@ import { localToday, wirdGoogleUrl, wirdIcs } from "@/lib/wird";
 import { WIRD_JUZ_DURATIONS, dailyAmountLabel, type WirdPortion } from "@/lib/wirdJuz";
 import { usePlayer } from "./PlayerProvider";
 import { ClockIcon, PlayIcon } from "./icons";
+import { ask } from "@/lib/confirm";
 
 const DISMISS_KEY = "yd-wird-dismissed";
 
@@ -159,6 +160,23 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
     </div>
   );
 
+  // عرض ختمة رمضان: قبل رمضان بخمس شهور أو أقل، أو في رمضان نفسه
+  const ro = w.ramadanOffer;
+  const ramadanOffer =
+    ro && ro.daysUntil <= 150 ? (
+      <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-l from-[#1E4A3C] to-[#10241D] p-4 text-[#F1EEE6] sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="font-display text-xl font-bold">ختمة رمضان {toArabicDigits(ro.year)} هـ</span>
+          <span className="text-sm text-[#C9D2CC]">
+            جزء كل ليلة، والخطة بتبدأ لوحدها {ro.daysUntil > 0 ? `أول يوم في رمضان (بعد ${toArabicDigits(ro.daysUntil)} يوم)` : "من أول رمضان"}.
+          </span>
+        </div>
+        <button type="button" onClick={w.startRamadan} className="min-h-11 shrink-0 rounded-full bg-[#CDAA62] px-5 font-semibold text-[#1A1408] hover:bg-[#E7CD94]">
+          اشترك في ختمة رمضان
+        </button>
+      </div>
+    ) : null;
+
   // ---- مفيش خطة: دعوة ----
   if (!w.plan) {
     if (dismissed) return null;
@@ -172,7 +190,8 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             اختر مدة الختمة، ونقسّم لك الأجزاء الثلاثين على الأيام، وتسمع وردك كل يوم بصوت الشيخ.
           </p>
         </div>
-        <p className="text-sm font-semibold">أختم المصحف في:</p>
+        {ramadanOffer}
+        <p className="text-sm font-semibold">{ramadanOffer ? "أو ابدأ دلوقتي، وأختم المصحف في:" : "أختم المصحف في:"}</p>
         {durations(w.start)}
         {dismissible && (
           <button
@@ -213,6 +232,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             </button>
           </div>
         )}
+        {ramadanOffer}
         <p className="text-sm font-semibold">ابدأ ختمة جديدة في:</p>
         {durations(w.restart)}
         <button type="button" onClick={w.stop} className="self-start text-sm text-muted underline-offset-4 hover:text-text hover:underline">
@@ -250,7 +270,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
     <section aria-labelledby="wird-title" className="glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="wird-title" className="font-display text-2xl font-bold text-gold-soft">
-          {allDone ? "أتممت ورد اليوم" : "وردك اليوم"}
+          {w.upcoming ? "ختمة رمضان" : allDone ? "أتممت ورد اليوم" : "وردك اليوم"}
         </h2>
         {w.streak.current >= 2 && (
           <span className="flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold text-gold-soft" title={w.streak.best > w.streak.current ? `أطول سلسلة: ${toArabicDigits(w.streak.best)} يومًا` : undefined}>
@@ -259,10 +279,19 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
           </span>
         )}
         <span className="text-sm text-muted">
-          اليوم {toArabicDigits(portion.index + 1)} من {toArabicDigits(w.plan.days)}
+          {w.upcoming
+            ? `ختمة رمضان ${toArabicDigits(w.plan.ramadan ?? 0)}`
+            : `اليوم ${toArabicDigits(portion.index + 1)} من ${toArabicDigits(w.plan.days)}`}
           {w.behind > 0 && `، متأخر ${w.behind === 1 ? "يوم" : w.behind === 2 ? "يومين" : `${toArabicDigits(w.behind)} أيام`}`}
         </span>
       </div>
+
+      {w.upcoming && (
+        <p className="rounded-2xl bg-gold/10 px-4 py-3 text-sm leading-6">
+          ختمتك بتبدأ أول يوم في رمضان، بعد {toArabicDigits(w.daysUntil)} {w.daysUntil === 1 ? "يوم" : w.daysUntil === 2 ? "يومين" : w.daysUntil <= 10 ? "أيام" : "يوم"} إن شاء الله.
+          وأول ورد هو الجزء الأول، وتقدر تسمعه من دلوقتي لو حابب.
+        </p>
+      )}
 
       {w.migrated && (
         <div className="flex items-start gap-3 rounded-2xl bg-gold/10 px-4 py-3 text-sm leading-6">
@@ -321,9 +350,10 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-ink text-accent">
               <PlayIcon className="h-4 w-4" />
             </span>
-            {loadingQueue ? "جارٍ التجهيز…" : allDone ? "اسمع ورد بكرة بدري" : "استمع لوردك"}
+            {loadingQueue ? "جارٍ التجهيز…" : w.upcoming ? "اسمع الجزء الأول بدري" : allDone ? "اسمع ورد بكرة بدري" : "استمع لوردك"}
           </button>
         )}
+        {!w.upcoming && (
         <button
           type="button"
           onClick={w.markDone}
@@ -331,6 +361,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
         >
           ✓ أتممت هذا الورد
         </button>
+        )}
 
         {/* حفظ سور ورد اليوم كلها للاستماع بدون إنترنت */}
         {recs.some((r) => canSaveOffline(r)) && (
@@ -430,8 +461,8 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
 
         <button
           type="button"
-          onClick={() => {
-            if (window.confirm("إيقاف خطة الورد؟ تقدّم الختمة سيبقى محفوظًا.")) w.stop();
+          onClick={async () => {
+            if (await ask("إيقاف خطة الورد؟ تقدّم الختمة سيبقى محفوظًا.", { confirm: "إيقاف" })) w.stop();
           }}
           className="ms-auto text-sm text-muted underline-offset-4 hover:text-text hover:underline"
         >
