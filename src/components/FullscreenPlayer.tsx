@@ -12,6 +12,8 @@ import { SLEEP_OPTIONS, usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
 import { HeartIcon, NextIcon, PauseIcon, PlayIcon } from "./icons";
 import { lockScroll } from "@/lib/scrollLock";
+import { CATEGORY_COVERS } from "@/lib/categories";
+import { useCoverTint } from "@/lib/coverTint";
 
 /**
  * وضع الاستماع بملء الشاشة: غلاف كبير وأزرار كبيرة، ونص الآية الحالية في سور المصحف.
@@ -116,6 +118,9 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
     };
   }, [requestClose]);
 
+  // لون الخلفية من غلاف التلاوة (نفس الصورة اللي في الغلاف)
+  const tint = useCoverTint(r ? r.imageUrl ?? CATEGORY_COVERS[r.category] : undefined);
+
   // نص السورة وتوقيتها: لسور المصحف الصوتية بس (التوقيت متاح لتلاوة mp3quran)
   const surah = r?.category === "mushaf" && r.surah && r.audioUrl.includes("mp3quran") ? r.surah : null;
   useEffect(() => {
@@ -166,9 +171,17 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
       className={`fixed inset-0 z-[60] flex h-[100dvh] flex-col overflow-hidden overscroll-contain bg-ink transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none ${
         shown ? "translate-y-0" : "translate-y-full"
       }`}
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={
+        {
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+          "--tint-h": tint.h,
+          "--tint-s": `${tint.s}%`,
+        } as React.CSSProperties
+      }
     >
-      <div aria-hidden className="ambient" />
+      {/* الخلفية بلون غلاف التلاوة (زي سبوتيفاي)، وبتتبدّل بالتدريج مع كل تلاوة */}
+      <div aria-hidden className="player-tint" />
       <div className="flex shrink-0 items-center px-3 pt-2">
         <button type="button" onClick={requestClose} aria-label="إغلاق ملء الشاشة" className={`${big} h-12 w-12`}>
           <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
