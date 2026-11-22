@@ -31,6 +31,15 @@
   --shadow-float: 0 20px 44px -28px rgb(40 30 10 / 0.3);
   color-scheme: light;
 }
+/* ارتفاع شريط التابات اللي تحت (موبايل وتابلت). من ١٢٨٠px الهيدر اللي فوق بيرجع، فالشريط مش موجود */
+:root {
+  --tabbar: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 1280px) {
+  :root {
+    --tabbar: 0px;
+  }
+}
 :root[data-theme="dark"] {
   --c-ink: 13 21 18;
   --c-night: 17 28 24;

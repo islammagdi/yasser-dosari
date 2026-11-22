@@ -73,7 +73,7 @@ export function PlayerBar() {
         if ((e.target as HTMLElement).closest("button, a, input, [role=menu]")) return;
         setFull(true);
       }}
-      className={`glass fixed inset-x-0 bottom-0 z-40 border-t border-fg/10 pb-[env(safe-area-inset-bottom)] ${p.current.youtubeId ? "" : "cursor-pointer"}`}
+      className={`glass fixed inset-x-0 bottom-[var(--tabbar)] z-40 border-t border-fg/10 xl:pb-[env(safe-area-inset-bottom)] ${p.current.youtubeId ? "" : "cursor-pointer"}`}
     >
       {/* خط التقدّم للموبايل */}
       <div aria-hidden dir="ltr" className="absolute inset-x-0 top-0 h-[2px] bg-fg/5 md:hidden">

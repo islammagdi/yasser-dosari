@@ -542,7 +542,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         aria-hidden={!videoOpen}
         className={
           videoOpen
-            ? "glass fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] start-3 z-40 rounded-2xl border border-fg/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
+            ? "glass fixed bottom-[calc(5rem+var(--tabbar))] start-3 z-40 rounded-2xl border border-fg/10 p-1.5 shadow-float md:bottom-[calc(4.25rem+var(--tabbar))] xl:bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:start-6 md:w-[420px] md:rounded-b-none md:rounded-t-3xl md:border-b-0 md:p-0"
             : "pointer-events-none fixed bottom-0 left-0 -z-10 w-[min(420px,100vw)] opacity-0"
         }
       >

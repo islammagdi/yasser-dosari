@@ -310,7 +310,7 @@ function ClipSlide({
       )}
 
       {/* الأزرار على اليمين */}
-      <div className="absolute bottom-[calc(9rem+env(safe-area-inset-bottom))] right-3 z-10 flex flex-col items-center gap-4">
+      <div className="absolute bottom-[calc(9rem+var(--tabbar))] right-3 z-10 flex flex-col items-center gap-4">
         <button type="button" onClick={() => fav.toggle(favKey)} aria-pressed={saved} aria-label={saved ? "إزالة من المفضلة" : "حفظ في المفضلة"} className={act}>
           <span className={actIcon}>
             <HeartIcon filled={saved} className={`h-6 w-6 ${saved ? "text-[#E5636B]" : ""}`} />
@@ -344,7 +344,7 @@ function ClipSlide({
       </div>
 
       {/* الكلام تحت */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/85 via-black/50 to-transparent pb-[calc(1.25rem+env(safe-area-inset-bottom))] pl-4 pr-20 pt-16">
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/85 via-black/50 to-transparent pb-[calc(1.25rem+var(--tabbar))] pl-4 pr-20 pt-16">
         {clip.ayah && (
           <Link href={clip.ayah.href} className="block rounded-2xl bg-black/30 px-3 py-2 backdrop-blur-sm">
             <span className="line-clamp-3 font-quran text-xl leading-[2.1]">{clip.ayah.text}</span>

@@ -12,7 +12,7 @@ const link = "flex min-h-11 items-center underline decoration-fg/25 decoration-1
 export function SiteFooter() {
   return (
     <footer className="border-t border-fg/10">
-      <div className="mx-auto flex max-w-page flex-col items-center gap-6 px-4 pb-32 pt-16 text-center sm:px-6">
+      <div className="mx-auto flex max-w-page flex-col items-center gap-6 px-4 pb-[calc(8rem+var(--tabbar))] pt-16 text-center sm:px-6">
         <Link href="/" aria-label="الرئيسية">
           <Logo label="الشيخ ياسر الدوسري" className="block h-16 w-64 sm:h-20 sm:w-80" />
         </Link>
