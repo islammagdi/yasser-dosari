@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Clip } from "@/lib/clips";
 import { SURAH_NAMES } from "@/lib/quran";
 import { prepareClip, saveClip, type ActionResult, type ClipInput } from "../../actions";
+import { faststart } from "@/lib/faststart";
 
 export type Rec = { id: string; title: string };
 const field = "min-h-11 w-full rounded-xl border border-line-strong bg-ink px-3 text-text";
@@ -195,7 +196,10 @@ export function ClipForm({ recordings }: { recordings: Rec[] }) {
       const prep = await prepareClip(file.name);
       if (!prep.ok) throw new Error(prep.message);
       const poster = await makePoster(file);
-      await put(prep.videoUrl, file, file.type || "video/mp4", setProgress);
+      // «فهرس في الأول» قبل الرفع (زي scripts/optimize-clips.mjs): من غيره المتصفح بيحمّل المقطع كله قبل ما يشغّل.
+      // لو الملف جاهز أصلًا أو مش مفهوم، بيترفع زي ما هو
+      const body = /\.(mp4|mov|m4v)$/i.test(file.name) ? ((await faststart(file).catch(() => null)) ?? file) : file;
+      await put(prep.videoUrl, body, file.type || "video/mp4", setProgress);
       if (poster) await put(prep.posterUrl, poster, "image/jpeg");
       const r = await saveClip({ ...meta, id: prep.id, videoKey: prep.videoKey, posterKey: poster ? prep.posterKey : undefined, notify });
       setMsg(r);
