@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 const NAV = [
   { href: "/admin", label: "الرئيسية" },
+  { href: "/admin/stats", label: "الإحصائيات" },
   { href: "/admin/status", label: "حالة الموقع" },
   { href: "/admin/upload", label: "رفع تسجيل" },
   { href: "/admin/clips", label: "مقتطفات" },

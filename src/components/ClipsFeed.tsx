@@ -1,11 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFavorites } from "@/lib/useFavorites";
 import { usePlayer } from "./PlayerProvider";
 import { HeartIcon } from "./icons";
 import { lockScroll } from "@/lib/scrollLock";
+import { track } from "@/lib/stats/track";
 
 export interface FeedClip {
   id: string;
@@ -46,6 +48,7 @@ function shuffle<T>(list: T[]): T[] {
 }
 
 export function ClipsFeed({ clips: source, startId }: { clips: FeedClip[]; startId?: string }) {
+  const { t } = useL();
   /**
    * الترتيب العشوائي بيتعمل هنا في المتصفح، مع كل فتحة للتاب.
    * لو اتعمل في السيرفر بس، الـ Next بيحتفظ بالصفحة في الذاكرة شوية (Router Cache)،
@@ -100,10 +103,11 @@ export function ClipsFeed({ clips: source, startId }: { clips: FeedClip[]; start
   if (!source.length) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
-        <p className="font-display text-3xl font-bold">مقتطفات</p>
-        <p className="text-muted">المقاطع القصيرة جاية قريب إن شاء الله.</p>
+        <p className="font-display text-3xl font-bold">{t("مقتطفات")}</p>
+        <p className="text-muted">{t("المقاطع القصيرة جاية قريب إن شاء الله.")}</p>
         <Link href="/" className="mt-2 min-h-11 rounded-full bg-accent px-6 py-2.5 font-semibold text-accent-ink">
-          الرئيسية
+          
+          {t("الرئيسية")}
         </Link>
       </div>
     );
@@ -113,16 +117,16 @@ export function ClipsFeed({ clips: source, startId }: { clips: FeedClip[]; start
     <div className="fixed inset-0 z-[45] bg-black text-white">
       {/* شريط فوق: رجوع واسم القسم */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent px-3 pb-8 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <Link href="/" aria-label="رجوع للرئيسية" className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/30 backdrop-blur">
+        <Link href="/" aria-label={t("رجوع للرئيسية")} className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/30 backdrop-blur">
           <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M9 6l6 6-6 6" />
           </svg>
         </Link>
-        <span className="font-display text-2xl font-bold">مقتطفات</span>
+        <span className="font-display text-2xl font-bold">{t("مقتطفات")}</span>
         <button
           type="button"
           onClick={() => setMuted((m) => !m)}
-          aria-label={muted ? "تشغيل الصوت" : "كتم الصوت"}
+          aria-label={muted ? t("تشغيل الصوت") : t("كتم الصوت")}
           className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/30 backdrop-blur"
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -168,6 +172,7 @@ function ClipSlide({
   onUnmute: () => void;
   onPlaySound: () => void;
 }) {
+  const { t, en } = useL();
   const v = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState<"share" | "download" | null>(null);
@@ -184,11 +189,14 @@ function ClipSlide({
     const el = v.current;
     if (!el) return;
     if (active) {
+      track({ type: "clip_view", id: clip.id, title: clip.title });
       el.play().then(() => setPaused(false)).catch(() => setPaused(true));
     } else {
       el.pause();
       el.currentTime = 0;
     }
+    // الإحصائيات مع تغيّر المقطع النشط بس
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   useEffect(() => {
@@ -207,7 +215,7 @@ function ClipSlide({
       // زي انستجرام: الضغطتين بيحفظوا بس، ومش بيشيلوا من المفضلة
       if (!saved) {
         fav.toggle(favKey);
-        flash("اتحفظ في المفضلة");
+        flash(t("اتحفظ في المفضلة"));
       }
       const box = e?.currentTarget.closest("section")?.getBoundingClientRect();
       const x = e && box ? e.clientX - box.left : (box?.width ?? 0) / 2;
@@ -231,7 +239,7 @@ function ClipSlide({
     }, 300);
   };
 
-  const pageUrl = () => `${window.location.origin}/clips?c=${clip.id}`;
+  const pageUrl = () => `${window.location.origin}${en ? "/en" : ""}/clips?c=${clip.id}`;
 
   // المشاركة: ملف الفيديو نفسه (عشان يتحط حالة واتساب)، ولو المتصفح مش بيدعم الملفات نشارك الرابط
   const share = async () => {
@@ -242,15 +250,18 @@ function ClipSlide({
         const file = await fetchFile(clip);
         if (navigator.canShare?.({ files: [file] })) {
           await navigator.share({ files: [file], title: clip.title, text });
+          track({ type: "clip_share", id: clip.id });
           return;
         }
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
       }
-      if (navigator.share) await navigator.share({ title: clip.title, text, url: pageUrl() });
-      else {
+      if (navigator.share) {
+        await navigator.share({ title: clip.title, text, url: pageUrl() });
+        track({ type: "clip_share", id: clip.id });
+      } else {
         await navigator.clipboard.writeText(pageUrl());
-        flash("اتنسخ الرابط");
+        flash(t("اتنسخ الرابط"));
       }
     } catch {
       /* المستخدم قفل المشاركة */
@@ -268,10 +279,11 @@ function ClipSlide({
       a.href = url;
       a.download = file.name;
       a.click();
+      track({ type: "clip_download", id: clip.id });
       window.setTimeout(() => URL.revokeObjectURL(url), 5000);
-      flash("اتحمّل على جهازك");
+      flash(t("اتحمّل على جهازك"));
     } catch {
-      flash("تعذّر التحميل دلوقتي");
+      flash(t("تعذّر التحميل دلوقتي"));
     } finally {
       setBusy(null);
     }
@@ -300,7 +312,7 @@ function ClipSlide({
           onClick={onTap}
           className="absolute left-1/2 top-1/2 z-10 touch-manipulation -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/45 px-5 py-3 text-sm font-semibold backdrop-blur"
         >
-          {muted ? "اضغط لتشغيل الصوت 🔊" : "▶ تشغيل"}
+          {muted ? t("اضغط لتشغيل الصوت 🔊") : t("▶ تشغيل")}
         </button>
       )}
       {heart && (
@@ -311,13 +323,13 @@ function ClipSlide({
 
       {/* الأزرار على اليمين */}
       <div className="absolute bottom-[calc(9rem+var(--tabbar))] right-3 z-10 flex flex-col items-center gap-4">
-        <button type="button" onClick={() => fav.toggle(favKey)} aria-pressed={saved} aria-label={saved ? "إزالة من المفضلة" : "حفظ في المفضلة"} className={act}>
+        <button type="button" onClick={() => fav.toggle(favKey)} aria-pressed={saved} aria-label={saved ? t("إزالة من المفضلة") : t("حفظ في المفضلة")} className={act}>
           <span className={actIcon}>
             <HeartIcon filled={saved} className={`h-6 w-6 ${saved ? "text-[#E5636B]" : ""}`} />
           </span>
-          {saved ? "محفوظ" : "حفظ"}
+          {saved ? t("محفوظ") : t("حفظ")}
         </button>
-        <button type="button" onClick={share} disabled={!!busy} aria-label="مشاركة" className={act}>
+        <button type="button" onClick={share} disabled={!!busy} aria-label={t("مشاركة")} className={act}>
           <span className={actIcon}>
             {busy === "share" ? (
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -327,9 +339,10 @@ function ClipSlide({
               </svg>
             )}
           </span>
-          حالة
+          
+          {t("حالة")}
         </button>
-        <button type="button" onClick={download} disabled={!!busy} aria-label="تحميل" className={act}>
+        <button type="button" onClick={download} disabled={!!busy} aria-label={t("تحميل")} className={act}>
           <span className={actIcon}>
             {busy === "download" ? (
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -339,7 +352,8 @@ function ClipSlide({
               </svg>
             )}
           </span>
-          تحميل
+          
+          {t("تحميل")}
         </button>
       </div>
 
@@ -347,7 +361,7 @@ function ClipSlide({
       <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/85 via-black/50 to-transparent pb-[calc(1.25rem+var(--tabbar))] pl-4 pr-20 pt-16">
         {clip.ayah && (
           <Link href={clip.ayah.href} className="block rounded-2xl bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <span className="line-clamp-3 font-quran text-xl leading-[2.1]">{clip.ayah.text}</span>
+            <span dir="rtl" lang="ar" className="line-clamp-3 font-quran text-xl leading-[2.1]">{clip.ayah.text}</span>
             <span className="text-xs text-[#E7CD94]">{clip.ayah.ref}</span>
           </Link>
         )}
@@ -359,16 +373,18 @@ function ClipSlide({
               <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
                 <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
               </svg>
-              اسمعه كامل
+              
+              {t("اسمعه كامل")}
             </Link>
           )}
           {/* المصدر: رابط لو موجود، اسم بس لو اتكتب من غير رابط، ولا حاجة لو المقطع من إنتاج الموقع */}
           {clip.sourceUrl ? (
             <a href={clip.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-white/75 underline-offset-4 hover:underline">
-              المصدر: {clip.sourceLabel ?? "المقطع الأصلي"} ↗
+              
+              {t("المصدر:")} {clip.sourceLabel ?? t("المقطع الأصلي")} ↗
             </a>
           ) : clip.sourceLabel ? (
-            <span className="text-white/75">المصدر: {clip.sourceLabel}</span>
+            <span className="text-white/75">{t("المصدر:")} {clip.sourceLabel}</span>
           ) : null}
         </div>
         {note && <p className="text-sm text-[#E7CD94]">{note}</p>}

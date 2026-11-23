@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useRef, useState } from "react";
 import type { Recording } from "@/types";
 import { usePlaylists } from "@/lib/usePlaylists";
@@ -8,6 +9,7 @@ import { usePlaylists } from "@/lib/usePlaylists";
 /** زرار "أضف إلى قائمة": بيفتح قايمة بقوائم الزائر، وكل واحدة عليها علامة لو التسجيل فيها */
 /** up: القايمة تفتح لفوق (لما الزرار في آخر الشاشة). buttonClassName: شكل زرار مختلف */
 export function AddToPlaylist({ recording, up = false, buttonClassName }: { recording: Recording; up?: boolean; buttonClassName?: string }) {
+  const { t } = useL();
   const pl = usePlaylists();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -34,8 +36,8 @@ export function AddToPlaylist({ recording, up = false, buttonClassName }: { reco
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        aria-label="إضافة إلى قائمة تشغيل"
-        title="إضافة إلى قائمة تشغيل"
+        aria-label={t("إضافة إلى قائمة تشغيل")}
+        title={t("إضافة إلى قائمة تشغيل")}
         className={
           buttonClassName
             ? `${buttonClassName} ${inCount ? "text-gold" : ""}`
@@ -49,7 +51,7 @@ export function AddToPlaylist({ recording, up = false, buttonClassName }: { reco
 
       {open && (
         <div className={`glass absolute z-30 flex w-72 max-w-[calc(100vw-2.5rem)] flex-col gap-2 rounded-2xl border border-fg/10 p-3 shadow-float ${up ? "bottom-full start-1/2 mb-2 -translate-x-1/2 rtl:translate-x-1/2" : "end-0 top-full mt-2"}`}>
-          <p className="px-1 text-sm font-semibold text-gold-soft">إضافة إلى قائمة</p>
+          <p className="px-1 text-sm font-semibold text-gold-soft">{t("إضافة إلى قائمة")}</p>
           {pl.lists.length > 0 && (
             <ul className="flex max-h-60 flex-col gap-1 overflow-y-auto">
               {pl.lists.map((p) => {
@@ -78,15 +80,17 @@ export function AddToPlaylist({ recording, up = false, buttonClassName }: { reco
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="قائمة جديدة، مثلًا: قيام الليل"
+              placeholder={t("قائمة جديدة، مثلًا: قيام الليل")}
               className="min-h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-ink px-3 text-sm text-text"
             />
             <button type="submit" disabled={!name.trim()} className="min-h-11 rounded-xl bg-accent px-3 text-sm font-semibold text-accent-ink disabled:opacity-40">
-              إنشاء
+              
+              {t("إنشاء")}
             </button>
           </form>
           <Link href="/playlists" className="px-1 text-sm text-gold-soft underline-offset-4 hover:underline">
-            كل قوائمي
+            
+            {t("كل قوائمي")}
           </Link>
         </div>
       )}

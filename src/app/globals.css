@@ -171,6 +171,31 @@
         linear-gradient(to bottom, #000 55%, transparent 94%);
       mask-composite: intersect;
     }
+    /* الإنجليزي: الصورة على اليمين، فبتسيح ناحية الشمال (ناحية النص) */
+    [dir="ltr"] .hero-portrait {
+      -webkit-mask-image:
+        radial-gradient(ellipse 72% 80% at 55% 36%, #000 42%, transparent 100%),
+        linear-gradient(to left, #000 40%, transparent 96%),
+        linear-gradient(to bottom, #000 55%, transparent 94%);
+      mask-image:
+        radial-gradient(ellipse 72% 80% at 55% 36%, #000 42%, transparent 100%),
+        linear-gradient(to left, #000 40%, transparent 96%),
+        linear-gradient(to bottom, #000 55%, transparent 94%);
+    }
+  }
+  /* الأسهم اللي بتشاور "لقدّام": في العربي للشمال، وفي الإنجليزي بتتقلب لليمين */
+  [dir="ltr"] .flip-ltr {
+    transform: scaleX(-1);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  /* سهم مقلوب بـ transform في الـ SVG نفسه: في الإنجليزي بيرجع لأصله */
+  [dir="ltr"] .unflip-ltr {
+    transform: none;
+  }
+  /* النص العربي اللي جاي من المحتوى (عناوين المحاضرات مثلًا) بياخد اتجاهه من أول حرف فيه، جوه الصفحة الإنجليزي */
+  [dir="ltr"] :is(p, h1, h2, h3, li, dd, dt, label) {
+    unicode-bidi: plaintext;
   }
   /* يكسر حدود الـ container ويبقى بعرض الشاشة كلها */
   .full-bleed {

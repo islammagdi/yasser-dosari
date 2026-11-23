@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useMemo, useState } from "react";
 import type { Prayer, Recording } from "@/types";
-import { hijriMonthName, PRAYER_LABELS } from "@/lib/categories";
-import { formatDuration, toArabicDigits } from "@/lib/format";
+import { PRAYER_LABELS } from "@/lib/categories";
 import { hijriToIso } from "@/lib/imamate";
 import { isPlayable } from "@/lib/labels";
 import { usePlayer } from "./PlayerProvider";
@@ -13,6 +13,7 @@ import { PauseIcon, PlayIcon } from "./icons";
 
 /** الأسبوع بيبدأ السبت، زي التقويم في السعودية */
 const WEEK = ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
+const WEEK_EN = ["Sa", "Su", "Mo", "Tu", "We", "Th", "Fr"];
 const WEEKDAY_NAMES = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const PRAYER_ORDER: Record<Prayer, number> = { fajr: 0, maghrib: 1, isha: 2 };
 const DOT: Record<Prayer, string> = {
@@ -34,6 +35,7 @@ function weekdayOf(y: number, m: number, d: number): number | null {
  * كل يوم عليه نقطة لكل صلاة اتسجلت، وبالضغط عليه بتظهر صلوات اليوم وتشتغل.
  */
 export function ImamateLog({ recordings }: { recordings: Recording[] }) {
+  const { t, hijriMonthName, toArabicDigits, recTitle, formatDuration, recSubtitle, en, comma } = useL();
   const p = usePlayer();
 
   // التسجيلات متجمّعة بالشهر ثم اليوم
@@ -85,15 +87,17 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="log-title" className="font-display text-3xl font-bold sm:text-4xl">
-            سجلّ الإمامة
+            
+            {t("سجلّ الإمامة")}
           </h2>
-          <p className="text-muted">اختار يوم من التقويم الهجري، واسمع الصلوات اللي أمّها الشيخ فيه.</p>
+          <p className="text-muted">{t("اختار يوم من التقويم الهجري، واسمع الصلوات اللي أمّها الشيخ فيه.")}</p>
         </div>
         <Link
           href="/fard"
           className="flex min-h-11 items-center rounded-full border border-line-strong px-5 text-sm font-semibold transition-colors hover:border-gold/60 hover:text-gold-soft"
         >
-          كل صلوات الفروض
+          
+          {t("كل صلوات الفروض")}
         </Link>
       </div>
 
@@ -109,7 +113,7 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
                 type="button"
                 onClick={() => go(1)}
                 disabled={monthIdx >= months.length - 1}
-                aria-label="الشهر السابق"
+                aria-label={t("الشهر السابق")}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-line-strong transition-colors hover:border-gold/60 disabled:opacity-30"
               >
                 <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
@@ -118,7 +122,7 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
                 type="button"
                 onClick={() => go(-1)}
                 disabled={monthIdx === 0}
-                aria-label="الشهر التالي"
+                aria-label={t("الشهر التالي")}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-line-strong transition-colors hover:border-gold/60 disabled:opacity-30"
               >
                 <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 6l-6 6 6 6" /></svg>
@@ -127,7 +131,7 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
           </div>
 
           <div className="grid grid-cols-7 gap-1.5 text-center" role="grid" aria-label={`${hijriMonthName(m)} ${toArabicDigits(y)}`}>
-            {WEEK.map((w) => (
+            {(en ? WEEK_EN : WEEK).map((w) => (
               <span key={w} className="pb-1 text-xs text-muted" aria-hidden>
                 {w}
               </span>
@@ -153,7 +157,7 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
                   type="button"
                   onClick={() => setPicked(d)}
                   aria-pressed={selected}
-                  aria-label={`${toArabicDigits(d)} ${hijriMonthName(m)}: ${recs.map((r) => PRAYER_LABELS[r.prayer ?? "isha"]).join(" و")}`}
+                  aria-label={`${toArabicDigits(d)} ${hijriMonthName(m)}: ${recs.map((r) => t(PRAYER_LABELS[r.prayer ?? "isha"])).join(comma)}`}
                   className={`${cell} transition-colors ${selected ? "bg-accent text-accent-ink" : "bg-fg/5 hover:bg-fg/10"}`}
                 >
                   {toArabicDigits(d)}
@@ -171,7 +175,7 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
             {(Object.keys(PRAYER_ORDER) as Prayer[]).map((pr) => (
               <span key={pr} className="flex items-center gap-1.5">
                 <i className={`h-2 w-2 rounded-full ${DOT[pr]}`} />
-                {PRAYER_LABELS[pr]}
+                {t(PRAYER_LABELS[pr])}
               </span>
             ))}
           </div>
@@ -180,11 +184,11 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
         {/* صلوات اليوم المختار */}
         <div className="flex flex-col rounded-[26px] border border-line bg-raised p-5 shadow-soft sm:p-7">
           <p className="text-sm font-semibold text-gold">
-            {dayWeekday !== null && `${WEEKDAY_NAMES[dayWeekday]} `}
-            {toArabicDigits(day)} {hijriMonthName(m)} {toArabicDigits(y)} هـ
+            {dayWeekday !== null && `${t(WEEKDAY_NAMES[dayWeekday])} `}
+            {toArabicDigits(day)} {hijriMonthName(m)} {toArabicDigits(y)}  {t("هـ")}
           </p>
           <p className="mb-2 font-display text-3xl font-bold">
-            {list.length === 1 ? "صلاة واحدة في اليوم ده" : list.length === 2 ? "صلاتين في اليوم ده" : `${toArabicDigits(list.length)} صلوات في اليوم ده`}
+            {list.length === 1 ? t("صلاة واحدة في اليوم ده") : list.length === 2 ? t("صلاتين في اليوم ده") : t("{n} صلوات في اليوم ده", { n: toArabicDigits(list.length) })}
           </p>
           <ul>
             {list.map((r, i) => {
@@ -195,16 +199,16 @@ export function ImamateLog({ recordings }: { recordings: Recording[] }) {
                   <RecordingCover recording={r} sizes="64px" className="h-16 w-16 shrink-0 rounded-2xl" />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <Link href={`/${r.category}/${r.id}`} className="truncate font-display text-xl font-bold hover:text-gold-soft">
-                      {r.prayerLabel ?? `صلاة ${PRAYER_LABELS[r.prayer ?? "isha"]}`}
+                      {en ? (recTitle(r).split(",")[0]) : r.prayerLabel ?? `صلاة ${PRAYER_LABELS[r.prayer ?? "isha"]}`}
                     </Link>
-                    {r.subtitle && <span className="truncate text-sm text-muted">{r.subtitle}</span>}
+                    {recSubtitle(r) && <span className="truncate text-sm text-muted">{recSubtitle(r)}</span>}
                   </div>
                   {r.durationSec ? <span className="hidden shrink-0 text-sm tabular-nums text-gold sm:block">{formatDuration(r.durationSec)}</span> : null}
                   <button
                     type="button"
                     onClick={() => (isCurrent ? p.toggle() : p.playQueue(list, i))}
                     disabled={!isPlayable(r)}
-                    aria-label={`${playingNow ? "إيقاف" : "تشغيل"} ${r.title}`}
+                    aria-label={`${playingNow ? t("إيقاف") : t("تشغيل")} ${recTitle(r)}`}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-40"
                   >
                     {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}

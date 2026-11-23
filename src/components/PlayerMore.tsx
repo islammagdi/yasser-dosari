@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useRef, useState } from "react";
 import type { Recording } from "@/types";
 import { getCategory } from "@/lib/playerLabels";
-import { toArabicDigits } from "@/lib/format";
 import { canSaveOffline, removeOffline, saveOffline, useOffline } from "@/lib/offline";
 import { usePlaylists } from "@/lib/usePlaylists";
 import { usePlayer } from "./PlayerProvider";
@@ -12,13 +12,14 @@ import { RecordingCover } from "./RecordingCover";
 
 /** المشاركة والتحميل من غير نت: مشتركين بين المشغّل الكبير وشريط الديسكتوب */
 export function usePlayerActions(r: Recording | null) {
+  const { t, recTitle, en } = useL();
   const off = useOffline();
   const [saving, setSaving] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const saved = !!r && off.isSaved(r.id);
 
-  const flash = (t: string) => {
-    setNote(t);
+  const flash = (msg: string) => {
+    setNote(msg);
     window.setTimeout(() => setNote(""), 2200);
   };
 
@@ -28,9 +29,9 @@ export function usePlayerActions(r: Recording | null) {
     setSaving(0);
     try {
       await saveOffline(r, (pct) => setSaving(pct));
-      flash("اتحفظت على جهازك");
+      flash(t("اتحفظت على جهازك"));
     } catch {
-      flash("تعذّر الحفظ دلوقتي");
+      flash(t("تعذّر الحفظ دلوقتي"));
     } finally {
       setSaving(null);
     }
@@ -38,13 +39,13 @@ export function usePlayerActions(r: Recording | null) {
 
   const share = async () => {
     if (!r) return;
-    const url = `${window.location.origin}/${r.category}/${r.id}`;
-    const title = r.title || r.prayerLabel || "";
+    const url = `${window.location.origin}${en ? "/en" : ""}/${r.category}/${r.id}`;
+    const title = recTitle(r);
     try {
       if (navigator.share) await navigator.share({ title, url });
       else {
         await navigator.clipboard.writeText(url);
-        flash("اتنسخ الرابط");
+        flash(t("اتنسخ الرابط"));
       }
     } catch {
       /* المستخدم قفل نافذة المشاركة */
@@ -101,6 +102,7 @@ export function PlayerMenu({
   onNavigate?: () => void;
   className?: string;
 }) {
+  const { t, recTitle, recSubtitle, toArabicDigits } = useL();
   const p = usePlayer();
   const pl = usePlaylists();
   const r = p.current;
@@ -146,8 +148,8 @@ export function PlayerMenu({
         <div className="mb-2 flex items-center gap-3 border-b border-fg/10 px-2 pb-3">
           <RecordingCover recording={r} sizes="56px" className="h-14 w-14 shrink-0 rounded-xl" />
           <div className="flex min-w-0 flex-col">
-            <span className="truncate font-semibold">{r.title || r.prayerLabel}</span>
-            {r.subtitle && <span className="truncate text-sm text-muted">{r.subtitle}</span>}
+            <span className="truncate font-semibold">{recTitle(r)}</span>
+            {recSubtitle(r) && <span className="truncate text-sm text-muted">{recSubtitle(r)}</span>}
           </div>
         </div>
       )}
@@ -157,30 +159,32 @@ export function PlayerMenu({
           {variant === "sheet" && (
           <button type="button" role="menuitemcheckbox" aria-checked={repeating} onClick={() => p.setRepeat(repeating ? 0 : Infinity)} className={row}>
             <RepeatIcon className={`h-5 w-5 ${repeating ? "text-gold" : "text-muted"}`} />
-            <span className="flex-1">تكرار التلاوة</span>
-            <span className={`text-xs font-semibold ${repeating ? "text-gold" : "text-muted"}`}>{repeating ? "شغال" : "مقفول"}</span>
+            <span className="flex-1">{t("تكرار التلاوة")}</span>
+            <span className={`text-xs font-semibold ${repeating ? "text-gold" : "text-muted"}`}>{repeating ? t("شغال") : t("مقفول")}</span>
           </button>
           )}
           <button type="button" role="menuitem" onClick={() => setView("playlists")} className={row}>
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M4 6h11M4 11h11M4 16h7M17 13v6M14 16h6" />
             </svg>
-            <span className="flex-1">إضافة لقايمة تشغيل</span>
-            {inLists > 0 && <span className="text-xs text-gold">في {toArabicDigits(inLists)}</span>}
+            <span className="flex-1">{t("إضافة لقايمة تشغيل")}</span>
+            {inLists > 0 && <span className="text-xs text-gold">{t("في")} {toArabicDigits(inLists)}</span>}
           </button>
           <div className="my-1 h-px bg-fg/10" />
           <Link href={`/${r.category}/${r.id}`} role="menuitem" onClick={go} className={row}>
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M9 18l6-6-6-6" transform="translate(24 0) scale(-1 1)" />
+              <path className="unflip-ltr" d="M9 18l6-6-6-6" transform="translate(24 0) scale(-1 1)" />
             </svg>
-            صفحة التلاوة
+            
+            {t("صفحة التلاوة")}
           </Link>
           <Link href={`/${r.category}`} role="menuitem" onClick={go} className={row}>
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="4" y="4" width="16" height="16" rx="3" />
               <path d="M8 9h8M8 13h8M8 17h5" />
             </svg>
-            قسم {getCategory(r.category)}
+            
+            {t("قسم")} {getCategory(r.category)}
           </Link>
         </>
       )}
@@ -188,9 +192,10 @@ export function PlayerMenu({
       {view === "playlists" && (
         <div className="flex flex-col gap-1">
           <button type="button" onClick={() => setView("main")} className="flex min-h-10 items-center gap-2 px-3 text-sm text-muted hover:text-text">
-            ← رجوع
+            
+            {t("← رجوع")}
           </button>
-          {pl.lists.length === 0 && <p className="px-3 py-2 text-sm text-muted">لسه معندكش قوايم. اعمل واحدة من هنا.</p>}
+          {pl.lists.length === 0 && <p className="px-3 py-2 text-sm text-muted">{t("لسه معندكش قوايم. اعمل واحدة من هنا.")}</p>}
           {pl.lists.map((l) => {
             const has = l.items.some((x) => x.id === r.id);
             return (
@@ -212,12 +217,13 @@ export function PlayerMenu({
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="اسم قايمة جديدة"
-              aria-label="اسم قايمة جديدة"
+              placeholder={t("اسم قايمة جديدة")}
+              aria-label={t("اسم قايمة جديدة")}
               className="min-h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-ink px-3 text-sm"
             />
             <button type="submit" className="min-h-11 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-ink">
-              إنشاء
+              
+              {t("إنشاء")}
             </button>
           </form>
         </div>
@@ -233,7 +239,7 @@ export function PlayerMenu({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="المزيد"
+        aria-label={t("المزيد")}
         className="flex h-11 w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-fg/5 hover:text-text"
       >
         <MoreIcon />

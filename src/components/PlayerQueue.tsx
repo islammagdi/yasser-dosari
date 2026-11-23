@@ -1,8 +1,8 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { toArabicDigits } from "@/lib/format";
 import type { Recording } from "@/types";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
@@ -35,6 +35,7 @@ const GripIcon = () => (
  * الزائر بيقدر يغيّر الترتيب بالسحب من المقبض (أو بالأسهم من الكيبورد)، يشغّل أي واحدة، أو يشيلها.
  */
 export function PlayerQueue({ className = "", label = true }: { className?: string; label?: boolean }) {
+  const { t, toArabicDigits } = useL();
   const p = usePlayer();
   const [open, setOpen] = useState(false);
   if (!p.current) return null;
@@ -46,13 +47,14 @@ export function PlayerQueue({ className = "", label = true }: { className?: stri
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        aria-label={label ? undefined : "قايمة الاستماع"}
+        aria-label={label ? undefined : t("قايمة الاستماع")}
         className={className}
       >
         <QueueIcon />
         {label && (
           <>
-            التالي
+            
+            {t("التالي")}
             {upcoming > 0 && <span className="tabular-nums text-gold">{toArabicDigits(upcoming)}</span>}
           </>
         )}
@@ -64,6 +66,7 @@ export function PlayerQueue({ className = "", label = true }: { className?: stri
 }
 
 function QueueSheet({ onClose }: { onClose: () => void }) {
+  const { recTitle, t, recSubtitle } = useL();
   const p = usePlayer();
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -119,14 +122,14 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={() => p.playFromQueue(abs)} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-1 text-start hover:bg-fg/5">
           <RecordingCover recording={r} sizes="48px" className="h-12 w-12 shrink-0 rounded-lg" />
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-[15px] font-medium">{r.title || r.prayerLabel}</span>
-            {r.subtitle && <span className="truncate text-xs text-muted">{r.subtitle}</span>}
+            <span className="truncate text-[15px] font-medium">{recTitle(r)}</span>
+            {recSubtitle(r) && <span className="truncate text-xs text-muted">{recSubtitle(r)}</span>}
           </span>
         </button>
         <button
           type="button"
           onClick={() => p.removeFromQueue(abs)}
-          aria-label={`شيل ${r.title} من القايمة`}
+          aria-label={t("شيل {x} من القايمة", { x: recTitle(r) })}
           className="flex h-11 w-9 shrink-0 items-center justify-center rounded-full text-muted hover:text-text"
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -135,7 +138,7 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
         </button>
         <button
           type="button"
-          aria-label={`ترتيب ${r.title}: اسحب، أو استخدم الأسهم فوق وتحت`}
+          aria-label={t("ترتيب {x}: اسحب، أو استخدم الأسهم فوق وتحت", { x: recTitle(r) })}
           className="flex h-11 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-full text-muted hover:text-text active:cursor-grabbing"
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture(e.pointerId);
@@ -180,9 +183,10 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between px-5 pb-2 pt-4">
           <h2 id={titleId} className="font-display text-2xl font-bold">
-            قايمة الاستماع
+            
+            {t("قايمة الاستماع")}
           </h2>
-          <button type="button" onClick={close} aria-label="إغلاق" className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-fg/5 hover:text-text">
+          <button type="button" onClick={close} aria-label={t("إغلاق")} className="flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-fg/5 hover:text-text">
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
@@ -191,12 +195,12 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
 
         <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <section className="flex flex-col gap-2">
-            <h3 className="px-1 text-xs font-semibold text-gold">يُشغَّل الآن</h3>
+            <h3 className="px-1 text-xs font-semibold text-gold">{t("يُشغَّل الآن")}</h3>
             <div className="flex items-center gap-3 rounded-2xl bg-fg/5 p-2">
               <RecordingCover recording={c} sizes="48px" className="h-12 w-12 shrink-0 rounded-lg" />
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[15px] font-semibold text-gold-soft">{c.title || c.prayerLabel}</span>
-                {c.subtitle && <span className="truncate text-xs text-muted">{c.subtitle}</span>}
+                <span className="truncate text-[15px] font-semibold text-gold-soft">{recTitle(c)}</span>
+                {recSubtitle(c) && <span className="truncate text-xs text-muted">{recSubtitle(c)}</span>}
               </span>
               {p.isPlaying && <EqualizerIcon className="me-2 h-4 w-4 shrink-0 text-gold" />}
             </div>
@@ -204,12 +208,13 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
 
           <section className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between px-1">
-              <h3 className="text-xs font-semibold text-gold">التالي</h3>
-              {upcoming.length > 1 && <span className="text-xs text-muted">اسحب من ⠿ عشان ترتّب</span>}
+              <h3 className="text-xs font-semibold text-gold">{t("التالي")}</h3>
+              {upcoming.length > 1 && <span className="text-xs text-muted">{t("اسحب من ⠿ عشان ترتّب")}</span>}
             </div>
             {upcoming.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-line-strong p-5 text-center text-sm leading-7 text-muted">
-                مفيش تلاوات بعد دي. شغّل من قسم أو قايمة تشغيل، والباقي هيظهر هنا بالترتيب.
+                
+                {t("مفيش تلاوات بعد دي. شغّل من قسم أو قايمة تشغيل، والباقي هيظهر هنا بالترتيب.")}
               </p>
             ) : (
               <ol className={`flex flex-col ${drag ? "select-none" : ""}`}>{upcoming.map(row)}</ol>

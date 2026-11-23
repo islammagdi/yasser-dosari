@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useRef, useState } from "react";
-import { formatDuration, toArabicDigits } from "@/lib/format";
 import { getCategory } from "@/lib/categories";
 import { isPlayable } from "@/lib/labels";
 import { useFavorites } from "@/lib/useFavorites";
@@ -25,6 +25,7 @@ const iconBtn =
   "relative flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors hover:bg-fg/5 hover:text-gold-soft disabled:opacity-30 disabled:hover:bg-transparent";
 
 export function PlayerBar() {
+  const { t, formatDuration, toArabicDigits, recTitle, dir } = useL();
   const p = usePlayer();
   const fav = useFavorites();
   const act = usePlayerActions(p.current);
@@ -51,7 +52,7 @@ export function PlayerBar() {
 
   if (!p.current) return null;
 
-  const section = getCategory(p.current.category)?.title ?? "";
+  const section = t(getCategory(p.current.category)?.title ?? "");
   const max = p.duration || 0;
   const pct = max ? (p.currentTime / max) * 100 : 0;
   const atEnd = p.queue.indexOf(p.current) >= p.queue.length - 1;
@@ -66,7 +67,7 @@ export function PlayerBar() {
   return (
     <div
       role="region"
-      aria-label="المشغّل"
+      aria-label={t("المشغّل")}
       onClick={(e) => {
         // الضغط على أي حتة في الشريط بيفتح المشغّل الكبير، ما عدا الأزرار والروابط وشريط التقدّم
         if (p.current?.youtubeId) return;
@@ -90,17 +91,17 @@ export function PlayerBar() {
           {p.current.youtubeId ? (
             <RecordingCover recording={p.current} sizes="48px" className="me-2 h-12 w-12 shrink-0 rounded-xl border border-gold/30" />
           ) : (
-            <button type="button" onClick={() => setFull(true)} aria-label="فتح المشغّل بملء الشاشة" className="me-2 shrink-0 rounded-xl">
+            <button type="button" onClick={() => setFull(true)} aria-label={t("فتح المشغّل بملء الشاشة")} className="me-2 shrink-0 rounded-xl">
               <RecordingCover recording={p.current} sizes="48px" className="h-12 w-12 rounded-xl border border-gold/30" />
             </button>
           )}
           <span className="flex min-w-0 flex-1 flex-col">
             {p.current.youtubeId ? (
               <Link href={`/${p.current.category}/${p.current.id}`} className="truncate text-[15px] font-semibold hover:text-gold-soft">
-                {p.current.title}
+                {recTitle(p.current)}
               </Link>
             ) : (
-              <span className="truncate text-[15px] font-semibold">{p.current.title}</span>
+              <span className="truncate text-[15px] font-semibold">{recTitle(p.current)}</span>
             )}
             <span className={`truncate text-xs ${p.error || act.note ? "text-gold-soft" : "text-muted"}`}>{p.error ?? (act.note || section)}</span>
           </span>
@@ -108,7 +109,7 @@ export function PlayerBar() {
             type="button"
             onClick={() => p.current && fav.toggle(p.current.id)}
             aria-pressed={favorite}
-            aria-label={favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+            aria-label={favorite ? t("إزالة من المفضلة") : t("إضافة إلى المفضلة")}
             className={`${iconBtn} ${favorite ? "!text-[#E5636B]" : ""}`}
           >
             <HeartIcon filled={favorite} className="h-5 w-5" />
@@ -118,14 +119,14 @@ export function PlayerBar() {
               type="button"
               onClick={act.toggleOffline}
               disabled={act.saving !== null}
-              aria-label={act.saved ? "محفوظة من غير نت (اضغط للمسح)" : "حفظ من غير نت"}
+              aria-label={act.saved ? t("محفوظة من غير نت (اضغط للمسح)") : t("حفظ من غير نت")}
               title={act.saving !== null ? `${Math.round(act.saving)}%` : undefined}
               className={`${iconBtn} hidden md:flex ${act.saved ? "!text-gold" : ""}`}
             >
               <DownloadIcon done={act.saved} />
             </button>
           )}
-          <button type="button" onClick={act.share} aria-label="مشاركة" className={`${iconBtn} hidden md:flex`}>
+          <button type="button" onClick={act.share} aria-label={t("مشاركة")} className={`${iconBtn} hidden md:flex`}>
             <ShareIcon />
           </button>
           <PlayerMenu variant="popover" className="hidden md:block" />
@@ -138,24 +139,24 @@ export function PlayerBar() {
               type="button"
               onClick={() => p.setRepeat(p.repeat > 0 ? 0 : Infinity)}
               aria-pressed={p.repeat > 0}
-              aria-label={p.repeat > 0 ? "إيقاف التكرار" : "تكرار التلاوة"}
+              aria-label={p.repeat > 0 ? t("إيقاف التكرار") : t("تكرار التلاوة")}
               className={`${iconBtn} hidden md:flex ${p.repeat > 0 ? "!text-gold" : ""}`}
             >
               <RepeatIcon />
             </button>
-            <button type="button" onClick={p.prev} aria-label="السابق" className={`${iconBtn} hidden md:flex`}>
+            <button type="button" onClick={p.prev} aria-label={t("السابق")} className={`${iconBtn} hidden md:flex`}>
               <PrevIcon className="h-5 w-5" />
             </button>
             <button
               type="button"
               onClick={p.toggle}
               disabled={!isPlayable(p.current)}
-              aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
+              aria-label={p.isPlaying ? t("إيقاف مؤقت") : t("تشغيل")}
               className="mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-40"
             >
               {p.isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
             </button>
-            <button type="button" onClick={p.next} disabled={atEnd} aria-label="التالي" className={iconBtn}>
+            <button type="button" onClick={p.next} disabled={atEnd} aria-label={t("التالي")} className={iconBtn}>
               <NextIcon className="h-5 w-5" />
             </button>
             {/* تايمر الإيقاف */}
@@ -165,7 +166,7 @@ export function PlayerBar() {
                 onClick={() => setSleepOpen((o) => !o)}
                 aria-expanded={sleepOpen}
                 aria-haspopup="true"
-                aria-label="تايمر الإيقاف"
+                aria-label={t("تايمر الإيقاف")}
                 className={`${iconBtn} ${p.sleep ? "!text-gold" : ""}`}
               >
                 <TimerIcon className="h-5 w-5" />
@@ -174,8 +175,8 @@ export function PlayerBar() {
                 )}
               </button>
               {sleepOpen && (
-                <div dir="rtl" className="absolute bottom-full left-1/2 mb-3 w-48 -translate-x-1/2 rounded-2xl border border-fg/10 bg-raised p-1.5 shadow-float">
-                  <p className="px-3 pb-1 pt-2 text-xs text-muted">إيقاف التشغيل</p>
+                <div dir={dir} className="absolute bottom-full left-1/2 mb-3 w-48 -translate-x-1/2 rounded-2xl border border-fg/10 bg-raised p-1.5 shadow-float">
+                  <p className="px-3 pb-1 pt-2 text-xs text-muted">{t("إيقاف التشغيل")}</p>
                   {SLEEP_OPTIONS.map((o) => (
                     <button
                       key={String(o.value)}
@@ -186,7 +187,7 @@ export function PlayerBar() {
                       }}
                       className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm transition-colors hover:bg-fg/5"
                     >
-                      {o.label}
+                      {t(o.label)}
                     </button>
                   ))}
                   {p.sleep && (
@@ -198,7 +199,8 @@ export function PlayerBar() {
                       }}
                       className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-fg/10 px-3 text-start text-sm text-gold-soft transition-colors hover:bg-fg/5"
                     >
-                      إلغاء التايمر
+                      
+                      {t("إلغاء التايمر")}
                     </button>
                   )}
                 </div>
@@ -206,7 +208,7 @@ export function PlayerBar() {
             </div>
           </div>
           <div dir="ltr" className="hidden w-full items-center gap-3 text-xs text-muted md:flex">
-            <span className="w-11 text-right tabular-nums">{formatDuration(p.currentTime) || "٠:٠٠"}</span>
+            <span className="w-11 text-right tabular-nums">{formatDuration(p.currentTime) || t("٠:٠٠")}</span>
             <input
               type="range"
               min={0}
@@ -215,18 +217,18 @@ export function PlayerBar() {
               value={Math.min(p.currentTime, max || 1)}
               onChange={(e) => p.seek(Number(e.target.value))}
               disabled={!max}
-              aria-label="التقدّم"
-              aria-valuetext={`${formatDuration(p.currentTime)} من ${formatDuration(max)}`}
+              aria-label={t("التقدّم")}
+              aria-valuetext={t("{a} من {b}", { a: formatDuration(p.currentTime), b: formatDuration(max) })}
               className="progress flex-1"
               style={{ "--pct": `${pct}%` } as React.CSSProperties}
             />
-            <span className="w-11 tabular-nums">{formatDuration(max) || "٠:٠٠"}</span>
+            <span className="w-11 tabular-nums">{formatDuration(max) || t("٠:٠٠")}</span>
           </div>
         </div>
 
         {/* الصوت وملء الشاشة (ديسكتوب) */}
         <div className="hidden items-center justify-end gap-1 md:flex">
-          <button type="button" onClick={p.toggleMute} aria-label={p.muted ? "تشغيل الصوت" : "كتم الصوت"} aria-pressed={p.muted} className={iconBtn}>
+          <button type="button" onClick={p.toggleMute} aria-label={p.muted ? t("تشغيل الصوت") : t("كتم الصوت")} aria-pressed={p.muted} className={iconBtn}>
             <VolumeIcon muted={p.muted || p.volume === 0} className="h-5 w-5" />
           </button>
           <input
@@ -236,13 +238,13 @@ export function PlayerBar() {
             step={0.05}
             value={p.muted ? 0 : p.volume}
             onChange={(e) => p.setVolume(Number(e.target.value))}
-            aria-label="مستوى الصوت"
+            aria-label={t("مستوى الصوت")}
             className="progress hidden w-24 lg:block"
             style={{ "--pct": `${(p.muted ? 0 : p.volume) * 100}%` } as React.CSSProperties}
           />
           <PlayerQueue label={false} className={iconBtn} />
           {!p.current.youtubeId && (
-            <button type="button" onClick={() => setFull(true)} aria-label="المشغّل بملء الشاشة" className={iconBtn}>
+            <button type="button" onClick={() => setFull(true)} aria-label={t("المشغّل بملء الشاشة")} className={iconBtn}>
               <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
               </svg>

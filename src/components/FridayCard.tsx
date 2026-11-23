@@ -1,8 +1,9 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useEffect, useState } from "react";
 import type { ImamateSlot } from "@/types";
-import { daysFromToday, hijriDayLabel, isNowLive, makkahTime, makkahToday, relativeDayLabel } from "@/lib/imamate";
+import { daysFromToday, isNowLive, makkahTime, makkahToday } from "@/lib/imamate";
 import { MAKKAH_LIVE_URL } from "@/lib/site";
 import { ImamateReminder } from "./ImamateReminder";
 
@@ -10,6 +11,7 @@ import { ImamateReminder } from "./ImamateReminder";
  * كارت "الجمعة": بيظهر بس لو الشيخ خطيب وإمام في جمعة خلال الأسبوع الجاي (الاحتياطي مش بيظهر هنا).
  */
 export function FridayCard({ slots }: { slots: ImamateSlot[] }) {
+  const { t, hijriDayLabel, relativeDayLabel } = useL();
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
@@ -27,16 +29,17 @@ export function FridayCard({ slots }: { slots: ImamateSlot[] }) {
   if (!friday || daysFromToday(friday.date, now) > 7) return null;
 
   const live = isNowLive(friday, now);
-  const when = daysFromToday(friday.date, now) === 0 ? "اليوم" : relativeDayLabel(friday.date, now);
+  const when = daysFromToday(friday.date, now) === 0 ? t("اليوم") : relativeDayLabel(friday.date, now);
 
   return (
     <section aria-labelledby="friday-title" className="glass-card flex flex-col gap-4 rounded-3xl border-gold/30 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-semibold text-gold">{live ? "الآن في المسجد الحرام" : `الجمعة · ${when}`}</p>
+        <p className="text-sm font-semibold text-gold">{live ? t("الآن في المسجد الحرام") : t("الجمعة · {when}", { when })}</p>
         <h2 id="friday-title" className="font-display text-2xl font-bold leading-snug">
-          الشيخ يخطب ويؤم صلاة الجمعة
+          
+          {t("الشيخ يخطب ويؤم صلاة الجمعة")}
         </h2>
-        <p className="text-sm text-muted">{hijriDayLabel(friday.date)} · المسجد الحرام</p>
+        <p className="text-sm text-muted">{hijriDayLabel(friday.date)}  {t("· المسجد الحرام")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         {live && MAKKAH_LIVE_URL ? (
@@ -46,7 +49,8 @@ export function FridayCard({ slots }: { slots: ImamateSlot[] }) {
             rel="noopener noreferrer"
             className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
           >
-            شاهد البث المباشر
+            
+            {t("شاهد البث المباشر")}
           </a>
         ) : (
           <ImamateReminder slot={friday} />

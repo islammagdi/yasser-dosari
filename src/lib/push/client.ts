@@ -1,4 +1,5 @@
 "use client";
+import { track } from "@/lib/stats/track";
 
 /** الاشتراك في الإشعارات من المتصفح */
 
@@ -83,6 +84,7 @@ export async function enablePush(): Promise<PushState> {
     body: JSON.stringify({ subscription: sub.toJSON(), topics: pushTopics() }),
   });
   if (!res.ok) throw new Error("subscribe failed");
+  track({ type: "push_subscribe" });
   try {
     localStorage.setItem(TOPICS_KEY, JSON.stringify(pushTopics()));
   } catch {

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
+import { usePathname } from "@/lib/i18n/nav";
 import { useEffect, useId, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
-import { toArabicDigits } from "@/lib/format";
 import { lockScroll } from "@/lib/scrollLock";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 import { useFavorites } from "@/lib/useFavorites";
@@ -20,6 +20,7 @@ type Sheet = "recitations" | "more" | null;
 const MORE_PATHS = ["/surah", "/favorites", "/playlists", "/saved", "/imamate", "/about", "/transfer", "/search"];
 
 export function MobileTabBar() {
+  const { t, href } = useL();
   const pathname = usePathname();
   const [sheet, setSheet] = useState<Sheet>(null);
   const onClips = pathname === "/clips";
@@ -56,36 +57,36 @@ export function MobileTabBar() {
     <>
       {sheet && <TabSheet kind={sheet} onClose={() => setSheet(null)} />}
       <nav
-        aria-label="التنقل الرئيسي"
+        aria-label={t("التنقل الرئيسي")}
         className={`fixed inset-x-0 bottom-0 z-[48] border-t pb-[env(safe-area-inset-bottom)] xl:hidden ${barTone}`}
       >
         <ul className="mx-auto grid h-16 max-w-xl grid-cols-5">
-          {tabs.map((t) => {
+          {tabs.map((tab) => {
             const inner = (
               <>
                 <span
                   className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
-                    t.active ? (onClips && !sheet ? "bg-white/20 text-white" : "bg-accent text-[#fff] dark:text-accent-ink") : ""
+                    tab.active ? (onClips && !sheet ? "bg-white/20 text-white" : "bg-accent text-[#fff] dark:text-accent-ink") : ""
                   }`}
                 >
-                  {t.icon}
+                  {tab.icon}
                 </span>
-                <span className={`text-[11px] leading-4 ${t.active ? (onClips && !sheet ? "font-semibold text-white" : "font-semibold text-text") : ""}`}>{t.label}</span>
+                <span className={`text-[11px] leading-4 ${tab.active ? (onClips && !sheet ? "font-semibold text-white" : "font-semibold text-text") : ""}`}>{t(tab.label)}</span>
               </>
             );
             const cls = "flex h-16 w-full flex-col items-center justify-center gap-0.5 transition-colors";
             return (
-              <li key={t.key}>
-                {t.href ? (
-                  <Link href={t.href} aria-current={t.active ? "page" : undefined} onClick={() => setSheet(null)} className={cls}>
+              <li key={tab.key}>
+                {tab.href ? (
+                  <Link href={tab.href} aria-current={tab.active ? "page" : undefined} onClick={() => setSheet(null)} className={cls}>
                     {inner}
                   </Link>
                 ) : (
                   <button
                     type="button"
-                    aria-expanded={sheet === t.sheet}
+                    aria-expanded={sheet === tab.sheet}
                     aria-haspopup="dialog"
-                    onClick={() => setSheet((s) => (s === t.sheet ? null : t.sheet!))}
+                    onClick={() => setSheet((s) => (s === tab.sheet ? null : tab.sheet!))}
                     className={cls}
                   >
                     {inner}
@@ -101,6 +102,7 @@ export function MobileTabBar() {
 }
 
 function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: () => void }) {
+  const { t, toArabicDigits } = useL();
   const pathname = usePathname();
   const { ids } = useFavorites();
   const titleId = useId();
@@ -120,7 +122,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
       >
         <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-fg/15" />
         <h2 id={titleId} className="px-4 pb-2 font-display text-xl font-bold">
-          {kind === "recitations" ? "التلاوات" : "المزيد"}
+          {kind === "recitations" ? t("التلاوات") : t("المزيد")}
         </h2>
         {kind === "recitations" ? (
           <ul className="mx-auto flex max-w-xl flex-col gap-1">
@@ -132,7 +134,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:text-gold">
                       <CategoryIcon category={c.slug} className="h-5 w-5" />
                     </span>
-                    {c.title}
+                    {t(c.title)}
                   </Link>
                 </li>
               );
@@ -142,18 +144,21 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
           <ul className="mx-auto flex max-w-xl flex-col gap-1">
             <li>
               <Link href="/surah" onClick={onClose} aria-current={under("/surah") ? "page" : undefined} className={row(under("/surah"))}>
-                التلاوات بالسور
+                
+                {t("التلاوات بالسور")}
               </Link>
             </li>
             <li>
               <Link href="/imamate" onClick={onClose} aria-current={under("/imamate") ? "page" : undefined} className={row(under("/imamate"))}>
-                جدول الإمامة
+                
+                {t("جدول الإمامة")}
               </Link>
             </li>
             <li>
               <Link href="/favorites" onClick={onClose} aria-current={under("/favorites") ? "page" : undefined} className={`${row(under("/favorites"))} justify-between`}>
                 <span className="flex items-center gap-3">
-                  المفضلة
+                  
+                  {t("المفضلة")}
                   <HeartIcon filled className="h-4 w-4 text-[#E5636B]" />
                 </span>
                 {ids.length > 0 && <span className="rounded-full bg-accent px-2 text-xs font-bold leading-5 text-accent-ink">{toArabicDigits(ids.length)}</span>}
@@ -161,18 +166,21 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
             </li>
             <li>
               <Link href="/playlists" onClick={onClose} aria-current={under("/playlists") ? "page" : undefined} className={row(under("/playlists"))}>
-                قوائم التشغيل
+                
+                {t("قوائم التشغيل")}
               </Link>
             </li>
             <li>
               <Link href="/saved" onClick={onClose} aria-current={under("/saved") ? "page" : undefined} className={row(under("/saved"))}>
-                المحفوظات (بدون إنترنت)
+                
+                {t("المحفوظات (بدون إنترنت)")}
               </Link>
             </li>
             <li aria-hidden className="my-1 h-px bg-fg/10" />
             <li>
               <Link href="/about" onClick={onClose} className="flex min-h-12 items-center rounded-2xl px-4 text-[15px] text-muted hover:bg-fg/5 hover:text-text">
-                عن الموقع
+                
+                {t("عن الموقع")}
               </Link>
             </li>
             <li>
@@ -181,7 +189,8 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
                 {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="flex min-h-12 items-center rounded-2xl px-4 text-[15px] font-semibold text-gold-soft hover:bg-fg/5"
               >
-                اقترح تحسينًا
+                
+                {t("اقترح تحسينًا")}
               </a>
             </li>
           </ul>

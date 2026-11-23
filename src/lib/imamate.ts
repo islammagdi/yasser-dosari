@@ -1,5 +1,6 @@
 import type { ImamateFriday, ImamatePrayer, ImamateSlot, ImamateWeek, NightPart, RamadanNight } from "@/types";
 import { toArabicDigits } from "./format";
+import type { Lang } from "@/lib/i18n/config";
 
 /** الدقايق بعد الأذان اللي الموعد بيفضل ظاهر فيها (الإقامة + الصلاة) */
 export const AFTER_ADHAN_MIN = 40;
@@ -48,9 +49,9 @@ export function isNowLive(slot: ImamateSlot, now: Date): boolean {
 }
 
 /** "الثلاثاء، ٢٥ جمادى الأولى ١٤٤٨ هـ" بالتقويم الهجري (أم القرى) */
-export function hijriDayLabel(isoDate: string): string {
+export function hijriDayLabel(isoDate: string, lang: Lang = "ar"): string {
   const d = new Date(`${isoDate}T12:00:00+03:00`);
-  return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", {
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB-u-ca-islamic-umalqura-nu-latn" : "ar-SA-u-ca-islamic-umalqura-nu-arab", {
     timeZone: MAKKAH_TZ,
     weekday: "long",
     day: "numeric",
@@ -66,8 +67,9 @@ export function daysFromToday(isoDate: string, now: Date): number {
 }
 
 /** "اليوم" / "غدًا" / "بعد يومين" / "بعد ٣ أيام" / "بعد ١١ يومًا" */
-export function relativeDayLabel(isoDate: string, now: Date): string {
+export function relativeDayLabel(isoDate: string, now: Date, lang: Lang = "ar"): string {
   const days = daysFromToday(isoDate, now);
+  if (lang === "en") return days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
   if (days <= 0) return "اليوم";
   if (days === 1) return "غدًا";
   if (days === 2) return "بعد يومين";
@@ -225,10 +227,26 @@ export function isRamadan(now: Date): boolean {
   return hijriOf(new Date(`${makkahToday(now)}T12:00:00Z`)).m === 9;
 }
 
-export function prayersList(list: ImamatePrayer[]): string {
+export const IMAMATE_PRAYER_LABELS_EN: Record<ImamatePrayer, string> = {
+  fajr: "Fajr",
+  dhuhr: "Dhuhr",
+  asr: "Asr",
+  maghrib: "Maghrib",
+  isha: "Isha",
+  taraweeh: "Taraweeh",
+  tahajjud: "Tahajjud",
+  jumuah: "Jumu'ah",
+};
+
+export function prayersList(list: ImamatePrayer[], lang: Lang = "ar"): string {
+  if (lang === "en") {
+    const n = list.map((p) => IMAMATE_PRAYER_LABELS_EN[p]);
+    return n.length > 1 ? `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}` : n.join("");
+  }
   return list.map((p) => IMAMATE_PRAYER_LABELS[p]).join(" و");
 }
 /** "صلاة الفجر" أو "خطبة وصلاة الجمعة" */
-export function prayerTitle(prayer: ImamatePrayer): string {
+export function prayerTitle(prayer: ImamatePrayer, lang: Lang = "ar"): string {
+  if (lang === "en") return prayer === "jumuah" ? "Friday Khutbah & Prayer" : `${IMAMATE_PRAYER_LABELS_EN[prayer]} Prayer`;
   return prayer === "jumuah" ? "خطبة وصلاة الجمعة" : `صلاة ${IMAMATE_PRAYER_LABELS[prayer]}`;
 }

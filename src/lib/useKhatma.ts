@@ -76,7 +76,8 @@ export function useKhatma() {
 }
 
 /** "ختمة واحدة" / "ختمتان" / "٣ ختمات" / "١٥ ختمة" */
-export function khatmaCountLabel(n: number, digits: (n: number) => string): string {
+export function khatmaCountLabel(n: number, digits: (n: number) => string, en = false): string {
+  if (en) return n === 1 ? "1 khatma" : `${n} khatmas`;
   if (n === 1) return "ختمة واحدة";
   if (n === 2) return "ختمتان";
   if (n >= 3 && n <= 10) return `${digits(n)} ختمات`;

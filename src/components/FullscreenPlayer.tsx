@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Ayah, AyahTiming } from "@/lib/api/quranText";
-import { formatDuration, toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
 import { PlayerQueue } from "./PlayerQueue";
 import { DownloadIcon, PlayerMenu, ShareIcon, usePlayerActions } from "./PlayerMore";
@@ -23,6 +23,7 @@ import { useCoverTint } from "@/lib/coverTint";
 const SHEET_MS = 420;
 
 export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
+  const { t, formatDuration, toArabicDigits, recTitle, recSubtitle } = useL();
   const p = usePlayer();
   const fav = useFavorites();
   const r = p.current;
@@ -167,7 +168,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
       ref={sheetRef}
       role="dialog"
       aria-modal="true"
-      aria-label="المشغّل بملء الشاشة"
+      aria-label={t("المشغّل بملء الشاشة")}
       className={`fixed inset-0 z-[60] flex h-[100dvh] flex-col overflow-hidden overscroll-contain bg-ink transition-transform duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none ${
         shown ? "translate-y-0" : "translate-y-full"
       }`}
@@ -183,7 +184,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
       {/* الخلفية بلون غلاف التلاوة (زي سبوتيفاي)، وبتتبدّل بالتدريج مع كل تلاوة */}
       <div aria-hidden className="player-tint" />
       <div className="flex shrink-0 items-center px-3 pt-2">
-        <button type="button" onClick={requestClose} aria-label="إغلاق ملء الشاشة" className={`${big} h-12 w-12`}>
+        <button type="button" onClick={requestClose} aria-label={t("إغلاق ملء الشاشة")} className={`${big} h-12 w-12`}>
           <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -195,7 +196,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
         <div className="flex min-h-0 flex-1 items-center justify-center">
           {current ? (
             // الآية اللي بتتقري دلوقتي مكان الغلاف
-            <p key={current.n} className="rise text-center font-quran text-3xl leading-[2.1] sm:text-4xl">
+            <p dir="rtl" lang="ar" key={current.n} className="rise text-center font-quran text-3xl leading-[2.1] sm:text-4xl">
               {current.text} <span className="text-gold/80">﴿{toArabicDigits(current.n)}﴾</span>
             </p>
           ) : (
@@ -212,12 +213,12 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
         <div className="flex w-full shrink-0 items-center gap-2">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <Link href={`/${r.category}/${r.id}`} onClick={requestClose} className="line-clamp-2 font-display text-2xl font-bold leading-snug hover:text-gold-soft">
-              {r.title || r.prayerLabel}
+              {recTitle(r)}
             </Link>
-            {r.subtitle && <p className="truncate text-sm text-muted">{r.subtitle}</p>}
+            {recSubtitle(r) && <p className="truncate text-sm text-muted">{recSubtitle(r)}</p>}
             {(p.error || act.note) && <p className="text-sm text-gold-soft">{p.error ?? act.note}</p>}
           </div>
-          <button type="button" onClick={act.share} aria-label="مشاركة" className={`${big} h-11 w-11 shrink-0 bg-fg/5 text-muted`}>
+          <button type="button" onClick={act.share} aria-label={t("مشاركة")} className={`${big} h-11 w-11 shrink-0 bg-fg/5 text-muted`}>
             <ShareIcon />
           </button>
           <PlayerMenu variant="sheet" onNavigate={requestClose} className="shrink-0" />
@@ -233,14 +234,14 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
             value={Math.min(p.currentTime, max || 1)}
             onChange={(e) => p.seek(Number(e.target.value))}
             disabled={!max}
-            aria-label="التقدّم"
-            aria-valuetext={`${formatDuration(p.currentTime)} من ${formatDuration(max)}`}
+            aria-label={t("التقدّم")}
+            aria-valuetext={t("{a} من {b}", { a: formatDuration(p.currentTime), b: formatDuration(max) })}
             className="progress w-full"
             style={{ "--pct": `${pct}%`, height: "6px" } as React.CSSProperties}
           />
           <div className="flex justify-between text-sm tabular-nums text-muted">
-            <span>{formatDuration(p.currentTime) || "٠:٠٠"}</span>
-            <span>{formatDuration(max) || "٠:٠٠"}</span>
+            <span>{formatDuration(p.currentTime) || t("٠:٠٠")}</span>
+            <span>{formatDuration(max) || t("٠:٠٠")}</span>
           </div>
         </div>
 
@@ -250,26 +251,26 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={() => fav.toggle(r.id)}
             aria-pressed={favorite}
-            aria-label={favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+            aria-label={favorite ? t("إزالة من المفضلة") : t("إضافة إلى المفضلة")}
             className={`${big} h-12 w-12 ${favorite ? "text-[#E5636B]" : "text-muted"}`}
           >
             <HeartIcon filled={favorite} className="h-6 w-6" />
           </button>
-          <button type="button" onClick={() => p.skip(-10)} disabled={!max} aria-label="رجوع ١٠ ثواني" className={skipBtn}>
+          <button type="button" onClick={() => p.skip(-10)} disabled={!max} aria-label={t("رجوع ١٠ ثواني")} className={skipBtn}>
             <SkipIcon dir={-1} />
           </button>
           <button
             type="button"
             onClick={p.toggle}
-            aria-label={p.isPlaying ? "إيقاف مؤقت" : "تشغيل"}
+            aria-label={p.isPlaying ? t("إيقاف مؤقت") : t("تشغيل")}
             className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover"
           >
             {p.isPlaying ? <PauseIcon className="h-9 w-9" /> : <PlayIcon className="h-9 w-9" />}
           </button>
-          <button type="button" onClick={() => p.skip(10)} disabled={!max} aria-label="تقديم ١٠ ثواني" className={skipBtn}>
+          <button type="button" onClick={() => p.skip(10)} disabled={!max} aria-label={t("تقديم ١٠ ثواني")} className={skipBtn}>
             <SkipIcon dir={1} />
           </button>
-          <button type="button" onClick={p.next} disabled={atEnd} aria-label="التالي" className={`${big} h-12 w-12 text-gold`}>
+          <button type="button" onClick={p.next} disabled={atEnd} aria-label={t("التالي")} className={`${big} h-12 w-12 text-gold`}>
             <NextIcon className="h-7 w-7" />
           </button>
         </div>
@@ -279,7 +280,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
           <div className="relative">
             <button type="button" onClick={() => setSleepOpen((o) => !o)} aria-expanded={sleepOpen} className={`${tool} ${p.sleep ? "text-gold" : ""}`}>
               <span className="text-sm font-bold">zZ</span>
-              {p.sleep ? "شغال" : "إيقاف بعد"}
+              {p.sleep ? t("شغال") : t("إيقاف بعد")}
             </button>
             {sleepOpen && (
               <div role="menu" className="absolute bottom-full start-0 z-10 mb-2 w-48 rounded-2xl border border-fg/10 bg-raised p-1.5 shadow-float">
@@ -294,7 +295,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
                     }}
                     className="flex min-h-10 w-full items-center rounded-xl px-3 text-start text-sm hover:bg-fg/5"
                   >
-                    {o.label}
+                    {t(o.label)}
                   </button>
                 ))}
                 {p.sleep && (
@@ -307,7 +308,8 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
                     }}
                     className="mt-1 flex min-h-10 w-full items-center rounded-xl border-t border-fg/10 px-3 text-start text-sm text-gold-soft hover:bg-fg/5"
                   >
-                    إلغاء التايمر
+                    
+                    {t("إلغاء التايمر")}
                   </button>
                 )}
               </div>
@@ -317,7 +319,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
           {act.canOffline && (
             <button type="button" onClick={act.toggleOffline} disabled={act.saving !== null} className={`${tool} ${act.saved ? "text-gold" : ""}`}>
               <DownloadIcon done={act.saved} />
-              {act.saving !== null ? `${toArabicDigits(Math.round(act.saving))}٪` : act.saved ? "محفوظة" : "من غير نت"}
+              {act.saving !== null ? `${toArabicDigits(Math.round(act.saving))}${t("٪")}` : act.saved ? t("محفوظة") : t("من غير نت")}
             </button>
           )}
         </div>
@@ -330,6 +332,7 @@ export function FullscreenPlayer({ onClose }: { onClose: () => void }) {
 
 /** سهم دايري ورقم ١٠ جواه: dir = -1 رجوع، 1 تقديم */
 function SkipIcon({ dir }: { dir: -1 | 1 }) {
+  
   return (
     <svg aria-hidden viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <g transform={dir === 1 ? "translate(24 0) scale(-1 1)" : undefined}>

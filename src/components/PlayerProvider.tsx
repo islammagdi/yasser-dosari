@@ -1,11 +1,13 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Recording } from "@/types";
 
 import { markSurahListened } from "@/lib/useKhatma";
 import { getProgressTime, saveProgress } from "@/lib/useProgress";
 import { playbackUrl } from "@/lib/offline";
+import { track } from "@/lib/stats/track";
 const STORAGE_KEY = "yd-player-v1";
 /** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -134,6 +136,7 @@ interface Saved {
 }
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  const { t, recTitle, recSubtitle } = useL();
   const audioRef = useRef<HTMLAudioElement>(null);
   const ytMountRef = useRef<HTMLDivElement>(null);
   const ytRef = useRef<YTPlayer | null>(null);
@@ -161,6 +164,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const retriesRef = useRef(0);
 
   const current = index >= 0 ? queue[index] ?? null : null;
+
+  // الإحصائيات: تشغيل واحد لكل تسجيل في الزيارة (الإيقاف والاستكمال مش بيتحسبوا تاني)
+  const playedRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!isPlaying || !current || playedRef.current.has(current.id)) return;
+    playedRef.current.add(current.id);
+    track({ type: "play", id: current.id, title: current.title });
+  }, [isPlaying, current]);
   const isYouTube = Boolean(current?.youtubeId);
   // لوحة الفيديو: مقفولة يعني الفيديو واقف (يوتيوب مش بيسمح بتشغيل فيديو مستخبي)
   const [videoClosed, setVideoClosed] = useState(true);
@@ -332,7 +343,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       audio.removeAttribute("src");
       audio.load();
       setIsPlaying(false);
-      setError("هذا التسجيل غير متاح بعد.");
+      setError(t("هذا التسجيل غير متاح بعد."));
       return;
     }
     retriesRef.current = 0;
@@ -513,9 +524,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!("mediaSession" in navigator) || !current) return;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: current.title,
-      artist: "الشيخ ياسر الدوسري",
-      album: current.subtitle ?? "",
+      title: recTitle(current),
+      artist: t("الشيخ ياسر الدوسري"),
+      album: recSubtitle(current) ?? "",
     });
     const ms = navigator.mediaSession;
     ms.setActionHandler("play", toggle);
@@ -524,7 +535,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ms.setActionHandler("previoustrack", prev);
     ms.setActionHandler("seekbackward", () => skip(-10));
     ms.setActionHandler("seekforward", () => skip(10));
-  }, [current, toggle, next, prev, skip, index, queue.length]);
+  }, [current, toggle, next, prev, skip, index, queue.length, recTitle, recSubtitle, t]);
 
   const value = useMemo<PlayerContextValue>(() => ({
     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
@@ -538,7 +549,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
       {/* لوحة "يُشغَّل الآن" لتسجيلات يوتيوب: الفيديو لازم يفضل ظاهر (٢٠٠px على الأقل) طول ما هو شغّال */}
       <section
-        aria-label="فيديو التلاوة"
+        aria-label={t("فيديو التلاوة")}
         aria-hidden={!videoOpen}
         className={
           videoOpen
@@ -550,13 +561,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-end gap-2 md:justify-between md:px-4 md:pb-2 md:pt-3">
           <span className="hidden min-w-0 items-center gap-2 text-xs text-muted md:flex">
             <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-            يُشغَّل الآن من يوتيوب
+            
+            {t("يُشغَّل الآن من يوتيوب")}
           </span>
           <button
             type="button"
             onClick={closeVideo}
             tabIndex={videoOpen ? 0 : -1}
-            aria-label="إغلاق الفيديو وإيقاف التلاوة"
+            aria-label={t("إغلاق الفيديو وإيقاف التلاوة")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-fg/10 hover:text-text md:h-10 md:w-10"
           >
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -569,8 +581,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           <div ref={ytMountRef} />
         </div>
         <div className="hidden flex-col gap-0.5 px-4 pb-4 pt-3 md:flex">
-          <p className="truncate font-semibold">{current?.title}</p>
-          {current?.subtitle && <p className="truncate text-sm text-muted">{current.subtitle}</p>}
+          <p className="truncate font-semibold">{current && recTitle(current)}</p>
+          {current && recSubtitle(current) && <p className="truncate text-sm text-muted">{recSubtitle(current)}</p>}
         </div>
       </section>
 
@@ -620,7 +632,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           if (current?.audioUrl) {
             setIsLoading(false);
             setIsPlaying(false);
-            setError("تعذّر تحميل التسجيل. تحقّق من الاتصال وحاول مرة أخرى.");
+            setError(t("تعذّر تحميل التسجيل. تحقّق من الاتصال وحاول مرة أخرى."));
           }
         }}
       />

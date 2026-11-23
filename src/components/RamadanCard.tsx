@@ -1,9 +1,9 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useEffect, useState } from "react";
 import type { ImamateSlot, NightPart, Recording } from "@/types";
-import { toArabicDigits } from "@/lib/format";
-import { IMAMATE_PRAYER_LABELS, addDays, daysFromToday, isRamadan, makkahTime, makkahToday, relativeDayLabel, NIGHT_PART_LABELS } from "@/lib/imamate";
+import { IMAMATE_PRAYER_LABELS, addDays, daysFromToday, isRamadan, makkahTime, makkahToday, NIGHT_PART_LABELS } from "@/lib/imamate";
 import { usePlayer } from "./PlayerProvider";
 import { RamadanCountdown } from "./RamadanCountdown";
 import { PauseIcon, PlayIcon } from "./icons";
@@ -25,6 +25,7 @@ interface Night {
 
 /** ليالي الشيخ في رمضان: جدوله كله مرة واحدة، والليلة الجاية متعلّمة، وكل ليلة اتسجلت بتشتغل */
 export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recordings: Recording[] }) {
+  const { t, toArabicDigits, relativeDayLabel } = useL();
   const p = usePlayer();
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -66,7 +67,7 @@ export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recor
     .sort((a, b) => a.night - b.night);
 
   const next = nights.find((n) => !n.past);
-  const nextLabel = next ? (daysFromToday(next.evening, now) <= 0 ? "الليلة" : relativeDayLabel(next.evening, now)) : null;
+  const nextLabel = next ? (daysFromToday(next.evening, now) <= 0 ? t("الليلة") : relativeDayLabel(next.evening, now)) : null;
 
   // تسجيل الليلة من التراويح (لو اتسجلت واترفعت)
   const recordingOf = (night: number) => recordings.find((r) => r.hijriYear === year && r.night === night);
@@ -76,9 +77,10 @@ export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recor
       <div aria-hidden className="pattern-stars absolute inset-0 -z-10 opacity-10" />
       <div className="flex flex-col gap-1 pb-4">
         <h2 id="ramadan-title" className="font-display text-2xl font-bold text-gold-soft sm:text-3xl">
-          ليالي الشيخ في رمضان {toArabicDigits(year)} هـ
+          
+          {t("ليالي الشيخ في رمضان")} {toArabicDigits(year)}  {t("هـ")}
         </h2>
-        <p className="text-sm text-muted">حسب الجدول المعلن من رئاسة الشؤون الدينية</p>
+        <p className="text-sm text-muted">{t("حسب الجدول المعلن من رئاسة الشؤون الدينية")}</p>
       </div>
 
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -89,7 +91,7 @@ export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recor
           const body = (
             <>
               <span className="flex items-center justify-between gap-2">
-                <span className="font-display text-xl font-bold">ليلة {toArabicDigits(n.night)}</span>
+                <span className="font-display text-xl font-bold">{t("ليلة")} {toArabicDigits(n.night)}</span>
                 {isNext && nextLabel && (
                   <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-ink">{nextLabel}</span>
                 )}
@@ -111,7 +113,7 @@ export function RamadanCard({ slots, recordings }: { slots: ImamateSlot[]; recor
                 <button
                   type="button"
                   onClick={() => (p.current?.id === rec.id ? p.toggle() : p.playQueue([rec], 0))}
-                  aria-label={`${playingNow ? "إيقاف" : "تشغيل"} تسجيل ليلة ${toArabicDigits(n.night)}`}
+                  aria-label={t(playingNow ? "إيقاف تسجيل ليلة {n}" : "تشغيل تسجيل ليلة {n}", { n: toArabicDigits(n.night) })}
                   className={`${cls} hover:border-gold/50 hover:opacity-100`}
                 >
                   {body}

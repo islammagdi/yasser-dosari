@@ -1,5 +1,6 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useEffect, useState } from "react";
 
 export const THEME_KEY = "yd-theme";
@@ -21,6 +22,7 @@ function apply(theme: Theme) {
 
 /** withLabel: نسخة القايمة على الموبايل، أيقونة ونص */
 export function ThemeToggle({ className = "", withLabel = false }: { className?: string; withLabel?: boolean }) {
+  const { t } = useL();
   const [theme, setTheme] = useState<Theme | null>(null);
   useEffect(() => setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light"), []);
 
@@ -40,8 +42,8 @@ export function ThemeToggle({ className = "", withLabel = false }: { className?:
     <button
       type="button"
       onClick={toggle}
-      aria-label={withLabel ? undefined : dark ? "الوضع الفاتح" : "الوضع الغامق"}
-      title={withLabel ? undefined : dark ? "الوضع الفاتح" : "الوضع الغامق"}
+      aria-label={withLabel ? undefined : dark ? t("الوضع الفاتح") : t("الوضع الغامق")}
+      title={withLabel ? undefined : dark ? t("الوضع الفاتح") : t("الوضع الغامق")}
       className={className}
     >
       <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -54,7 +56,7 @@ export function ThemeToggle({ className = "", withLabel = false }: { className?:
           <path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z" />
         )}
       </svg>
-      {withLabel && <span>{dark ? "الوضع الفاتح" : "الوضع الغامق"}</span>}
+      {withLabel && <span>{dark ? t("الوضع الفاتح") : t("الوضع الغامق")}</span>}
     </button>
   );
 }

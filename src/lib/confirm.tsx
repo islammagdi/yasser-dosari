@@ -58,7 +58,7 @@ function Dialog({ message, opts, onDone }: { message: string; opts: AskOptions; 
   }, [onDone, opts.danger]);
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
+    <div dir={document.documentElement.dir || "rtl"} className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
       <div aria-hidden className="absolute inset-0 bg-[#000]/50" onClick={() => onDone(false)} />
       <div
         role="alertdialog"
@@ -76,10 +76,10 @@ function Dialog({ message, opts, onDone }: { message: string; opts: AskOptions; 
               opts.danger ? "bg-[#E5636B] text-[#fff] hover:bg-[#d4545c]" : "bg-accent text-accent-ink hover:bg-accent-hover"
             }`}
           >
-            {opts.confirm ?? "تمام"}
+            {opts.confirm ?? (document.documentElement.lang === "en" ? "OK" : "تمام")}
           </button>
           <button ref={cancelBtn} type="button" onClick={() => onDone(false)} className="min-h-12 flex-1 rounded-full border border-line-strong px-5 hover:border-gold/60">
-            {opts.cancel ?? "لا"}
+            {opts.cancel ?? (document.documentElement.lang === "en" ? "Cancel" : "لا")}
           </button>
         </div>
       </div>

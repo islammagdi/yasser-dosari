@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useId, useState } from "react";
 import { isRamadan } from "@/lib/imamate";
 import type { Category, Recording } from "@/types";
-import { toArabicDigits } from "@/lib/format";
 import { useLastVisit } from "@/lib/useVisit";
 import { RecordingList } from "./RecordingList";
 
@@ -26,6 +26,7 @@ const HOME_LIMIT = 4;
  * "عرض الكل" بقت آخر خانة في الشبكة على الشاشات الكبيرة، وزرار بعرض الشاشة على الموبايل.
  */
 export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
+  const { t, toArabicDigits } = useL();
   const [active, setActive] = useState<Category | undefined>(sections[0]?.slug);
   const id = useId();
   const lastVisit = useLastVisit();
@@ -57,10 +58,10 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
   };
 
   return (
-    <section id="sections" aria-label="الأقسام" className="flex scroll-mt-24 flex-col gap-5 sm:gap-7">
+    <section id="sections" aria-label={t("الأقسام")} className="flex scroll-mt-24 flex-col gap-5 sm:gap-7">
       <div
         role="tablist"
-        aria-label="الأقسام"
+        aria-label={t("الأقسام")}
         onKeyDown={onKeyDown}
         className="-mx-4 flex min-w-0 gap-2 overflow-x-auto overflow-y-hidden px-4 sm:mx-0 sm:gap-9 sm:px-0 sm:shadow-[inset_0_-1px_0_rgb(255_255_255/0.1)]"
       >
@@ -83,10 +84,10 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
                   : "border-line-strong text-text hover:border-gold/40 sm:border-transparent sm:text-muted sm:hover:text-text"
               }`}
             >
-              {s.title}
+              {t(s.title)}
               {fresh > 0 && (
-                <span className="h-2 w-2 shrink-0 rounded-full bg-accent" title={`${toArabicDigits(fresh)} جديد منذ زيارتك الأخيرة`}>
-                  <span className="sr-only">({toArabicDigits(fresh)} جديد)</span>
+                <span className="h-2 w-2 shrink-0 rounded-full bg-accent" title={t("{n} جديد منذ زيارتك الأخيرة", { n: toArabicDigits(fresh) })}>
+                  <span className="sr-only">({t("{n} جديد", { n: toArabicDigits(fresh) })})</span>
                 </span>
               )}
               <span
@@ -108,7 +109,7 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
           mobileRows
           more={{
             href: `/${current.slug}`,
-            label: `عرض كل ${current.title}`,
+            label: t("عرض كل {x}", { x: t(current.title) }),
             remaining: Math.max(0, current.total - shown.length),
           }}
         />
@@ -116,9 +117,10 @@ export function HomeBrowser({ sections }: { sections: HomeSection[] }) {
           href={`/${current.slug}`}
           className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-line-strong text-[15px] font-semibold text-gold transition-colors hover:border-gold/50 sm:hidden"
         >
-          عرض كل {current.title} ({toArabicDigits(current.total)})
+          
+          {t("عرض كل {x}", { x: t(current.title) })} ({toArabicDigits(current.total)})
           <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-            <path d="M19 12H5M11 18l-6-6 6-6" />
+            <path className="flip-ltr" d="M19 12H5M11 18l-6-6 6-6" />
           </svg>
         </Link>
       </div>

@@ -65,8 +65,11 @@ export interface Recording {
   id: string;
   category: Category;
   title: string;
+  /** العنوان بالإنجليزي: بيتولّد تلقائيًا للفروض والتراويح والخطب والمصحف (labels.ts) */
+  titleEn?: string;
   /** سطر وصفي قصير: المكان، السور، إلخ */
   subtitle?: string;
+  subtitleEn?: string;
   /** ISO date: "2025-03-14" */
   date?: string;
   durationSec?: number;

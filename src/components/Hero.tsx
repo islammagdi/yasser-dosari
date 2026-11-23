@@ -1,13 +1,13 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useMemo, useState } from "react";
 
 import type { ImamateSlot, Recording } from "@/types";
 import { getCategory } from "@/lib/categories";
 import { pickForDate } from "@/lib/dailyPick";
-import { formatDuration } from "@/lib/format";
 import { makkahToday } from "@/lib/imamate";
 import { isPlayable } from "@/lib/labels";
 import { HomeStrip } from "./HomeStrip";
@@ -42,6 +42,7 @@ interface Props {
  * الصورة على الشمال باهتة وسايحة في الخلفية، وتحت الهيرو شريط المعلومات الثانوية.
  */
 export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
+  const { t, formatDuration, recTitle, recSubtitle, en } = useL();
   const { current, isPlaying, currentTime, duration, playQueue, toggle } = usePlayer();
 
   // تلاوة اليوم بتتحسب في المتصفح بتاريخ مكة؛ ولحد ما تتحسب (أو لو مفيش) بنعرض أحدث تلاوة
@@ -49,7 +50,7 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
   useEffect(() => setToday(makkahToday(new Date())), []);
   const daily = today ? dailyPinned[today] ?? pickForDate(today, dailyPool) : undefined;
   const featured = daily ?? recent[0];
-  const label = daily ? "تلاوة اليوم" : "أُضيف حديثًا";
+  const label = daily ? t("تلاوة اليوم") : t("أُضيف حديثًا");
 
   const isCurrent = !!featured && current?.id === featured.id;
   const playingNow = isCurrent && isPlaying;
@@ -57,8 +58,8 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
   const pct = isCurrent && total ? Math.min(1, currentTime / total) : 0;
   const bars = useMemo(() => (featured ? waveFor(featured.id) : []), [featured]);
 
-  const title = featured ? featured.title || featured.prayerLabel || "" : "";
-  const meta = featured ? featured.subtitle || getCategory(featured.category)?.title || "" : "";
+  const title = featured ? recTitle(featured) : "";
+  const meta = featured ? recSubtitle(featured) || t(getCategory(featured.category)?.title ?? "") : "";
 
   const onPlay = () => {
     if (!featured) return;
@@ -70,7 +71,7 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
   return (
     <section aria-labelledby="hero-title" className="full-bleed relative isolate -mt-8 sm:-mt-10">
       {/* الصورة: فوق بعرض الشاشة على الموبايل، وعلى الشمال من حرف الشاشة في الديسكتوب */}
-      <div className="relative -z-10 h-[360px] w-full sm:h-[440px] lg:absolute lg:inset-y-0 lg:left-0 lg:-top-24 lg:h-auto lg:w-[46%] lg:max-w-[700px]">
+      <div className="relative -z-10 h-[360px] w-full sm:h-[440px] lg:absolute lg:inset-y-0 lg:end-0 lg:-top-24 lg:h-auto lg:w-[46%] lg:max-w-[700px]">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -90,18 +91,29 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
         <div className="-mt-28 flex flex-col gap-5 sm:-mt-32 lg:ms-0 lg:mt-0 lg:min-h-[640px] lg:w-[52%] lg:max-w-[660px] lg:justify-center lg:py-12">
           <p className="rise flex items-center gap-3.5 text-[15px] font-semibold text-gold sm:text-base">
             <span aria-hidden className="h-px w-10 shrink-0 bg-gold/60 sm:w-12" />
-            إمام وخطيب المسجد الحرام
+            
+            {t("إمام وخطيب المسجد الحرام")}
           </p>
 
+          {en ? (
+            <h1 id="hero-title" className="rise font-display text-[2.7rem] font-bold leading-[1.05] text-emerald dark:text-[#F6F1E6] sm:text-[3.8rem] lg:text-[4.6rem]" style={delay(80)}>
+              Sheikh Yasser
+              <br />
+              Al-Dosari
+            </h1>
+          ) : (
           <h1 id="hero-title" className="rise flex items-end gap-3 sm:gap-4" style={delay(80)}>
             <span className="shrink-0 pb-[0.14em] font-ruqaa text-[2.6rem] font-bold leading-none text-emerald dark:text-[#F6F1E6] sm:text-[3.6rem] lg:text-[4.6rem]">
-              الشيخ
+              
+              {t("الشيخ")}
             </span>
-            <Logo label="ياسر الدوسري" className="w-[250px] min-w-0 sm:w-[360px] lg:w-[460px]" />
+            <Logo label={t("ياسر الدوسري")} className="w-[250px] min-w-0 sm:w-[360px] lg:w-[460px]" />
           </h1>
+          )}
 
           <p className="rise max-w-[540px] text-base leading-[1.9] text-muted sm:text-lg" style={delay(140)}>
-            تلاواته في صلوات الفروض والتراويح بالمسجد الحرام، والمصحف المسجّل، وخطبه ومحاضراته، في مكان واحد.
+            
+            {t("تلاواته في صلوات الفروض والتراويح بالمسجد الحرام، والمصحف المسجّل، وخطبه ومحاضراته، في مكان واحد.")}
           </p>
 
           {/* تلاوة اليوم: الكارت الوحيد الغامق في الهيرو، وأول حاجة ممكن الزائر يعملها */}
@@ -116,13 +128,13 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
                   type="button"
                   onClick={onPlay}
                   disabled={!isPlayable(featured)}
-                  aria-label={`${playingNow ? "إيقاف" : "تشغيل"} ${title}`}
+                  aria-label={`${playingNow ? t("إيقاف") : t("تشغيل")} ${title}`}
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#CDAA62] text-[#1A1408] transition-colors hover:bg-[#E7CD94] disabled:opacity-40 sm:h-16 sm:w-16"
                 >
                   {playingNow ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
                 </button>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[13px] font-semibold text-[#E7CD94]">{playingNow ? "يعمل الآن" : label}</span>
+                  <span className="text-[13px] font-semibold text-[#E7CD94]">{playingNow ? t("يعمل الآن") : label}</span>
                   <Link
                     href={`/${featured.category}/${featured.id}`}
                     className="truncate font-display text-2xl font-bold leading-snug hover:text-[#E7CD94] sm:text-[28px]"
@@ -133,7 +145,7 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
                 </div>
                 {total > 0 && (
                   <span className="hidden shrink-0 text-[13px] tabular-nums text-[#A9B7AF] sm:block">
-                    {isCurrent ? `${formatDuration(currentTime)} من ${formatDuration(total)}` : formatDuration(total)}
+                    {isCurrent ? t("{a} من {b}", { a: formatDuration(currentTime), b: formatDuration(total) }) : formatDuration(total)}
                   </span>
                 )}
               </div>

@@ -42,6 +42,23 @@ export async function surahText(surah: number): Promise<SurahText> {
   return { basmala, ayahs };
 }
 
+/**
+ * ترجمة معاني الآيات بالإنجليزي (Saheeh International) من alquran.cloud، للنسخة الإنجليزي.
+ * بترجع مصفوفة بترتيب الآيات (الفهرس = رقم الآية - 1)، أو [] لو الخدمة وقعت.
+ */
+export async function surahTranslation(surah: number): Promise<string[]> {
+  try {
+    const res = await fetch(`https://api.alquran.cloud/v1/surah/${surah}/en.sahih`, { next: { revalidate: MONTH } });
+    if (!res.ok) return [];
+    const { data } = (await res.json()) as { data: { ayahs: { numberInSurah: number; text: string }[] } };
+    const out: string[] = [];
+    for (const a of data.ayahs) out[a.numberInSurah - 1] = a.text.trim();
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 export interface SurahInfo {
   n: number;
   name: string;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import { disablePush, enablePush, pushState, type PushState } from "@/lib/push/client";
 
@@ -24,6 +25,7 @@ export function NotificationsButton({
   /** القايمة تفتح لفوق (للزرار اللي في آخر الصفحة زي الفوتر) */
   up?: boolean;
 }) {
+  const { t } = useL();
   const [state, setState] = useState<PushState | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -46,7 +48,7 @@ export function NotificationsButton({
     try {
       setState(await fn());
     } catch {
-      setError("تعذّر تغيير الإعداد الآن. حاول مرة أخرى.");
+      setError(t("تعذّر تغيير الإعداد الآن. حاول مرة أخرى."));
     } finally {
       setBusy(false);
     }
@@ -58,14 +60,14 @@ export function NotificationsButton({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        aria-label={label ? undefined : state === "on" ? "الإشعارات مفعّلة" : "الإشعارات"}
+        aria-label={label ? undefined : state === "on" ? t("الإشعارات مفعّلة") : t("الإشعارات")}
         className={`relative ${className}`}
       >
         <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill={state === "on" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
         </svg>
-        {label && <span>{state === "on" ? "الإشعارات مفعّلة" : label}</span>}
+        {label && <span>{state === "on" ? t("الإشعارات مفعّلة") : label}</span>}
       </button>
 
       {open && (
@@ -76,32 +78,34 @@ export function NotificationsButton({
               : `absolute ${up ? "bottom-full mb-2" : "top-full mt-2"} w-72 max-w-[calc(100vw-2rem)] ${align === "start" ? "start-0" : "end-0"}`
           }`}
         >
-          <p className="font-semibold text-gold-soft">الإشعارات</p>
+          <p className="font-semibold text-gold-soft">{t("الإشعارات")}</p>
           {(state === "off" || state === "on") && (
             <p className="leading-6 text-text">
-              بيوصلك إشعار بكل جديد في الموقع: التلاوات الجديدة، وبداية صلاة الشيخ في الحرم مع رابط البث، وأي تحديث.
+              
+              {t("بيوصلك إشعار بكل جديد في الموقع: التلاوات الجديدة، وبداية صلاة الشيخ في الحرم مع رابط البث، وأي تحديث.")}
             </p>
           )}
-          {state === "unsupported" && <p className="leading-6 text-muted">متصفحك لا يدعم الإشعارات.</p>}
+          {state === "unsupported" && <p className="leading-6 text-muted">{t("متصفحك لا يدعم الإشعارات.")}</p>}
           {state === "needs-install" && (
             <p className="leading-6 text-muted">
-              على الآيفون، تعمل الإشعارات بعد تثبيت الموقع: اضغط زر المشاركة، ثم «إضافة إلى الشاشة الرئيسية»، وافتح الموقع من الأيقونة الجديدة.
+              
+              {t("على الآيفون، تعمل الإشعارات بعد تثبيت الموقع: اضغط زر المشاركة، ثم «إضافة إلى الشاشة الرئيسية»، وافتح الموقع من الأيقونة الجديدة.")}
             </p>
           )}
-          {state === "denied" && <p className="leading-6 text-muted">الإشعارات محظورة لهذا الموقع من إعدادات المتصفح. فعّلها من الإعدادات ثم عُد إلى هنا.</p>}
+          {state === "denied" && <p className="leading-6 text-muted">{t("الإشعارات محظورة لهذا الموقع من إعدادات المتصفح. فعّلها من الإعدادات ثم عُد إلى هنا.")}</p>}
           {state === "off" && (
             <>
-              <p className="leading-6 text-muted">بيوصلك الإشعار حتى والموقع مقفول.</p>
+              <p className="leading-6 text-muted">{t("بيوصلك الإشعار حتى والموقع مقفول.")}</p>
               <button type="button" disabled={busy} onClick={() => run(enablePush)} className="min-h-11 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50">
-                {busy ? "جارٍ التفعيل…" : "فعّل الإشعارات"}
+                {busy ? t("جارٍ التفعيل…") : t("فعّل الإشعارات")}
               </button>
             </>
           )}
           {state === "on" && (
             <>
-              <p className="leading-6">✓ الإشعارات مفعّلة على هذا الجهاز.</p>
+              <p className="leading-6">{t("✓ الإشعارات مفعّلة على هذا الجهاز.")}</p>
               <button type="button" disabled={busy} onClick={() => run(disablePush)} className="min-h-11 rounded-full border border-line-strong text-muted hover:text-text disabled:opacity-50">
-                {busy ? "جارٍ الإيقاف…" : "إيقاف الإشعارات"}
+                {busy ? t("جارٍ الإيقاف…") : t("إيقاف الإشعارات")}
               </button>
             </>
           )}

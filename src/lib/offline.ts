@@ -103,5 +103,7 @@ export function useOffline() {
   return { items, isSaved, totalSize: items.reduce((s, x) => s + x.size, 0) };
 }
 
-export const formatSize = (bytes: number) =>
-  bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} جيجا` : `${Math.max(1, Math.round(bytes / 1024 ** 2))} ميجا`;
+export const formatSize = (bytes: number, lang: "ar" | "en" = "ar") =>
+  bytes >= 1024 ** 3
+    ? `${(bytes / 1024 ** 3).toFixed(1)} ${lang === "en" ? "GB" : "جيجا"}`
+    : `${Math.max(1, Math.round(bytes / 1024 ** 2))} ${lang === "en" ? "MB" : "ميجا"}`;

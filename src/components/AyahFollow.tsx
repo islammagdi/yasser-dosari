@@ -1,9 +1,9 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Recording } from "@/types";
 import type { Ayah, AyahTiming } from "@/lib/api/quranText";
-import { toArabicDigits } from "@/lib/format";
 import { usePlayer } from "./PlayerProvider";
 
 const selectClass = "min-h-11 rounded-xl border border-fg/10 bg-surface px-3 text-text";
@@ -27,6 +27,7 @@ export function AyahFollow({
   initialFrom?: number;
   initialTo?: number;
 }) {
+  const { t, toArabicDigits } = useL();
   const p = usePlayer();
   const [follow, setFollow] = useState(true);
   const refs = useRef(new Map<number, HTMLElement>());
@@ -131,53 +132,64 @@ export function AyahFollow({
     <section id="ayahs" aria-labelledby="ayahs-title" className="glass-card flex scroll-mt-24 flex-col gap-6 rounded-3xl p-5 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="ayahs-title" className="font-display text-2xl font-bold text-gold-soft">
-          نص السورة
+          
+          {t("نص السورة")}
         </h2>
         {hasTimings && (
           <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-muted">
             <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="h-5 w-5 accent-[#CDAA62]" />
-            تتبّع الآية تلقائيًا
+            
+            {t("تتبّع الآية تلقائيًا")}
           </label>
         )}
       </div>
 
       {timed.length > 0 && (
         <div className="flex flex-col gap-3 rounded-2xl border border-fg/10 p-4">
-          <span className="text-sm font-semibold text-gold-soft">تكرار للحفظ</span>
+          <span className="text-sm font-semibold text-gold-soft">{t("تكرار للحفظ")}</span>
           {repeat ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm" aria-live="polite">
-                بيكرّر {from === to ? `الآية ${toArabicDigits(from)}` : `من الآية ${toArabicDigits(from)} إلى ${toArabicDigits(to)}`} · المرة{" "}
-                {toArabicDigits(repeat.round)}
-                {times ? ` من ${toArabicDigits(times)}` : ""}
+                
+                {t("بيكرّر")}{" "}
+                {from === to
+                  ? t("الآية {n}", { n: toArabicDigits(from) })
+                  : t("من الآية {a} إلى {b}", { a: toArabicDigits(from), b: toArabicDigits(to) })}{" "}
+                {t("· المرة")} {toArabicDigits(repeat.round)}
+                {times ? t(" من {n}", { n: toArabicDigits(times) }) : ""}
               </span>
               <button type="button" onClick={stopRepeat} className="min-h-11 rounded-full border border-gold/40 px-5 text-sm text-gold-soft transition-colors hover:bg-gold/10">
-                إيقاف التكرار
+                
+                {t("إيقاف التكرار")}
               </button>
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label className="flex items-center gap-2">
-                من الآية
+                
+                {t("من الآية")}
                 <select value={from} onChange={(e) => { const v = Number(e.target.value); setFrom(v); if (to < v) setTo(v); }} className={selectClass}>
                   {timed.map((t) => <option key={t.ayah} value={t.ayah}>{toArabicDigits(t.ayah)}</option>)}
                 </select>
               </label>
               <label className="flex items-center gap-2">
-                إلى
+                
+                {t("إلى")}
                 <select value={to} onChange={(e) => setTo(Number(e.target.value))} className={selectClass}>
                   {timed.filter((t) => t.ayah >= from).map((t) => <option key={t.ayah} value={t.ayah}>{toArabicDigits(t.ayah)}</option>)}
                 </select>
               </label>
               <label className="flex items-center gap-2">
-                عدد المرات
+                
+                {t("عدد المرات")}
                 <select value={times} onChange={(e) => setTimes(Number(e.target.value))} className={selectClass}>
                   {[2, 3, 5, 7, 10, 20].map((n) => <option key={n} value={n}>{toArabicDigits(n)}</option>)}
-                  <option value={0}>بلا توقف</option>
+                  <option value={0}>{t("بلا توقف")}</option>
                 </select>
               </label>
               <button type="button" onClick={startRepeat} className="min-h-11 rounded-full bg-accent px-5 font-semibold text-accent-ink transition-opacity hover:opacity-90 sm:ms-auto">
-                ابدأ التكرار
+                
+                {t("ابدأ التكرار")}
               </button>
             </div>
           )}
@@ -185,19 +197,19 @@ export function AyahFollow({
       )}
 
       {basmala && (
-        <p ref={setRef(0)} className={`text-center font-quran text-2xl leading-[2.2] sm:text-3xl ${active === 0 ? "text-gold-soft" : ""}`}>
+        <p dir="rtl" lang="ar" ref={setRef(0)} className={`text-center font-quran text-2xl leading-[2.2] sm:text-3xl ${active === 0 ? "text-gold-soft" : ""}`}>
           {BASMALA}
         </p>
       )}
 
-      <p className="text-justify font-quran text-2xl leading-[2.4] sm:text-[1.9rem]">
+      <p dir="rtl" lang="ar" className="text-justify font-quran text-2xl leading-[2.4] sm:text-[1.9rem]">
         {ayahs.map((a) => (
           <span
             key={a.n}
             ref={setRef(a.n)}
             role={hasTimings ? "button" : undefined}
             tabIndex={hasTimings ? 0 : undefined}
-            aria-label={hasTimings ? `انتقل للآية ${toArabicDigits(a.n)}` : undefined}
+            aria-label={hasTimings ? t("انتقل للآية {n}", { n: toArabicDigits(a.n) }) : undefined}
             onClick={hasTimings ? () => jump(a.n) : undefined}
             onKeyDown={hasTimings ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), jump(a.n)) : undefined}
             className={ayahClass(a.n)}
@@ -208,8 +220,9 @@ export function AyahFollow({
       </p>
 
       <p className="text-xs text-muted">
-        النص بالرسم العثماني من alquran.cloud، وتوقيت الآيات من MP3Quran.
-        {hasTimings ? " اضغط على أي آية للانتقال إليها." : ""}
+        
+        {t("النص بالرسم العثماني من alquran.cloud، وتوقيت الآيات من MP3Quran.")}
+        {hasTimings ? t(" اضغط على أي آية للانتقال إليها.") : ""}
       </p>
     </section>
   );

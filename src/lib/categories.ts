@@ -1,4 +1,5 @@
 import type { Category, LectureType, Prayer } from "@/types";
+import type { Lang } from "@/lib/i18n/config";
 
 export interface CategoryInfo {
   slug: Category;
@@ -70,9 +71,26 @@ export const HIJRI_MONTHS = [
   "ذو الحجة",
 ] as const;
 
-export function hijriMonthName(month: number): string {
-  return HIJRI_MONTHS[month - 1] ?? "";
+export const HIJRI_MONTHS_EN = [
+  "Muharram",
+  "Safar",
+  "Rabi al-Awwal",
+  "Rabi al-Thani",
+  "Jumada al-Ula",
+  "Jumada al-Akhirah",
+  "Rajab",
+  "Shaban",
+  "Ramadan",
+  "Shawwal",
+  "Dhu al-Qadah",
+  "Dhu al-Hijjah",
+] as const;
+
+export function hijriMonthName(month: number, lang: Lang = "ar"): string {
+  return (lang === "en" ? HIJRI_MONTHS_EN : HIJRI_MONTHS)[month - 1] ?? "";
 }
+
+export const PRAYER_LABELS_EN: Record<Prayer, string> = { fajr: "Fajr", maghrib: "Maghrib", isha: "Isha" };
 
 /** غلاف افتراضي لكل قسم (اختياري) — بيظهر لأي تسجيل في القسم ملوش imageUrl خاص بيه */
 export const CATEGORY_COVERS: Partial<Record<Category, string>> = {

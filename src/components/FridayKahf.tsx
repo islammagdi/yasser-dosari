@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useState } from "react";
 import type { Recording } from "@/types";
 import { usePlayer } from "./PlayerProvider";
@@ -14,6 +15,7 @@ function isFridayTime(d: Date): boolean {
 }
 
 export function FridayKahf({ kahf }: { kahf: Recording | null }) {
+  const { t } = useL();
   const p = usePlayer();
   // بنقرر بعد ما الصفحة تفتح في المتصفح، عشان اليوم يتحسب بتوقيت الزائر مش السيرفر
   const [show, setShow] = useState(false);
@@ -37,21 +39,22 @@ export function FridayKahf({ kahf }: { kahf: Recording | null }) {
         )}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="text-sm font-medium text-gold">يوم الجمعة</p>
+        <p className="text-sm font-medium text-gold">{t("يوم الجمعة")}</p>
         <h2 id="kahf-title" className="font-display text-2xl font-bold sm:text-3xl">
-          سورة الكهف
+          
+          {t("سورة الكهف")}
         </h2>
-        <p className="truncate text-sm text-muted">بصوت الشيخ ياسر الدوسري</p>
+        <p className="truncate text-sm text-muted">{t("بصوت الشيخ ياسر الدوسري")}</p>
       </div>
       <button
         type="button"
         onClick={() => (isCurrent ? p.toggle() : p.playQueue([kahf], 0))}
-        aria-label={playingNow ? "إيقاف سورة الكهف" : "تشغيل سورة الكهف"}
+        aria-label={playingNow ? t("إيقاف سورة الكهف") : t("تشغيل سورة الكهف")}
         className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink shadow-glow transition-colors hover:bg-accent-hover"
       >
         {playingNow ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
       </button>
-      <Link href={`/${kahf.category}/${kahf.id}`} aria-label="صفحة سورة الكهف" className="absolute inset-0 rounded-3xl" />
+      <Link href={`/${kahf.category}/${kahf.id}`} aria-label={t("صفحة سورة الكهف")} className="absolute inset-0 rounded-3xl" />
     </section>
   );
 }

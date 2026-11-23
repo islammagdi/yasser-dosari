@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useMemo, useState } from "react";
 import type { LectureType, Recording } from "@/types";
-import { LECTURE_TYPE_LABELS, hijriMonthName } from "@/lib/categories";
-import { normalizeArabic, toArabicDigits } from "@/lib/format";
+import { LECTURE_TYPE_LABELS, } from "@/lib/categories";
+import { normalizeArabic, } from "@/lib/format";
 import { matchesSearch, searchTerms } from "@/lib/search";
 import { useFavorites } from "@/lib/useFavorites";
 import { useKhatma } from "@/lib/useKhatma";
@@ -106,6 +107,7 @@ export function RecordingList({
   mobileRows = false,
   yearSource,
 }: Props) {
+  const { t, toArabicDigits, hijriMonthName } = useL();
   const { current, isPlaying, playQueue } = usePlayer();
   const fav = useFavorites();
   const khatma = useKhatma();
@@ -113,7 +115,7 @@ export function RecordingList({
   const [type, setType] = useState<TypeValue>("all");
   const [year, setYear] = useState<number | null>(null);
   const [version, setVersion] = useState<string | null>(null);
-  const versionOf = (r: Recording) => r.versionLabel ?? "المصحف المرتل";
+  const versionOf = (r: Recording) => r.versionLabel ?? "المصحف المرتل"; // بيتترجم وقت العرض
   const versions = useMemo(() => (versionTabs ? Array.from(new Set(items.map(versionOf))) : []), [items, versionTabs]);
   const activeVersion = versions.length > 1 ? version ?? versions[0] : null;
 
@@ -204,8 +206,8 @@ export function RecordingList({
     // الشهور: الأحدث الأول (ذو الحجة فوق ومحرم آخر حاجة)، والشهر غير المحدد في الآخر خالص
     return Array.from(byMonth.entries())
       .sort(([a], [b]) => (a === 0 ? 1 : b === 0 ? -1 : b - a))
-      .map(([m, recs]) => ({ key: `m-${m}`, title: hijriMonthName(m) || "شهر غير محدد", items: recs }));
-}, [source, searchingAll, query, type, activeYear, activeVersion, numbered, newest, groupByMonth]);
+      .map(([m, recs]) => ({ key: `m-${m}`, title: hijriMonthName(m) || t("شهر غير محدد"), items: recs }));
+}, [source, searchingAll, query, type, activeYear, activeVersion, numbered, newest, groupByMonth, hijriMonthName, t]);
 
   // قايمة التشغيل = كل اللي ظاهر بنفس ترتيب العرض
   const queue = useMemo(() => groups.flatMap((g) => g.items), [groups]);
@@ -216,28 +218,28 @@ export function RecordingList({
     <div className="flex min-w-0 flex-wrap gap-3">
       {yearTabs && years.length > 0 && activeYear != null && (
         <Segmented
-          label="السنة الهجرية"
+          label={t("السنة الهجرية")}
           value={activeYear}
           onChange={setYear}
-          options={years.map((y) => ({ value: y, label: `${toArabicDigits(y)} هـ` }))}
+          options={years.map((y) => ({ value: y, label: t("{y} هـ", { y: toArabicDigits(y) }) }))}
         />
       )}
-      {typeFilter && <Segmented label="نوع المحاضرة" value={type} onChange={setType} options={TYPE_OPTIONS} />}
+      {typeFilter && <Segmented label={t("نوع المحاضرة")} value={type} onChange={setType} options={TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.label) }))} />}
       {activeVersion != null && (
-        <Segmented label="النسخة" value={activeVersion} onChange={setVersion} options={versions.map((v) => ({ value: v, label: v }))} />
+        <Segmented label={t("النسخة")} value={activeVersion} onChange={setVersion} options={versions.map((v) => ({ value: v, label: t(v) }))} />
       )}
     </div>
   );
 
   const search = searchable && (
     <label className="relative w-full sm:w-72">
-      <span className="sr-only">ابحث في القسم</span>
-      <SearchIcon className="pointer-events-none absolute right-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted" />
+      <span className="sr-only">{t("ابحث في القسم")}</span>
+      <SearchIcon className="pointer-events-none absolute start-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted" />
       <input
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="ابحث بالسورة أو العنوان"
+        placeholder={t("ابحث بالسورة أو العنوان")}
         className="glass-card min-h-12 w-full rounded-full pe-5 ps-11 text-base text-text transition-colors placeholder:text-muted/70 focus:border-gold/60"
       />
     </label>
@@ -249,7 +251,7 @@ export function RecordingList({
         <>
           {/* العنوان والبحث في صف واحد، والفلاتر تحتهم */}
           <div className="flex flex-wrap items-center justify-between gap-4">
-<h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">{title}</h1>
+<h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">{t(title)}</h1>
             {search}
           </div>
           {filters}
@@ -265,17 +267,17 @@ export function RecordingList({
       )}
       {queue.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-line-strong px-6 py-12 text-center text-muted">
-{loadingYear ? "جارٍ التحميل…" : filtered ? "لا توجد نتائج. جرّب كلمة أخرى أو غيّر التصفية." : "لا توجد تسجيلات هنا بعد."}
+{loadingYear ? t("جارٍ التحميل…") : filtered ? t("لا توجد نتائج. جرّب كلمة أخرى أو غيّر التصفية.") : t("لا توجد تسجيلات هنا بعد.")}
         </p>
       ) : (
         <div className="flex flex-col gap-10">
-          {filtered && <p className="-mb-6 px-1 text-sm text-muted">عدد النتائج: {toArabicDigits(queue.length)}</p>}
+          {filtered && <p className="-mb-6 px-1 text-sm text-muted">{t("عدد النتائج:")} {toArabicDigits(queue.length)}</p>}
           {groups.map((g, gi) => (
             <section key={g.key} aria-label={g.title} className="flex flex-col gap-4">
               {g.title && (
                 <div className="flex items-center gap-4 px-1">
                   <h3 className="font-display text-2xl font-bold text-gold-soft">{g.title}</h3>
-                  <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-gold/30 to-transparent" />
+                  <span aria-hidden className="h-px flex-1 bg-gradient-to-l ltr:bg-gradient-to-r from-gold/30 to-transparent" />
                 </div>
               )}
               <ul className={`grid sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 ${mobileRows ? "grid-cols-1 gap-1" : "grid-cols-2 gap-2"}`}>
@@ -312,7 +314,7 @@ export function RecordingList({
                       <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-gold">
                         {more.label}
                         <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-                          <path d="M19 12H5M11 18l-6-6 6-6" />
+                          <path className="flip-ltr" d="M19 12H5M11 18l-6-6 6-6" />
                         </svg>
                       </span>
                     </Link>

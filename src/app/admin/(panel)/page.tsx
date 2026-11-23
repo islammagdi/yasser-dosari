@@ -14,6 +14,10 @@ export default async function AdminHome() {
         </Link>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/admin/stats" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
+          <span className="font-display text-2xl font-bold text-gold-soft">الإحصائيات</span>
+          <span className="text-sm text-muted">عدد الزوار والمتواجدين الآن، وأكتر التلاوات والمقتطفات، والدول ومصادر الزيارات</span>
+        </Link>
         <Link href="/admin/status" className="glass-card flex flex-col gap-1 rounded-3xl p-5 hover:border-gold/40">
           <span className="font-display text-2xl font-bold text-gold-soft">حالة الموقع</span>
           <span className="text-sm text-muted">فحص سريع لكل أجزاء الموقع: يوتيوب، والتخزين، والصوتيات، والجدول، والإشعارات</span>

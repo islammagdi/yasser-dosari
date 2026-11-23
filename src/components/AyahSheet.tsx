@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import { toArabicDigits as arDigits } from "@/lib/format";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Ayah } from "@/lib/api/quranText";
 import { renderAyahImage, selectionText, wordsOf, type ImageFormat } from "@/lib/ayahImage";
-import { toArabicDigits } from "@/lib/format";
-import { surahName } from "@/lib/quran";
 import { lockScroll } from "@/lib/scrollLock";
 
 /** التفسير بيتحمّل مرة لكل سورة ويفضل في الذاكرة طول الزيارة */
@@ -33,17 +33,21 @@ interface Props {
   bookmarked: boolean;
   onToggleBookmark: () => void;
   onClose: () => void;
+  /** ترجمة معنى الآية بالإنجليزي (النسخة الإنجليزي بس) */
+  meaning?: string;
 }
 
 /** قايمة الآية: التفسير الميسر، العلامة، النسخ، صورة للمشاركة، والاستماع مع التكرار */
-export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookmark, onClose }: Props) {
+export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookmark, onClose, meaning }: Props) {
+  const { t, toArabicDigits, surahName, dir } = useL();
   const [view, setView] = useState<"main" | "image">("main");
   const [tafsir, setTafsir] = useState<string | null | "error">(null);
   const [copied, setCopied] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const ref = `سورة ${surahName(surah)} · الآية ${toArabicDigits(ayah)}`;
+  const ref = t("سورة {s} · الآية {n}", { s: surahName(surah), n: toArabicDigits(ayah) });
 
   useEffect(() => {
+    if (meaning) return; // النسخة الإنجليزي بتعرض الترجمة بدل التفسير
     let alive = true;
     setTafsir(null);
     loadTafsir(surah)
@@ -52,7 +56,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
     return () => {
       alive = false;
     };
-  }, [surah, ayah]);
+  }, [surah, ayah, meaning]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -67,7 +71,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`${text} ﴿${toArabicDigits(ayah)}﴾\n[${ref}]`);
+      await navigator.clipboard.writeText(`${text} ﴿${arDigits(ayah)}﴾${meaning ? `\n${meaning}` : ""}\n[${ref}]`);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -79,8 +83,8 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
     "flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl border border-fg/10 px-2 text-xs transition-colors hover:border-gold/40 hover:bg-fg/5";
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center" dir="rtl">
-      <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center" dir={dir}>
+      <button type="button" aria-label={t("إغلاق")} tabIndex={-1} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         role="dialog"
         aria-modal="true"
@@ -93,7 +97,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
             ref={closeRef}
             type="button"
             onClick={onClose}
-            aria-label="إغلاق"
+            aria-label={t("إغلاق")}
             className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-muted transition-colors hover:bg-fg/5 hover:text-text"
           >
             ✕
@@ -102,36 +106,42 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
 
         {view === "main" ? (
           <>
-            <p className="font-quran text-2xl leading-[2.1]">
-              {text} <span className="text-gold/80">﴿{toArabicDigits(ayah)}﴾</span>
+            <p dir="rtl" lang="ar" className="font-quran text-2xl leading-[2.1]">
+              {text} <span className="text-gold/80">﴿{arDigits(ayah)}﴾</span>
             </p>
+            {meaning && <p className="leading-7 text-text/90">{meaning}</p>}
 
             <div className="grid grid-cols-4 gap-2">
               <button type="button" onClick={onToggleBookmark} aria-pressed={bookmarked} className={`${action} ${bookmarked ? "border-gold/60 text-gold-soft" : ""}`}>
                 <span aria-hidden className="text-lg">{bookmarked ? "★" : "☆"}</span>
-                {bookmarked ? "شيل العلامة" : "علامة هنا"}
+                {bookmarked ? t("شيل العلامة") : t("علامة هنا")}
               </button>
               <button type="button" onClick={copy} className={action}>
                 <span aria-hidden className="text-lg">⧉</span>
-                {copied ? "اتنسخت" : "نسخ"}
+                {copied ? t("اتنسخت") : t("نسخ")}
               </button>
               <button type="button" onClick={() => setView("image")} className={action}>
                 <span aria-hidden className="text-lg">▣</span>
-                صورة
+                
+                {t("صورة")}
               </button>
               <Link href={`/mushaf/mushaf-${String(surah).padStart(3, "0")}?from=${ayah}&to=${ayah}#ayahs`} className={action}>
                 <span aria-hidden className="text-lg">⟲</span>
-                استمع وكرّر
+                
+                {t("استمع وكرّر")}
               </Link>
             </div>
 
-            <section aria-label="التفسير الميسر" className="flex flex-col gap-2 border-t border-fg/10 pt-4">
-              <h3 className="text-sm font-semibold text-gold-soft">التفسير الميسر</h3>
-              {tafsir === null && <p className="text-sm text-muted">جارٍ التحميل…</p>}
-              {tafsir === "error" && <p className="text-sm text-muted">تعذّر تحميل التفسير الآن.</p>}
+            {!meaning && (
+            <section aria-label={t("التفسير الميسر")} className="flex flex-col gap-2 border-t border-fg/10 pt-4">
+              <h3 className="text-sm font-semibold text-gold-soft">{t("التفسير الميسر")}</h3>
+              {tafsir === null && <p className="text-sm text-muted">{t("جارٍ التحميل…")}</p>}
+              {tafsir === "error" && <p className="text-sm text-muted">{t("تعذّر تحميل التفسير الآن.")}</p>}
               {tafsir && tafsir !== "error" && <p className="leading-loose text-text/90">{tafsir}</p>}
-              <p className="text-xs text-muted">التفسير الميسر، مجمع الملك فهد لطباعة المصحف الشريف.</p>
+              <p className="text-xs text-muted">{t("التفسير الميسر، مجمع الملك فهد لطباعة المصحف الشريف.")}</p>
             </section>
+            )}
+            {meaning && <p className="border-t border-fg/10 pt-3 text-xs text-muted">Translation: Saheeh International</p>}
           </>
         ) : (
           <AyahImagePanel surah={surah} ayah={ayah} ayahs={ayahs} onBack={() => setView("main")} />
@@ -146,6 +156,7 @@ export function AyahSheet({ surah, ayah, text, ayahs, bookmarked, onToggleBookma
 const MAX_AYAHS = 10;
 
 function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: number; ayahs: Ayah[]; onBack: () => void }) {
+  const { t, toArabicDigits } = useL();
   const [format, setFormat] = useState<ImageFormat>("square");
   const [from, setFrom] = useState(ayah);
   const [to, setTo] = useState(ayah);
@@ -237,14 +248,15 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-1 rounded-full border border-fg/10 p-1">
-        {tab("square", "مربع (بوست)")}
-        {tab("story", "طولي (ستوري)")}
+        {tab("square", t("مربع (بوست)"))}
+        {tab("story", t("طولي (ستوري)"))}
       </div>
 
       {/* الآيات: من … إلى … */}
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <label className="flex items-center gap-2">
-          من الآية
+          
+          {t("من الآية")}
           <select value={from} onChange={(e) => changeFrom(Number(e.target.value))} className={select}>
             {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>
@@ -254,7 +266,8 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
           </select>
         </label>
         <label className="flex items-center gap-2">
-          إلى
+          
+          {t("إلى")}
           <select value={to} onChange={(e) => changeTo(Number(e.target.value))} className={select}>
             {Array.from({ length: Math.min(MAX_AYAHS, total - from + 1) }, (_, i) => from + i).map((n) => (
               <option key={n} value={n}>
@@ -268,14 +281,15 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
       {/* جزء من الآيات: اضغط أول كلمة وآخر كلمة */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2 text-xs text-muted">
-          <span>{pick?.end === null ? "اضغط آخر كلمة" : "لجزء من الآية: اضغط أول كلمة ثم آخر كلمة"}</span>
+          <span>{pick?.end === null ? t("اضغط آخر كلمة") : t("لجزء من الآية: اضغط أول كلمة ثم آخر كلمة")}</span>
           {pick && (
             <button type="button" onClick={() => setPick(null)} className="min-h-9 px-2 text-gold-soft hover:underline">
-              الكل
+              
+              {t("الكل")}
             </button>
           )}
         </div>
-        <p className="max-h-40 overflow-y-auto rounded-2xl border border-fg/10 p-3 font-quran text-xl leading-[2.2]">
+        <p dir="rtl" lang="ar" className="max-h-40 overflow-y-auto rounded-2xl border border-fg/10 p-3 font-quran text-xl leading-[2.2]">
           {words.map((w, i) => {
             const on = i >= lo && i <= hi;
             return (
@@ -299,22 +313,23 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
 
       <div className="flex min-h-[240px] items-center justify-center rounded-2xl bg-black/30 p-3">
         {failed ? (
-          <p className="text-sm text-muted">تعذّر تجهيز الصورة.</p>
+          <p className="text-sm text-muted">{t("تعذّر تجهيز الصورة.")}</p>
         ) : blob && url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={sel?.ref ?? ""} className={`rounded-xl ${format === "story" ? "max-h-[52vh]" : "max-h-[44vh]"} w-auto`} />
         ) : (
-          <p className="text-sm text-muted">جارٍ تجهيز الصورة…</p>
+          <p className="text-sm text-muted">{t("جارٍ تجهيز الصورة…")}</p>
         )}
       </div>
       {truncated && (
-        <p className="text-sm text-gold-soft">النص أطول من مساحة الصورة، فاتقص آخره. قلّل عدد الآيات أو اختر جزءًا منها.</p>
+        <p className="text-sm text-gold-soft">{t("النص أطول من مساحة الصورة، فاتقص آخره. قلّل عدد الآيات أو اختر جزءًا منها.")}</p>
       )}
 
       <div className="flex gap-2">
         {canShare && (
           <button type="button" onClick={share} className="min-h-12 flex-1 rounded-full bg-accent font-semibold text-accent-ink transition-opacity hover:opacity-90">
-            مشاركة
+            
+            {t("مشاركة")}
           </button>
         )}
         <button
@@ -325,11 +340,13 @@ function AyahImagePanel({ surah, ayah, ayahs, onBack }: { surah: number; ayah: n
             canShare ? "border border-gold/40 text-gold-soft hover:bg-gold/10" : "bg-accent text-accent-ink hover:opacity-90"
           }`}
         >
-          تنزيل
+          
+          {t("تنزيل")}
         </button>
       </div>
       <button type="button" onClick={onBack} className="min-h-11 text-sm text-muted hover:text-text">
-        رجوع
+        
+        {t("رجوع")}
       </button>
     </div>
   );

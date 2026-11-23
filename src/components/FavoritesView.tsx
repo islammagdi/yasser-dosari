@@ -1,7 +1,8 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import type { ClipCard } from "./ClipOfDay";
-import Link from "next/link";
+import Link from "@/lib/i18n/nav";
 import { useMemo } from "react";
 import type { Recording } from "@/types";
 import { useFavorites } from "@/lib/useFavorites";
@@ -12,6 +13,7 @@ const titleClass = "font-display text-4xl font-bold leading-tight sm:text-5xl lg
 
 /** بيطابق الـ ids المحفوظة في المتصفح مع التسجيلات، والأحدث إضافة الأول */
 export function FavoritesView({ all, clips = [], title }: { all: Recording[]; clips?: ClipCard[]; title: string }) {
+  const { t } = useL();
   const { ids, ready } = useFavorites();
 
   const items = useMemo(() => {
@@ -34,7 +36,8 @@ export function FavoritesView({ all, clips = [], title }: { all: Recording[]; cl
   const clipsSection = savedClips.length > 0 && (
     <section aria-labelledby="saved-clips-title" className="flex flex-col gap-3">
       <h2 id="saved-clips-title" className="font-display text-2xl font-bold">
-        مقتطفات محفوظة
+        
+        {t("مقتطفات محفوظة")}
       </h2>
       <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
         {savedClips.map((c) => (
@@ -59,7 +62,8 @@ export function FavoritesView({ all, clips = [], title }: { all: Recording[]; cl
     <div className="flex flex-wrap items-end justify-between gap-3">
       <h1 className={titleClass}>{title}</h1>
       <Link href="/playlists" className="min-h-11 py-2.5 text-[15px] font-semibold text-gold-soft underline-offset-4 hover:underline">
-        قوائم التشغيل
+        
+        {t("قوائم التشغيل")}
       </Link>
     </div>
   );
@@ -72,13 +76,14 @@ export function FavoritesView({ all, clips = [], title }: { all: Recording[]; cl
         {heading}
         <div className="glass-card flex flex-col items-center gap-4 rounded-3xl px-6 py-14 text-center">
           <HeartIcon className="h-10 w-10 text-gold" />
-          <p className="text-lg font-semibold">لم تُضف أي تلاوة إلى المفضلة بعد</p>
-          <p className="max-w-md leading-7 text-muted">اضغط على القلب في أي تلاوة أو في المشغّل، وستجدها هنا.</p>
+          <p className="text-lg font-semibold">{t("لم تُضف أي تلاوة إلى المفضلة بعد")}</p>
+          <p className="max-w-md leading-7 text-muted">{t("اضغط على القلب في أي تلاوة أو في المشغّل، وستجدها هنا.")}</p>
           <Link
             href="/"
             className="mt-2 flex min-h-11 items-center rounded-full bg-accent px-6 font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
           >
-            تصفّح التلاوات
+            
+            {t("تصفّح التلاوات")}
           </Link>
         </div>
       </div>
