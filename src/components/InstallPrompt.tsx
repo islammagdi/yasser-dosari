@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { track } from "@/lib/stats/track";
 
 /**
  * دعوة لتثبيت الموقع على الموبايل:
@@ -100,6 +101,7 @@ export function InstallPrompt() {
     if (!event) return;
     await event.prompt();
     const { outcome } = await event.userChoice;
+    if (outcome === "accepted") track({ type: "install" });
     if (outcome === "accepted") setMode(null);
     else dismiss();
   };

@@ -6,6 +6,7 @@ import { useFavorites } from "@/lib/useFavorites";
 import { usePlayer } from "./PlayerProvider";
 import { HeartIcon } from "./icons";
 import { lockScroll } from "@/lib/scrollLock";
+import { track } from "@/lib/stats/track";
 
 export interface FeedClip {
   id: string;
@@ -184,6 +185,7 @@ function ClipSlide({
     const el = v.current;
     if (!el) return;
     if (active) {
+      track({ type: "clip_view", id: clip.id, title: clip.title });
       el.play().then(() => setPaused(false)).catch(() => setPaused(true));
     } else {
       el.pause();
@@ -242,13 +244,16 @@ function ClipSlide({
         const file = await fetchFile(clip);
         if (navigator.canShare?.({ files: [file] })) {
           await navigator.share({ files: [file], title: clip.title, text });
+          track({ type: "clip_share", id: clip.id });
           return;
         }
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
       }
-      if (navigator.share) await navigator.share({ title: clip.title, text, url: pageUrl() });
-      else {
+      if (navigator.share) {
+        await navigator.share({ title: clip.title, text, url: pageUrl() });
+        track({ type: "clip_share", id: clip.id });
+      } else {
         await navigator.clipboard.writeText(pageUrl());
         flash("اتنسخ الرابط");
       }
@@ -268,6 +273,7 @@ function ClipSlide({
       a.href = url;
       a.download = file.name;
       a.click();
+      track({ type: "clip_download", id: clip.id });
       window.setTimeout(() => URL.revokeObjectURL(url), 5000);
       flash("اتحمّل على جهازك");
     } catch {

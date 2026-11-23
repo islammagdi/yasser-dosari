@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Recording } from "@/types";
 import { canSaveOffline, removeOffline, saveOffline, useOffline } from "@/lib/offline";
+import { track } from "@/lib/stats/track";
 
 /** زرار "حفظ للاستماع بدون إنترنت" في صفحة التلاوة */
 export function SaveOffline({ recording }: { recording: Recording }) {
@@ -20,6 +21,7 @@ export function SaveOffline({ recording }: { recording: Recording }) {
     setProgress(0);
     try {
       await saveOffline(recording, setProgress);
+      track({ type: "save_offline", id: recording.id });
     } catch {
       setError("تعذّر حفظ هذه التلاوة الآن. تأكد من الاتصال وحاول مرة أخرى.");
     } finally {

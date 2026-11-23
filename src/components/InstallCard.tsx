@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { NotificationsButton } from "./NotificationsButton";
+import { track } from "@/lib/stats/track";
 
 interface InstallEvent extends Event {
   prompt: () => Promise<void>;
@@ -49,6 +50,7 @@ export function InstallCard() {
     if (!event) return;
     await event.prompt();
     const { outcome } = await event.userChoice;
+    if (outcome === "accepted") track({ type: "install" });
     if (outcome === "accepted") setMode(null);
   };
 

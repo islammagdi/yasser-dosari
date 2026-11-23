@@ -6,6 +6,7 @@ import type { Recording } from "@/types";
 import { markSurahListened } from "@/lib/useKhatma";
 import { getProgressTime, saveProgress } from "@/lib/useProgress";
 import { playbackUrl } from "@/lib/offline";
+import { track } from "@/lib/stats/track";
 const STORAGE_KEY = "yd-player-v1";
 /** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -161,6 +162,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const retriesRef = useRef(0);
 
   const current = index >= 0 ? queue[index] ?? null : null;
+
+  // الإحصائيات: تشغيل واحد لكل تسجيل في الزيارة (الإيقاف والاستكمال مش بيتحسبوا تاني)
+  const playedRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!isPlaying || !current || playedRef.current.has(current.id)) return;
+    playedRef.current.add(current.id);
+    track({ type: "play", id: current.id, title: current.title });
+  }, [isPlaying, current]);
   const isYouTube = Boolean(current?.youtubeId);
   // لوحة الفيديو: مقفولة يعني الفيديو واقف (يوتيوب مش بيسمح بتشغيل فيديو مستخبي)
   const [videoClosed, setVideoClosed] = useState(true);

@@ -9,6 +9,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { themeInitScript } from "@/components/ThemeToggle";
 import { AdminShortcut } from "@/components/AdminShortcut";
+import { Analytics } from "@/components/Analytics";
 import "./globals.css";
 
 // رابط الموقع الأساسي: مهم عشان صور المشاركة على واتساب تبقى روابط كاملة
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div aria-hidden className="ambient" />
         <RegisterSW />
+        <Analytics />
         <PlayerProvider>
           <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-30 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-ink">
             تخطَّ إلى المحتوى

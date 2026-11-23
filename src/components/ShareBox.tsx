@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatDuration } from "@/lib/format";
 import { usePlayer } from "./PlayerProvider";
+import { track } from "@/lib/stats/track";
 
 /** مشاركة التلاوة: من الموبايل بقايمة المشاركة، أو واتساب، أو نسخ الرابط. ولو بتسمعها، تقدر تشاركها من الدقيقة دي */
 export function ShareBox({ id, title, path }: { id: string; title: string; path: string }) {
@@ -18,6 +19,7 @@ export function ShareBox({ id, title, path }: { id: string; title: string; path:
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url());
+      track({ type: "share", id });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -29,6 +31,7 @@ export function ShareBox({ id, title, path }: { id: string; title: string; path:
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url: url() });
+        track({ type: "share", id });
       } catch {
         /* المستخدم قفل قايمة المشاركة */
       }
@@ -49,7 +52,10 @@ export function ShareBox({ id, title, path }: { id: string; title: string; path:
         </button>
         <button
           type="button"
-          onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url()}`)}`, "_blank", "noopener,noreferrer")}
+          onClick={() => {
+            track({ type: "share", id });
+            window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url()}`)}`, "_blank", "noopener,noreferrer");
+          }}
           className={`${btn} glass-card text-text hover:border-gold/50`}
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor">
