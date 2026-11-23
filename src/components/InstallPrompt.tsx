@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useL } from "@/lib/i18n/client";
+import { usePathname } from "@/lib/i18n/nav";
 import { useEffect, useState } from "react";
 import { track } from "@/lib/stats/track";
 
@@ -46,6 +47,7 @@ function write(key: string, value: string) {
 }
 
 export function InstallPrompt() {
+  const { t } = useL();
   const pathname = usePathname();
   const [mode, setMode] = useState<"android" | "ios" | null>(null);
   const [event, setEvent] = useState<InstallEvent | null>(null);
@@ -108,7 +110,7 @@ export function InstallPrompt() {
 
   return (
     <aside
-      aria-label="تثبيت الموقع"
+      aria-label={t("تثبيت الموقع")}
       className="glass fixed inset-x-3 z-50 mx-auto max-w-md rounded-3xl border border-fg/10 p-4 shadow-float"
       style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
     >
@@ -116,18 +118,21 @@ export function InstallPrompt() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/icon-192.png" alt="" className="h-12 w-12 shrink-0 rounded-xl" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="font-semibold">ثبّت الموقع على جوالك</p>
+          <p className="font-semibold">{t("ثبّت الموقع على جوالك")}</p>
           {mode === "android" ? (
-            <p className="text-sm leading-6 text-muted">يفتح كتطبيق من الشاشة الرئيسية، بضغطة واحدة.</p>
+            <p className="text-sm leading-6 text-muted">{t("يفتح كتطبيق من الشاشة الرئيسية، بضغطة واحدة.")}</p>
           ) : (
             <ol className="flex flex-col gap-1.5 text-sm leading-6 text-muted">
               <li className="flex flex-wrap items-center gap-1.5">
-                ١. اضغط زر المشاركة
+                
+                {t("١. اضغط زر المشاركة")}
                 <ShareIcon />
-                في أسفل المتصفح
+                
+                {t("في أسفل المتصفح")}
               </li>
               <li className="flex flex-wrap items-center gap-1.5">
-                ٢. اختر «إضافة إلى الشاشة الرئيسية»
+                
+                {t("٢. اختر «إضافة إلى الشاشة الرئيسية»")}
                 <AddIcon />
               </li>
             </ol>
@@ -136,7 +141,7 @@ export function InstallPrompt() {
         <button
           type="button"
           onClick={dismiss}
-          aria-label="إغلاق"
+          aria-label={t("إغلاق")}
           className="-me-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted hover:bg-fg/10 hover:text-text"
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -147,10 +152,12 @@ export function InstallPrompt() {
       {mode === "android" && (
         <div className="mt-3 flex gap-2">
           <button type="button" onClick={install} className="min-h-11 flex-1 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover">
-            تثبيت
+            
+            {t("تثبيت")}
           </button>
           <button type="button" onClick={dismiss} className="min-h-11 rounded-full px-4 text-sm text-muted hover:text-text">
-            ليس الآن
+            
+            {t("ليس الآن")}
           </button>
         </div>
       )}
@@ -160,8 +167,9 @@ export function InstallPrompt() {
 
 /** أيقونة المشاركة في سفاري: مربع وسهم لفوق */
 function ShareIcon() {
+  const { t } = useL();
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-fg/10 text-gold-soft" aria-label="زر المشاركة">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-fg/10 text-gold-soft" aria-label={t("زر المشاركة")}>
       <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3v12M8 7l4-4 4 4" />
         <path d="M6 11v9h12v-9" />

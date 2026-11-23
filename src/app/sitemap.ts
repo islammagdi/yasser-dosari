@@ -59,5 +59,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...categoryPages, ...surahListening, ...recordingPages, ...surahPages];
+  // كل صفحة بنسختين: العربي (الأساسي) والإنجليزي تحت /en، ومعاهم روابط اللغتين لجوجل
+  const all = [...staticPages, ...categoryPages, ...surahListening, ...recordingPages, ...surahPages];
+  const en = (url: string) => {
+    const path = url.slice(siteUrl.length) || "/";
+    return `${siteUrl}${path === "/" ? "/en" : `/en${path}`}`;
+  };
+  return all.flatMap((p) => {
+    const languages = { ar: p.url, en: en(p.url) };
+    return [
+      { ...p, alternates: { languages } },
+      { ...p, url: en(p.url), priority: (p.priority ?? 0.5) * 0.8, alternates: { languages } },
+    ];
+  });
 }

@@ -1,8 +1,7 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import type { Recording } from "@/types";
-import { toArabicDigits } from "@/lib/format";
-import { surahName } from "@/lib/quran";
 import { khatmaCountLabel, useKhatma } from "@/lib/useKhatma";
 import { usePlayer } from "./PlayerProvider";
 import { PlayIcon } from "./icons";
@@ -10,6 +9,7 @@ import { ask } from "@/lib/confirm";
 
 /** متابعة الختمة في صفحة المصحف: كام سورة اتسمعت، وزرار "كمّل" */
 export function KhatmaProgress({ items }: { items: Recording[] }) {
+  const { t, toArabicDigits, surahName, en } = useL();
   const k = useKhatma();
   const p = usePlayer();
   if (!k.ready) return null;
@@ -28,18 +28,18 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-baseline justify-between gap-3">
           <p className="font-semibold">
-            {finished ? "أتممت الاستماع للمصحف كاملًا، تقبّل الله منك" : "ختمتك"}
+            {finished ? t("أتممت الاستماع للمصحف كاملًا، تقبّل الله منك") : t("ختمتك")}
           </p>
           <p className="shrink-0 text-sm text-muted">
-            {toArabicDigits(k.count)} من {toArabicDigits(total)} سورة
+            {t("{n} من {total} سورة", { n: toArabicDigits(k.count), total: toArabicDigits(total) })}
           </p>
         </div>
         {k.completed > 0 && (
-          <p className="text-sm text-gold-soft">أتممت حتى الآن {khatmaCountLabel(k.completed, toArabicDigits)} بصوت الشيخ</p>
+          <p className="text-sm text-gold-soft">{t("أتممت حتى الآن {x} بصوت الشيخ", { x: khatmaCountLabel(k.completed, toArabicDigits, en) })}</p>
         )}
         <div
           role="progressbar"
-          aria-label="تقدّم الختمة"
+          aria-label={t("تقدّم الختمة")}
           aria-valuemin={0}
           aria-valuemax={total}
           aria-valuenow={k.count}
@@ -47,7 +47,7 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
         >
           <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${pct}%` }} />
         </div>
-        <p className="text-xs text-muted">السورة بتتحسب لما تسمع ٩٠٪ منها. التقدّم محفوظ على جهازك.</p>
+        <p className="text-xs text-muted">{t("السورة بتتحسب لما تسمع ٩٠٪ منها. التقدّم محفوظ على جهازك.")}</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -60,16 +60,17 @@ export function KhatmaProgress({ items }: { items: Recording[] }) {
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-ink text-accent">
               <PlayIcon className="h-4 w-4" />
             </span>
-            {k.count ? "كمّل" : "ابدأ"} من سورة {surahName(k.nextSurah!)}
+            {k.count ? t("كمّل") : t("ابدأ")}  {t("من سورة")} {surahName(k.nextSurah!)}
           </button>
         )}
         {k.count > 0 && (
           <button
             type="button"
-            onClick={async () => (await ask("تبدأ ختمة جديدة؟ هيتمسح التقدّم الحالي.", { confirm: "ابدأ من جديد", danger: true })) && k.reset()}
+            onClick={async () => (await ask(t("تبدأ ختمة جديدة؟ هيتمسح التقدّم الحالي."), { confirm: t("ابدأ من جديد"), danger: true })) && k.reset()}
             className="flex min-h-11 items-center rounded-full border border-fg/15 px-5 text-[15px] text-muted transition-colors hover:text-text"
           >
-            ختمة جديدة
+            
+            {t("ختمة جديدة")}
           </button>
         )}
       </div>

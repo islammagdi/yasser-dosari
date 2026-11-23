@@ -78,6 +78,35 @@ export function wirdPortion(days: number, index: number): WirdPortion {
   return { index, fromRub, toRub, label, range, segments };
 }
 
+/** نفس label و range بالإنجليزي: "Juz 5" / "From Al-Baqarah 142 to Al-Baqarah 252" */
+export function portionLabelEn(p: WirdPortion): string {
+  const j1 = juzOf(p.fromRub);
+  const j2 = juzOf(p.toRub);
+  const wholeJuz = p.fromRub % 8 === 0 && (p.toRub + 1) % 8 === 0;
+  const span = p.toRub - p.fromRub + 1;
+  if (j1 === j2) {
+    if (wholeJuz) return `Juz ${j1}`;
+    if (span === 4) return `${p.fromRub % 8 === 0 ? "First" : "Second"} half of Juz ${j1}`;
+    return `Part of Juz ${j1}`;
+  }
+  if (wholeJuz && j2 === j1 + 1) return `Juz ${j1} and ${j2}`;
+  return `Juz ${j1} to Juz ${j2}`;
+}
+
+export function portionRangeEn(p: WirdPortion): string {
+  const a = p.segments[0];
+  const b = p.segments[p.segments.length - 1];
+  return `From ${surahName(a.surah, "en")} ${a.from} to ${surahName(b.surah, "en")} ${b.to}`;
+}
+
+export function dailyAmountLabelEn(days: number): string {
+  const juz = 30 / days;
+  if (juz === 1) return "1 juz a day";
+  if (juz === 0.5) return "Half a juz a day";
+  if (Number.isInteger(juz)) return `${juz} juz a day`;
+  return `About ${Math.round(juz * 10) / 10} juz a day`;
+}
+
 /** نصيب اليوم كوصف للمدة: "جزء يوميًا"، "جزئين يوميًا"، "حزب يوميًا"… */
 export function dailyAmountLabel(days: number): string {
   const juz = 30 / days;

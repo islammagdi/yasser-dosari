@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useState } from "react";
 import type { ImamateSlot } from "@/types";
-import { formatDuration, toArabicDigits } from "@/lib/format";
-import { hijriDayLabel, isNowLive, nextSlot, prayerTitle, relativeDayLabel } from "@/lib/imamate";
+import { isNowLive, nextSlot } from "@/lib/imamate";
 import { useKhatma } from "@/lib/useKhatma";
 import { useInProgress } from "@/lib/useProgress";
 import { usePlayer } from "./PlayerProvider";
@@ -24,6 +24,7 @@ const iconBox = "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl
 
 /** شريط تحت الهيرو: الإمامة القادمة، والختمة، وكمّل الاستماع. نفس الوزن، ومش بينافس الهيرو */
 export function HomeStrip({ slots }: { slots: ImamateSlot[] }) {
+  
   return (
     <div className="grid overflow-hidden rounded-[26px] border border-line bg-raised shadow-soft md:grid-cols-[1.25fr_1fr_1fr] [&>*+*]:border-t [&>*+*]:border-line md:[&>*+*]:border-s md:[&>*+*]:border-t-0">
       <ImamateCell slots={slots} />
@@ -34,6 +35,7 @@ export function HomeStrip({ slots }: { slots: ImamateSlot[] }) {
 }
 
 function ImamateCell({ slots }: { slots: ImamateSlot[] }) {
+  const { t, toArabicDigits, hijriDayLabel, prayerTitle, relativeDayLabel } = useL();
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
@@ -57,25 +59,25 @@ function ImamateCell({ slots }: { slots: ImamateSlot[] }) {
         <MosqueIcon className="h-6 w-6" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[13px] text-muted">{live ? "الآن في المسجد الحرام" : "الإمامة القادمة في الحرم"}</span>
+        <span className="text-[13px] text-muted">{live ? t("الآن في المسجد الحرام") : t("الإمامة القادمة في الحرم")}</span>
         {now === null ? (
           <span aria-hidden className="my-1.5 h-4 w-40 animate-pulse rounded bg-fg/10" />
         ) : slot ? (
           <span className="truncate font-semibold leading-7">
-            {prayerTitle(slot.prayer)}، {live ? "بإمامة الشيخ" : relativeDayLabel(slot.nightOf ?? slot.date, now) || hijriDayLabel(slot.date)}
+            {prayerTitle(slot.prayer)}{t("،")} {live ? t("بإمامة الشيخ") : relativeDayLabel(slot.nightOf ?? slot.date, now) || hijriDayLabel(slot.date)}
           </span>
         ) : (
-          <span className="text-sm leading-6">الجدول بيتعلن أسبوعيًا</span>
+          <span className="text-sm leading-6">{t("الجدول بيتعلن أسبوعيًا")}</span>
         )}
       </span>
       {parts && !live && (
-        <span className="flex shrink-0 basis-full items-baseline gap-1 ps-16 lg:basis-auto lg:ps-0" aria-label={`بعد ${parts[0]} ساعة و${parts[1]} دقيقة`}>
+        <span className="flex shrink-0 basis-full items-baseline gap-1 ps-16 lg:basis-auto lg:ps-0" aria-label={t("بعد {h} ساعة و{m} دقيقة", { h: parts[0], m: parts[1] })}>
           {parts.map((n, i) => (
             <span key={i} className="flex items-baseline gap-1">
               <b className="rounded-xl bg-fg/5 px-2 pb-0.5 pt-1.5 font-display text-2xl leading-none text-emerald tabular-nums dark:text-gold-soft">
-                {toArabicDigits(n).padStart(2, "٠")}
+                {toArabicDigits(n).padStart(2, t("٠"))}
               </b>
-              <span className="text-[11px] text-muted">{["س", "د", "ث"][i]}</span>
+              <span className="text-[11px] text-muted">{[t("س"), t("د"), t("ث")][i]}</span>
             </span>
           ))}
         </span>
@@ -85,6 +87,7 @@ function ImamateCell({ slots }: { slots: ImamateSlot[] }) {
 }
 
 function KhatmaCell() {
+  const { t, toArabicDigits } = useL();
   const k = useKhatma();
   const r = 22;
   const c = 2 * Math.PI * r;
@@ -101,9 +104,9 @@ function KhatmaCell() {
         />
       </svg>
       <span className="flex min-w-0 flex-col">
-        <span className="text-[13px] text-muted">ختمتك مع الشيخ</span>
+        <span className="text-[13px] text-muted">{t("ختمتك مع الشيخ")}</span>
         <span className="truncate font-semibold leading-7">
-          {!k.ready ? "…" : k.count === 0 ? "ابدأ ختمة بصوت الشيخ" : `${toArabicDigits(k.count)} من ${toArabicDigits(KHATMA_TOTAL)} سورة`}
+          {!k.ready ? "…" : k.count === 0 ? t("ابدأ ختمة بصوت الشيخ") : t("{n} من {total} سورة", { n: toArabicDigits(k.count), total: toArabicDigits(KHATMA_TOTAL) })}
         </span>
       </span>
     </Link>
@@ -111,6 +114,7 @@ function KhatmaCell() {
 }
 
 function ContinueCell() {
+  const { t, formatDuration, recTitle } = useL();
   const [item] = useInProgress(1);
   const { current, isPlaying, playQueue, toggle } = usePlayer();
 
@@ -121,14 +125,14 @@ function ContinueCell() {
           <CategoryIcon category="fard" className="h-6 w-6" />
         </span>
         <span className="flex min-w-0 flex-col">
-          <span className="text-[13px] text-muted">أحدث صلوات الحرم</span>
-          <span className="truncate font-semibold leading-7">تصفّح الفروض</span>
+          <span className="text-[13px] text-muted">{t("أحدث صلوات الحرم")}</span>
+          <span className="truncate font-semibold leading-7">{t("تصفّح الفروض")}</span>
         </span>
       </Link>
     );
   }
 
-  const { rec, t, d } = item;
+  const { rec, t: at, d } = item;
   const isCurrent = current?.id === rec.id;
   const playingNow = isCurrent && isPlaying;
   return (
@@ -136,17 +140,17 @@ function ContinueCell() {
       <button
         type="button"
         onClick={() => (isCurrent ? toggle() : playQueue([rec], 0))}
-        aria-label={`${playingNow ? "إيقاف" : "كمّل"} ${rec.title}`}
+        aria-label={`${playingNow ? t("إيقاف") : t("كمّل")} ${recTitle(rec)}`}
         className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover"
       >
         {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
       </button>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[13px] text-muted">كمّل من حيث وقفت</span>
+        <span className="text-[13px] text-muted">{t("كمّل من حيث وقفت")}</span>
         <Link href={`/${rec.category}/${rec.id}`} className="truncate font-semibold leading-7 hover:text-gold-soft">
-          {rec.title}
+          {recTitle(rec)}
         </Link>
-        <span className="text-xs text-muted">متبقٍ {formatDuration(d - t)}</span>
+        <span className="text-xs text-muted">{t("متبقٍ")} {formatDuration(d - at)}</span>
       </span>
     </div>
   );

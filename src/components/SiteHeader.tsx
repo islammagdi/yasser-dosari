@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
+import { usePathname } from "@/lib/i18n/nav";
 import { CATEGORIES } from "@/lib/categories";
-import { toArabicDigits } from "@/lib/format";
 import { useFavorites } from "@/lib/useFavorites";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
+import { LangSwitch, TranslateIcon } from "./LangSwitch";
 import { HeartIcon, SearchIcon } from "./icons";
 
 /**
@@ -14,6 +15,8 @@ import { HeartIcon, SearchIcon } from "./icons";
  * موبايل وتابلت: اللوجو، والبحث، والثيم بس. التنقل كله في شريط التابات اللي تحت (MobileTabBar)
  */
 export function SiteHeader() {
+  const { t, toArabicDigits } = useL();
+  
   const pathname = usePathname();
   const { ids } = useFavorites();
   const onFavorites = pathname === "/favorites";
@@ -48,9 +51,9 @@ export function SiteHeader() {
       <div className="mx-auto hidden h-[72px] max-w-page items-center justify-between gap-4 px-8 xl:flex">
         <div className="flex min-w-0 items-center gap-4">
           <Link href="/" className="flex h-[72px] shrink-0 items-center">
-            <Logo label="الشيخ ياسر الدوسري" className="h-11 w-[176px]" />
+            <Logo label={t("الشيخ ياسر الدوسري")} className="h-11 w-[176px]" />
           </Link>
-          <nav aria-label="الأقسام" className="flex items-center gap-1">
+          <nav aria-label={t("الأقسام")} className="flex items-center gap-1">
             {navItems.map((n) => (
               <Link
                 key={n.href}
@@ -63,7 +66,7 @@ export function SiteHeader() {
                     : "font-medium text-text hover:bg-fg/5"
                 }`}
               >
-                {n.label}
+                {t(n.label)}
                 {n.active && (
                   <span aria-hidden className="absolute inset-x-2 bottom-0 h-1.5 rounded-full bg-[#fff]/45 dark:bg-accent-hover" />
                 )}
@@ -73,19 +76,15 @@ export function SiteHeader() {
         </div>
 
         <div className="flex shrink-0 items-center">
-          {/* زرار اللغة: بيظهر لما النسخة الإنجليزي تنزل (NEXT_PUBLIC_ENABLE_EN=1) */}
-          {process.env.NEXT_PUBLIC_ENABLE_EN === "1" && (
-            <Link href="/en" lang="en" className={`${deskAction} min-w-[72px] px-4 font-medium`}>
-              <TranslateIcon />
-              English
-            </Link>
-          )}
-          <Link href="/search" aria-label="البحث" aria-current={onSearch ? "page" : undefined} className={`${deskAction} ${onSearch ? "text-gold" : ""}`}>
+          <LangSwitch className={`${deskAction} min-w-[72px] px-4 font-medium`}>
+            <TranslateIcon />
+          </LangSwitch>
+          <Link href="/search" aria-label={t("البحث")} aria-current={onSearch ? "page" : undefined} className={`${deskAction} ${onSearch ? "text-gold" : ""}`}>
             <SearchIcon className="h-6 w-6" />
           </Link>
           <Link
             href="/favorites"
-            aria-label={`المفضلة${ids.length ? ` (${ids.length})` : ""}`}
+            aria-label={`${t("المفضلة")}${ids.length ? ` (${toArabicDigits(ids.length)})` : ""}`}
             aria-current={onFavorites ? "page" : undefined}
             className={`${deskAction} ${onFavorites ? "text-[#E5636B]" : ""}`}
           >
@@ -99,30 +98,22 @@ export function SiteHeader() {
       {/* ---------- موبايل وتابلت ---------- */}
       <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:py-3 xl:hidden">
         <Link href="/" className="flex min-h-11 items-center justify-self-start">
-          <Logo label="الشيخ ياسر الدوسري" className="w-[144px] sm:w-[176px]" />
+          <Logo label={t("الشيخ ياسر الدوسري")} className="w-[144px] sm:w-[176px]" />
         </Link>
         <div className="flex items-center gap-2 justify-self-end">
           <Link
             href="/search"
-            aria-label="البحث"
+            aria-label={t("البحث")}
             aria-current={onSearch ? "page" : undefined}
             className={`${iconBtn} ${onSearch ? "text-gold" : "text-muted hover:text-text"}`}
           >
             <SearchIcon className="h-5 w-5" />
           </Link>
+          <LangSwitch className={`${iconBtn} w-auto px-3 text-sm font-semibold text-muted hover:text-text md:w-auto`} />
           <ThemeToggle className={`${iconBtn} text-muted hover:text-text`} />
         </div>
       </div>
 
     </header>
-  );
-}
-/** أيقونة الترجمة (زرار English في الهيدر) */
-function TranslateIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 5h9M8.5 3v2M10.5 5c-.8 3.5-3 6.5-6.5 8M6.5 9c1 1.8 2.6 3.3 4.5 4.2" />
-      <path d="M12.5 21l4-9 4 9M13.8 18h5.4" />
-    </svg>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import type { L } from "@/lib/i18n";
+import Link from "@/lib/i18n/nav";
 import type { HomeCollection } from "@/lib/homeCollections";
-import { formatDuration, recitationsLabel, toArabicDigits } from "@/lib/format";
 import { isPlayable } from "@/lib/labels";
 import { usePlayer } from "./PlayerProvider";
 import { PauseIcon, PlayIcon } from "./icons";
@@ -15,18 +16,24 @@ const TONES: Record<HomeCollection["tone"], string> = {
   maroon: "from-[#4A1E2C] to-[#26101A]",
 };
 
-function totalLabel(items: HomeCollection["items"]) {
+function totalLabel(items: HomeCollection["items"], { t, toArabicDigits, formatDuration, recitationsLabel, comma }: L) {
   const sec = items.reduce((a, r) => a + (r.durationSec ?? 0), 0);
   const count = recitationsLabel(items.length);
   if (!sec) return count;
   const h = Math.floor(sec / 3600);
   const m = Math.round((sec % 3600) / 60);
-  const time = h ? `${toArabicDigits(h)} ساعة${m ? ` و${toArabicDigits(m)} دقيقة` : ""}` : formatDuration(sec);
-  return `${count}، ${time}`;
+  const time = h
+    ? m
+      ? t("{h} ساعة و{m} دقيقة", { h: toArabicDigits(h), m: toArabicDigits(m) })
+      : t("{h} ساعة", { h: toArabicDigits(h) })
+    : formatDuration(sec);
+  return `${count}${comma}${time}`;
 }
 
 /** مجموعات للاستماع: قوايم أوتوماتيك بتتشغّل كلها مرة واحدة */
 export function HomeCollections({ collections }: { collections: HomeCollection[] }) {
+  const l = useL();
+  const { t, toArabicDigits } = l;
   const p = usePlayer();
   if (!collections.length) return null;
 
@@ -34,9 +41,10 @@ export function HomeCollections({ collections }: { collections: HomeCollection[]
     <section aria-labelledby="collections-title" className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h2 id="collections-title" className="font-display text-3xl font-bold sm:text-4xl">
-          مجموعات للاستماع
+          
+          {t("مجموعات للاستماع")}
         </h2>
-        <p className="text-muted">قوايم جاهزة بتتحدّث لوحدها كل ما تتضاف تلاوة جديدة.</p>
+        <p className="text-muted">{t("قوايم جاهزة بتتحدّث لوحدها كل ما تتضاف تلاوة جديدة.")}</p>
       </div>
 
       <ul className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
@@ -51,28 +59,28 @@ export function HomeCollections({ collections }: { collections: HomeCollection[]
             >
               <span aria-hidden className="pattern-stars absolute inset-0 -z-10 opacity-[0.16]" />
               <span aria-hidden className="absolute inset-x-6 top-6 font-ruqaa text-5xl font-bold leading-[1.15] lg:text-[3.4rem]">
-                {c.word}
+                {t(c.word)}
               </span>
               <div className="flex items-end gap-3">
                 <div className="flex min-w-0 flex-1 flex-col">
                   {c.href ? (
                     <Link href={c.href} className="font-display text-2xl font-bold leading-snug after:absolute after:inset-0 hover:text-[#E7CD94]">
-                      <span className="sr-only">{c.word}: </span>
-                      {c.title}
+                      <span className="sr-only">{t(c.word)}: </span>
+                      {t(c.title, { y: c.year ? toArabicDigits(c.year) : "" })}
                     </Link>
                   ) : (
                     <p className="font-display text-2xl font-bold leading-snug">
-                      <span className="sr-only">{c.word}: </span>
-                      {c.title}
+                      <span className="sr-only">{t(c.word)}: </span>
+                      {t(c.title, { y: c.year ? toArabicDigits(c.year) : "" })}
                     </p>
                   )}
-                  <span className="text-[13px] text-[#F1EEE6]/75">{totalLabel(c.items)}</span>
+                  <span className="text-[13px] text-[#F1EEE6]/75">{totalLabel(c.items, l)}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => (inThis ? p.toggle() : p.playQueue(playable, 0))}
                   disabled={!playable.length}
-                  aria-label={`${playingNow ? "إيقاف" : "تشغيل"} ${c.word}`}
+                  aria-label={`${playingNow ? t("إيقاف") : t("تشغيل")} ${t(c.word)}`}
                   className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur transition-colors hover:bg-white/25 disabled:opacity-40"
                 >
                   {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}

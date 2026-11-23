@@ -1,5 +1,6 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ImamateSlot } from "@/types";
@@ -11,6 +12,7 @@ const GAP = 8;
 
 /** "ذكّرني": يضيف موعد الإمامة لتقويم Google أو تقويم الجهاز (آيفون وغيره) */
 export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
+  const { t, dir } = useL();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -76,14 +78,15 @@ export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
           <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15Z" />
           <path d="M10 20.5a2 2 0 0 0 4 0" />
         </svg>
-        ذكّرني بالموعد
+        
+        {t("ذكّرني بالموعد")}
       </button>
       {open &&
         pos &&
         createPortal(
           <div
             ref={menuRef}
-            dir="rtl"
+            dir={dir}
             style={{ position: "fixed", top: pos.top, left: pos.left, width: MENU_W }}
             className="glass-card z-[100] rounded-2xl p-1.5 shadow-float"
           >
@@ -94,10 +97,12 @@ export function ImamateReminder({ slot }: { slot: ImamateSlot }) {
               onClick={() => setOpen(false)}
               className={item}
             >
-              تقويم Google
+              
+              {t("تقويم Google")}
             </a>
             <button type="button" onClick={downloadIcs} className={item}>
-              تقويم الجهاز (آيفون وغيره)
+              
+              {t("تقويم الجهاز (آيفون وغيره)")}
             </button>
           </div>,
           document.body,

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { recitationsLabel } from "@/lib/format";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { isPlayable } from "@/lib/labels";
 import { usePlaylists } from "@/lib/usePlaylists";
 import { usePlayer } from "./PlayerProvider";
@@ -15,6 +15,7 @@ const TONES = ["from-[#1E4A3C] to-[#0F2A21]", "from-[#6B4A1A] to-[#3A2810]", "fr
  * مبتظهرش غير لو عنده قايمة فيها تلاوات.
  */
 export function HomePlaylists() {
+  const { t, recitationsLabel } = useL();
   const pl = usePlaylists();
   const p = usePlayer();
   const lists = pl.lists.filter((l) => l.items.length > 0);
@@ -25,15 +26,17 @@ export function HomePlaylists() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="my-playlists-title" className="font-display text-3xl font-bold sm:text-4xl">
-            قوايمك
+            
+            {t("قوايمك")}
           </h2>
-          <p className="text-muted">القوايم اللي عملتها، محفوظة على جهازك.</p>
+          <p className="text-muted">{t("القوايم اللي عملتها، محفوظة على جهازك.")}</p>
         </div>
         <Link
           href="/playlists"
           className="flex min-h-11 items-center rounded-full border border-line-strong px-5 text-sm font-semibold transition-colors hover:border-gold/60 hover:text-gold-soft"
         >
-          كل القوايم
+          
+          {t("كل القوايم")}
         </Link>
       </div>
 
@@ -62,7 +65,7 @@ export function HomePlaylists() {
                   type="button"
                   onClick={() => (inThis ? p.toggle() : p.playQueue(playable, 0))}
                   disabled={!playable.length}
-                  aria-label={`${playingNow ? "إيقاف" : "تشغيل"} قايمة ${l.name}`}
+                  aria-label={t(playingNow ? "إيقاف قايمة {name}" : "تشغيل قايمة {name}", { name: l.name })}
                   className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur transition-colors hover:bg-white/25 disabled:opacity-40"
                 >
                   {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}

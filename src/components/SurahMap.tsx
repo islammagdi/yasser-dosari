@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useMemo, useState } from "react";
 import type { SurahStat } from "@/lib/homeCollections";
-import { recitationsLabel, toArabicDigits } from "@/lib/format";
-import { surahName } from "@/lib/quran";
 
 /** ٥ درجات لون: من مفيش تلاوات لأكتر سورة اتقرت */
 const LEVELS = [
@@ -36,7 +35,8 @@ function levelOf(total: number, [a, b, c]: [number, number, number]) {
  * الضغط على سورة بيعرض تفصيلها، ومنه لصفحة السورة.
  */
 export function SurahMap({ stats }: { stats: SurahStat[] }) {
-  const t = useMemo(() => thresholds(stats), [stats]);
+  const { t, recitationsLabel, surahName, en, toArabicDigits, surahTitle } = useL();
+  const th = useMemo(() => thresholds(stats), [stats]);
   const top = useMemo(() => stats.reduce((a, b) => (b.total > a.total ? b : a), stats[0]), [stats]);
   const [selected, setSelected] = useState(top?.n ?? 18);
   const covered = stats.filter((s) => s.total > 0).length;
@@ -57,18 +57,22 @@ export function SurahMap({ stats }: { stats: SurahStat[] }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="surah-map-title" className="font-display text-3xl font-bold sm:text-4xl">
-            ابحث بالسورة
+            
+            {t("ابحث بالسورة")}
           </h2>
           <p className="max-w-2xl text-muted">
-            كل سورة، وكل مرة قرأها الشيخ: في المصحف والفروض والتراويح. كل ما اللون أغمق، التلاوات أكتر.
+            
+            {t("كل سورة، وكل مرة قرأها الشيخ: في المصحف والفروض والتراويح. كل ما اللون أغمق، التلاوات أكتر.")}
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted" aria-hidden>
-          أقل
+          
+          {t("أقل")}
           {LEVELS.map((l, i) => (
             <i key={i} className={`h-4 w-4 rounded ${l.split(" ").filter((c) => c.includes("bg-")).join(" ")}`} />
           ))}
-          أكتر
+          
+          {t("أكتر")}
         </div>
       </div>
 
@@ -83,9 +87,9 @@ export function SurahMap({ stats }: { stats: SurahStat[] }) {
                 type="button"
                 onClick={() => setSelected(st.n)}
                 aria-pressed={isSel}
-                aria-label={`${surahName(st.n)}: ${st.total ? recitationsLabel(st.total) : "مفيش تلاوات لسه"}`}
+                aria-label={`${surahName(st.n)}: ${st.total ? recitationsLabel(st.total) : t("مفيش تلاوات لسه")}`}
                 title={surahName(st.n)}
-                className={`aspect-square rounded-lg text-[11px] font-semibold tabular-nums transition-transform hover:scale-110 ${LEVELS[levelOf(st.total, t)]} ${
+                className={`aspect-square rounded-lg text-[11px] font-semibold tabular-nums transition-transform hover:scale-110 ${LEVELS[levelOf(st.total, th)]} ${
                   isSel ? "relative z-10 scale-110 outline outline-2 outline-offset-2 outline-gold" : ""
                 }`}
               >
@@ -97,37 +101,39 @@ export function SurahMap({ stats }: { stats: SurahStat[] }) {
 
           {/* ملخص التغطية: جزء من الخريطة نفسها */}
           <p className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-sm text-muted">
-            <span>{toArabicDigits(covered)} سورة من ١١٤ ليها تلاوات</span>
+            <span>{toArabicDigits(covered)}  {t("سورة من ١١٤ ليها تلاوات")}</span>
             <Link href="/surah" className="font-semibold text-gold-soft underline-offset-4 hover:underline">
-              فهرس السور كامل
+              
+              {t("فهرس السور كامل")}
             </Link>
           </p>
         </div>
 
         {/* تفصيل السورة المختارة */}
         <div className="flex flex-col rounded-[22px] border border-line bg-raised p-5 shadow-soft" aria-live="polite">
-          <p className="text-sm font-semibold text-gold">السورة {toArabicDigits(s.n)}</p>
-          <p className="font-display text-3xl font-bold leading-tight">سورة {surahName(s.n)}</p>
+          <p className="text-sm font-semibold text-gold">{t("السورة")} {toArabicDigits(s.n)}</p>
+          <p className="font-display text-3xl font-bold leading-tight">{surahTitle(s.n)}</p>
           {s.total > 0 ? (
             <>
-              <p className="mt-1 text-sm text-muted">{recitationsLabel(s.total)} في الأرشيف</p>
+              <p className="mt-1 text-sm text-muted">{recitationsLabel(s.total)}  {t("في الأرشيف")}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {chips.map(([label, c]) => (
                   <span key={label} className="flex h-8 items-center gap-1.5 rounded-full bg-fg/5 px-3 text-[13px] font-medium">
-                    {label} <b className="text-gold">{toArabicDigits(c)}</b>
+                    {t(label)} <b className="text-gold">{toArabicDigits(c)}</b>
                   </span>
                 ))}
               </div>
-              {s.last && <p className="mt-4 text-[13px] leading-6 text-muted">آخر مرة: {s.last}</p>}
+              {s.last && <p className="mt-4 text-[13px] leading-6 text-muted">{t("آخر مرة:")} {en ? s.lastEn ?? s.last : s.last}</p>}
               <Link
                 href={`/surah/${s.n}`}
                 className="mt-5 flex min-h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover lg:mt-auto"
               >
-                اسمع تلاوات السورة
+                
+                {t("اسمع تلاوات السورة")}
               </Link>
             </>
           ) : (
-            <p className="mt-2 text-sm leading-7 text-muted">مفيش تلاوات للسورة دي في الأرشيف لسه.</p>
+            <p className="mt-2 text-sm leading-7 text-muted">{t("مفيش تلاوات للسورة دي في الأرشيف لسه.")}</p>
           )}
         </div>
       </div>

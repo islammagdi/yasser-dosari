@@ -1,7 +1,7 @@
 "use client";
 
+import { useL } from "@/lib/i18n/client";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { formatDuration } from "@/lib/format";
 import { NOTE_MAX, REPORT_REASONS, type ReportReason } from "@/lib/reportReasons";
 import { lockScroll } from "@/lib/scrollLock";
 
@@ -36,6 +36,7 @@ type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent" } | { kind:
  * position: الثانية اللي الزائر واقف عندها دلوقتي، بتتبعت مع البلاغ لو وافق.
  */
 export function ReportProblem({ id, category, position }: { id: string; category: string; position: () => number }) {
+  const { t, formatDuration, en } = useL();
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [reason, setReason] = useState<ReportReason | null>(null);
@@ -97,14 +98,14 @@ export function ReportProblem({ id, category, position }: { id: string; category
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
       if (!res.ok || !data.ok) {
-        setState({ kind: "error", message: data.message ?? "حصلت مشكلة في الإرسال. جرّب تاني بعد شوية." });
+        setState({ kind: "error", message: (en ? undefined : data.message) ?? t("حصلت مشكلة في الإرسال. جرّب تاني بعد شوية.") });
         return;
       }
       markReported(id);
       setDone(true);
       setState({ kind: "sent" });
     } catch {
-      setState({ kind: "error", message: "مفيش اتصال بالإنترنت. جرّب تاني لما النت يرجع." });
+      setState({ kind: "error", message: t("مفيش اتصال بالإنترنت. جرّب تاني لما النت يرجع.") });
     }
   }
 
@@ -120,7 +121,7 @@ export function ReportProblem({ id, category, position }: { id: string; category
         <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
         </svg>
-        {done ? "وصلنا بلاغك عن التلاوة دي، شكرًا" : "بلّغ عن مشكلة في التلاوة"}
+        {done ? t("وصلنا بلاغك عن التلاوة دي، شكرًا") : t("بلّغ عن مشكلة في التلاوة")}
       </button>
 
       {open && (
@@ -135,11 +136,13 @@ export function ReportProblem({ id, category, position }: { id: string; category
             {state.kind === "sent" ? (
               <div className="flex flex-col gap-4 py-2">
                 <h2 id={titleId} className="font-display text-2xl font-bold">
-                  وصل البلاغ، شكرًا
+                  
+                  {t("وصل البلاغ، شكرًا")}
                 </h2>
-                <p className="leading-7 text-muted">هنراجع التلاوة ونصلّحها في أقرب وقت إن شاء الله.</p>
+                <p className="leading-7 text-muted">{t("هنراجع التلاوة ونصلّحها في أقرب وقت إن شاء الله.")}</p>
                 <button type="button" onClick={close} className="min-h-12 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover">
-                  تمام
+                  
+                  {t("تمام")}
                 </button>
               </div>
             ) : (
@@ -152,9 +155,10 @@ export function ReportProblem({ id, category, position }: { id: string; category
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2 id={titleId} className="font-display text-2xl font-bold">
-                    إيه المشكلة؟
+                    
+                    {t("إيه المشكلة؟")}
                   </h2>
-                  <button type="button" onClick={close} aria-label="إغلاق" className="-m-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+                  <button type="button" onClick={close} aria-label={t("إغلاق")} className="-m-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
                     <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                       <path d="M6 6l12 12M18 6 6 18" />
                     </svg>
@@ -162,7 +166,7 @@ export function ReportProblem({ id, category, position }: { id: string; category
                 </div>
 
                 <fieldset className="flex flex-col gap-1">
-                  <legend className="sr-only">سبب البلاغ</legend>
+                  <legend className="sr-only">{t("سبب البلاغ")}</legend>
                   {REPORT_REASONS.map((r, i) => (
                     <label key={r.value} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-fg/5">
                       <input
@@ -174,7 +178,7 @@ export function ReportProblem({ id, category, position }: { id: string; category
                         onChange={() => setReason(r.value)}
                         className="h-5 w-5 accent-[#CDAA62]"
                       />
-                      <span>{r.label}</span>
+                      <span>{t(r.label)}</span>
                     </label>
                   ))}
                 </fieldset>
@@ -183,18 +187,19 @@ export function ReportProblem({ id, category, position }: { id: string; category
                   <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-fg/5">
                     <input type="checkbox" checked={withTime} onChange={(e) => setWithTime(e.target.checked)} className="h-5 w-5 accent-[#CDAA62]" />
                     <span>
-                      المشكلة عند الدقيقة <span className="font-semibold tabular-nums">{formatDuration(at)}</span>
+                      
+                      {t("المشكلة عند الدقيقة")} <span className="font-semibold tabular-nums">{formatDuration(at)}</span>
                     </span>
                   </label>
                 )}
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm text-muted">تفاصيل (اختياري)</span>
+                  <span className="text-sm text-muted">{t("تفاصيل (اختياري)")}</span>
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
                     rows={3}
-                    placeholder="مثلًا: الصوت بيقف بعد الركعة الأولى"
+                    placeholder={t("مثلًا: الصوت بيقف بعد الركعة الأولى")}
                     className="resize-none rounded-xl border border-line-strong bg-ink px-3 py-2.5 text-text"
                   />
                 </label>
@@ -213,9 +218,9 @@ export function ReportProblem({ id, category, position }: { id: string; category
                   disabled={!reason || state.kind === "sending"}
                   className="min-h-12 rounded-full bg-accent font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-40"
                 >
-                  {state.kind === "sending" ? "بيتبعت…" : "ابعت البلاغ"}
+                  {state.kind === "sending" ? t("بيتبعت…") : t("ابعت البلاغ")}
                 </button>
-                <p className="text-xs leading-6 text-muted">مش بنطلب اسمك ولا أي بيانات عنك. بيتبعت مع البلاغ نوع جهازك بس، علشان نعرف لو المشكلة في متصفح معيّن.</p>
+                <p className="text-xs leading-6 text-muted">{t("مش بنطلب اسمك ولا أي بيانات عنك. بيتبعت مع البلاغ نوع جهازك بس، علشان نعرف لو المشكلة في متصفح معيّن.")}</p>
               </form>
             )}
           </div>

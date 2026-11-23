@@ -31,7 +31,7 @@ async function warm() {
     await assets.put(url, res.clone());
     return res;
   };
-  for (const path of ["/", "/saved"]) {
+  for (const path of ["/", "/saved", "/en", "/en/saved"]) {
     try {
       const res = await fetch(path, { cache: "no-store" });
       if (!res.ok) continue;
@@ -124,8 +124,9 @@ async function page(req) {
   } catch {
     return (
       (await cache.match(req, { ignoreSearch: true })) ||
+      (await cache.match(new URL(req.url).pathname.startsWith("/en") ? "/en/saved" : "/saved")) ||
       (await cache.match("/saved")) ||
-      new Response("<h1 dir='rtl'>لا يوجد اتصال بالإنترنت</h1>", { headers: { "Content-Type": "text/html; charset=utf-8" } })
+      new Response("<h1 dir='rtl'>لا يوجد اتصال بالإنترنت</h1><h1 dir='ltr'>No internet connection</h1>", { headers: { "Content-Type": "text/html; charset=utf-8" } })
     );
   }
 }

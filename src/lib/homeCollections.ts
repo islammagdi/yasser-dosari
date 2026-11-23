@@ -1,7 +1,6 @@
 import type { Recording } from "@/types";
 import { surahsMentioned } from "@/lib/surahIndex";
 import { SURAH_NAMES } from "@/lib/quran";
-import { toArabicDigits } from "@/lib/format";
 
 /** ملخص سورة واحدة لخريطة السور في الرئيسية (خفيف، من غير التسجيلات نفسها) */
 export interface SurahStat {
@@ -15,13 +14,16 @@ export interface SurahStat {
   other: number;
   /** عنوان آخر صلاة اتقرت فيها السورة، لو فيه */
   last?: string;
+  lastEn?: string;
 }
 
 export interface HomeCollection {
   id: string;
   /** الكلمة الكبيرة بالرقعة على الكارت */
   word: string;
+  /** نص عربي بيتترجم في الكارت؛ {y} بيتبدّل بـ year */
   title: string;
+  year?: number;
   tone: "emerald" | "amber" | "navy" | "maroon";
   href?: string;
   items: Recording[];
@@ -45,7 +47,10 @@ export function surahStats(index: Map<number, Recording[]>): SurahStat[] {
       else s.other++;
     }
     const lastPrayer = list.filter((r) => r.category === "fard" || r.category === "taraweeh").sort(newestFirst)[0];
-    if (lastPrayer) s.last = lastPrayer.title;
+    if (lastPrayer) {
+      s.last = lastPrayer.title;
+      s.lastEn = lastPrayer.titleEn;
+    }
     return s;
   });
 }
@@ -68,7 +73,8 @@ export function homeCollections(all: Recording[], index: Map<number, Recording[]
   out.push({
     id: "last-ten",
     word: "العشر الأواخر",
-    title: lastYear ? `من رمضان ${toArabicDigits(lastYear)} هـ` : "من رمضان",
+    title: lastYear ? "من رمضان {y} هـ" : "من رمضان",
+    year: lastYear || undefined,
     tone: "navy",
     href: "/taraweeh",
     items: lastTen,

@@ -75,7 +75,11 @@ export async function fromCode(code: string): Promise<Backup | null> {
 }
 
 /** ملخص بالعربي للي جوه النسخة، عشان الزائر يعرف هيتنقل إيه */
-export function summarize(b: Backup): string[] {
+type Tr = (ar: string, params?: Record<string, string | number>) => string;
+const plain: Tr = (ar, params) => Object.entries(params ?? {}).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), ar);
+
+/** tr: دالة الترجمة t من useL، عشان الملخص يطلع بلغة الصفحة */
+export function summarize(b: Backup, tr: Tr = plain): string[] {
   const j = (k: string) => {
     try {
       return JSON.parse(b.data[k] ?? "null");
@@ -85,17 +89,17 @@ export function summarize(b: Backup): string[] {
   };
   const out: string[] = [];
   const fav = j("yd-favorites-v1");
-  if (Array.isArray(fav) && fav.length) out.push(`${fav.length} تلاوة في المفضلة`);
+  if (Array.isArray(fav) && fav.length) out.push(tr("{n} تلاوة في المفضلة", { n: fav.length }));
   const lists = j("yd-playlists-v1");
-  if (Array.isArray(lists) && lists.length) out.push(`${lists.length} قائمة تشغيل`);
+  if (Array.isArray(lists) && lists.length) out.push(tr("{n} قائمة تشغيل", { n: lists.length }));
   const k = j("yd-khatma-v1");
-  if (k?.done?.length) out.push(`${k.done.length} سورة في الختمة`);
-  if (k?.completed) out.push(`${k.completed} ختمة مكتملة`);
-  if (j("yd-wird-v1")?.days) out.push("خطة الورد اليومي");
+  if (k?.done?.length) out.push(tr("{n} سورة في الختمة", { n: k.done.length }));
+  if (k?.completed) out.push(tr("{n} ختمة مكتملة", { n: k.completed }));
+  if (j("yd-wird-v1")?.days) out.push(tr("خطة الورد اليومي"));
   const days = j("yd-wird-days-v1");
-  if (Array.isArray(days) && days.length) out.push(`${days.length} يوم ورد مكتمل`);
+  if (Array.isArray(days) && days.length) out.push(tr("{n} يوم ورد مكتمل", { n: days.length }));
   const progress = j("yd-progress-v1");
-  if (progress && Object.keys(progress).length) out.push(`مكانك في ${Object.keys(progress).length} تلاوة`);
-  if (j("yd-reading-v1")?.bookmark) out.push("علامة القراءة");
+  if (progress && Object.keys(progress).length) out.push(tr("مكانك في {n} تلاوة", { n: Object.keys(progress).length }));
+  if (j("yd-reading-v1")?.bookmark) out.push(tr("علامة القراءة"));
   return out;
 }

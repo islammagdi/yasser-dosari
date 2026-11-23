@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { toArabicDigits } from "@/lib/format";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { daysFromToday, hijriOf, hijriToIso } from "@/lib/imamate";
 
 const MONTHS_SHORT = ["محرم", "صفر", "ربيع ١", "ربيع ٢", "جمادى ١", "جمادى ٢", "رجب", "شعبان", "رمضان"];
@@ -23,6 +23,7 @@ function Moon({ state }: { state: "past" | "now" | "future" | "ramadan" }) {
  * بيتعرض بدل RamadanCard لما الكارت ده مش ظاهر.
  */
 export function RamadanCountdown({ now }: { now: Date }) {
+  const { t, toArabicDigits } = useL();
   const h = hijriOf(now);
   if (h.m === 9) return null; // في رمضان نفسه RamadanCard هو اللي بيتكلم
   const year = h.m < 9 ? h.y : h.y + 1;
@@ -32,35 +33,38 @@ export function RamadanCountdown({ now }: { now: Date }) {
   if (days <= 0) return null;
 
   // الشهور لحد رمضان؛ لو احنا بعد رمضان بنبدأ من الشهر الحالي (شوال وما بعده)
-  const months = h.m < 9 ? MONTHS_SHORT : [...["شوال", "ذو القعدة", "ذو الحجة"].slice(h.m - 10), ...MONTHS_SHORT];
+  const months = (h.m < 9 ? MONTHS_SHORT : [...["شوال", "ذو القعدة", "ذو الحجة"].slice(h.m - 10), ...MONTHS_SHORT]).map((m) => t(m));
   const currentIndex = h.m < 9 ? h.m - 1 : 0;
 
   return (
     <section
       aria-labelledby="ramadan-countdown-title"
-      className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-l from-[#1E4A3C] to-[#10241D] p-6 text-[#F1EEE6] sm:p-9"
+      className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-l ltr:bg-gradient-to-r from-[#1E4A3C] to-[#10241D] p-6 text-[#F1EEE6] sm:p-9"
     >
       <span aria-hidden className="pattern-stars absolute inset-0 -z-10 opacity-[0.12]" />
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex max-w-xl flex-col gap-1.5">
-          <p className="text-sm font-semibold text-[#E7CD94]">الموسم القادم</p>
+          <p className="text-sm font-semibold text-[#E7CD94]">{t("الموسم القادم")}</p>
           <h2 id="ramadan-countdown-title" className="font-display text-3xl font-bold leading-tight sm:text-4xl">
-            رمضان {toArabicDigits(year)} هـ
+            
+            {t("رمضان")} {toArabicDigits(year)}  {t("هـ")}
           </h2>
           <p className="text-[15px] leading-7 text-[#A9B7AF]">
-            جدول ليالي الشيخ في التراويح والتهجد هيظهر هنا أول ما يتعلن، ولو مفعّل الإشعارات هيوصلك تذكير قبل كل ليلة.
+            
+            {t("جدول ليالي الشيخ في التراويح والتهجد هيظهر هنا أول ما يتعلن، ولو مفعّل الإشعارات هيوصلك تذكير قبل كل ليلة.")}
           </p>
           <Link href="/taraweeh" className="mt-2 self-start text-sm font-semibold text-[#E7CD94] underline-offset-4 hover:underline">
-            اسمع ليالي رمضان اللي فاتت
+            
+            {t("اسمع ليالي رمضان اللي فاتت")}
           </Link>
         </div>
         <div className="flex shrink-0 items-end gap-3 sm:flex-col sm:items-center sm:gap-0">
           <span className="font-display text-7xl font-bold leading-none text-[#E7CD94] sm:text-8xl">{toArabicDigits(days)}</span>
-          <span className="pb-2 text-sm text-[#A9B7AF] sm:pb-0">{days === 1 ? "يوم" : days <= 10 ? "أيام" : "يومًا"}</span>
+          <span className="pb-2 text-sm text-[#A9B7AF] sm:pb-0">{days === 1 ? t("يوم") : days <= 10 ? t("أيام") : t("يومًا")}</span>
         </div>
       </div>
 
-      <ol className="mt-8 flex items-end justify-between gap-1 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="الشهور لحد رمضان">
+      <ol className="mt-8 flex items-end justify-between gap-1 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={t("الشهور لحد رمضان")}>
         {months.map((m, i) => {
           const isRamadan = i === months.length - 1;
           const state = isRamadan ? "ramadan" : i < currentIndex ? "past" : i === currentIndex ? "now" : "future";

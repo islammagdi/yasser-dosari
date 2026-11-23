@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { useEffect, useState } from "react";
-import { formatDuration } from "@/lib/format";
 import { formatSize, removeOffline, useOffline } from "@/lib/offline";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
@@ -10,6 +10,7 @@ import { PauseIcon, PlayIcon } from "./icons";
 
 /** صفحة المحفوظات: التلاوات اللي على الجهاز، ومساحتها، وتشغيلها من غير نت */
 export function SavedView() {
+  const { t, recTitle, formatDuration, recitationsLabel, recSubtitle, lang } = useL();
   const off = useOffline();
   const player = usePlayer();
   const [quota, setQuota] = useState<{ usage: number; quota: number } | null>(null);
@@ -37,34 +38,38 @@ export function SavedView() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">المحفوظات</h1>
+        <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">{t("المحفوظات")}</h1>
         <p className="max-w-2xl text-lg leading-8 text-muted">
-          التلاوات المحفوظة على جهازك، تسمعها من غير إنترنت. لحفظ تلاوة، افتحها واضغط «حفظ للاستماع بدون إنترنت».
+          
+          {t("التلاوات المحفوظة على جهازك، تسمعها من غير إنترنت. لحفظ تلاوة، افتحها واضغط «حفظ للاستماع بدون إنترنت».")}
         </p>
-        {!online && <p className="text-gold-soft">أنت الآن بدون اتصال، ويمكنك تشغيل التلاوات المحفوظة فقط.</p>}
+        {!online && <p className="text-gold-soft">{t("أنت الآن بدون اتصال، ويمكنك تشغيل التلاوات المحفوظة فقط.")}</p>}
       </div>
 
       {ios && (
         <p className="rounded-2xl border border-gold/40 bg-gold/5 p-4 text-sm leading-7">
-          على الآيفون: أضف الموقع إلى الشاشة الرئيسية من زر المشاركة، حتى لا يحذف المتصفح التلاوات المحفوظة إذا لم تفتح الموقع لفترة.
+          
+          {t("على الآيفون: أضف الموقع إلى الشاشة الرئيسية من زر المشاركة، حتى لا يحذف المتصفح التلاوات المحفوظة إذا لم تفتح الموقع لفترة.")}
         </p>
       )}
 
       {items.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
           <span>
-            {items.length} تلاوة · {formatSize(off.totalSize)}
-            {quota && ` · المساحة المتاحة للموقع: ${formatSize(Math.max(0, quota.quota - quota.usage))}`}
+            {recitationsLabel(items.length)} · {formatSize(off.totalSize, lang)}
+            {quota && ` · ${t("المساحة المتاحة للموقع: {x}", { x: formatSize(Math.max(0, quota.quota - quota.usage), lang) })}`}
           </span>
           <button type="button" onClick={() => player.playQueue(queue, 0)} className="min-h-11 rounded-full bg-accent px-5 font-semibold text-accent-ink hover:bg-accent-hover">
-            تشغيل الكل
+            
+            {t("تشغيل الكل")}
           </button>
         </div>
       )}
 
       {items.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-line-strong px-6 py-12 text-center leading-8 text-muted">
-          لا توجد تلاوات محفوظة بعد.
+          
+          {t("لا توجد تلاوات محفوظة بعد.")}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -74,15 +79,15 @@ export function SavedView() {
               <li key={rec.id} className="glass-card flex items-center gap-3 rounded-2xl p-3">
                 <RecordingCover recording={rec} sizes="56px" className="h-14 w-14 shrink-0 rounded-xl" />
                 <Link href={`/${rec.category}/${rec.id}`} className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-semibold">{rec.title || rec.prayerLabel}</span>
+                  <span className="truncate font-semibold">{recTitle(rec)}</span>
                   <span className="truncate text-sm text-muted">
-                    {[rec.subtitle, rec.durationSec ? formatDuration(rec.durationSec) : "", formatSize(size)].filter(Boolean).join(" · ")}
+                    {[recSubtitle(rec), rec.durationSec ? formatDuration(rec.durationSec) : "", formatSize(size, lang)].filter(Boolean).join(" · ")}
                   </span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => player.playQueue(queue, i)}
-                  aria-label={`${playing ? "إيقاف" : "تشغيل"} ${rec.title}`}
+                  aria-label={`${playing ? t("إيقاف") : t("تشغيل")} ${recTitle(rec)}`}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink hover:bg-accent-hover"
                 >
                   {playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
@@ -90,7 +95,7 @@ export function SavedView() {
                 <button
                   type="button"
                   onClick={() => removeOffline(rec.id)}
-                  aria-label={`حذف ${rec.title} من الجهاز`}
+                  aria-label={t("حذف {x} من الجهاز", { x: recTitle(rec) })}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:text-[#E5636B]"
                 >
                   ✕

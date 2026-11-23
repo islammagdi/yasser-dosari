@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import type { Recording } from "@/types";
-import { formatDate, formatDuration, toArabicDigits } from "@/lib/format";
 import { isPlayable } from "@/lib/labels";
 import { useProgressRatio } from "@/lib/useProgress";
 import { isNewSince, useLastVisit } from "@/lib/useVisit";
@@ -45,6 +45,7 @@ export function RecordingCard({
   listened = false,
   row = false,
 }: Props) {
+  const { t, formatDate, formatDuration, recTitle, toArabicDigits, recSubtitle } = useL();
   const unavailable = !isPlayable(recording);
   const playingNow = isCurrent && isPlaying;
   const progress = useProgressRatio(recording.id);
@@ -53,7 +54,7 @@ export function RecordingCard({
   const details = [formatDate(recording.date), formatDuration(recording.durationSec)].filter(Boolean);
   // صور يوتيوب 16:9 (شرايطها السودا بتتقص مع object-cover)، والأغلفة المولّدة تفضل مربعة
   const wide = !!recording.imageUrl;
-  const playLabel = unavailable ? `${recording.title}: غير متاح بعد` : `${playingNow ? "إيقاف" : "تشغيل"} ${recording.title}`;
+  const playLabel = unavailable ? t("{x}: غير متاح بعد", { x: recTitle(recording) }) : t(playingNow ? "إيقاف {x}" : "تشغيل {x}", { x: recTitle(recording) });
 
   return (
     <li
@@ -61,7 +62,7 @@ export function RecordingCard({
         row ? "flex-row items-center sm:flex-col sm:items-stretch" : "flex-col"
       } ${isCurrent ? "bg-fg/[0.07] ring-1 ring-inset ring-gold/40" : "hover:bg-fg/5"}`}
     >
-      <Link href={`/${recording.category}/${recording.id}`} aria-label={recording.title} className="absolute inset-0 rounded-3xl" />
+      <Link href={`/${recording.category}/${recording.id}`} aria-label={recTitle(recording)} className="absolute inset-0 rounded-3xl" />
 
       <span
         className={`pointer-events-none relative block shrink-0 overflow-hidden ${wide ? "aspect-video" : "aspect-square"} ${
@@ -92,13 +93,15 @@ export function RecordingCard({
         )}
         {listened && (
           <span className={`absolute start-2 top-2 items-center gap-1 rounded-full bg-ink/80 px-2.5 py-1 text-xs font-medium text-gold-soft ${row ? "hidden sm:flex" : "flex"}`}>
-            ✓ سمعتها
+            
+            {t("✓ سمعتها")}
           </span>
         )}
         {/* اتضاف بعد آخر زيارة */}
         {isNew && (
           <span className="absolute bottom-2 start-2 rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-accent-ink sm:text-xs">
-            جديد
+            
+            {t("جديد")}
           </span>
         )}
         {/* شريط التقدّم لو بدأها ومكمّلهاش */}
@@ -130,7 +133,7 @@ export function RecordingCard({
             type="button"
             onClick={onToggleFavorite}
             aria-pressed={favorite}
-            aria-label={`${favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}: ${recording.title}`}
+            aria-label={`${favorite ? t("إزالة من المفضلة") : t("إضافة إلى المفضلة")}: ${recTitle(recording)}`}
             className={`pointer-events-auto absolute end-2 top-2 h-10 w-10 items-center justify-center rounded-full bg-ink/75 transition-colors hover:bg-ink ${
               row ? "hidden sm:flex" : "flex"
             } ${favorite ? "text-[#E5636B]" : "text-text/80 hover:text-text"}`}
@@ -146,11 +149,11 @@ export function RecordingCard({
             isCurrent ? "text-gold-soft" : "group-hover:text-gold-soft"
           }`}
         >
-          {recording.title}
+          {recTitle(recording)}
         </span>
         {/* الوصف هو اللي بيفرّق بين التسجيلات اللي عناوينها متشابهة، فبياخد سطرين كاملين */}
-        {recording.subtitle && (
-          <span className="line-clamp-2 text-[13px] leading-[1.6] text-muted">{recording.subtitle}</span>
+        {recSubtitle(recording) && (
+          <span className="line-clamp-2 text-[13px] leading-[1.6] text-muted">{recSubtitle(recording)}</span>
         )}
         {details.length > 0 && (
           <span className={`truncate text-xs text-muted/80 ${row ? "hidden sm:block" : ""}`}>{details.join(" · ")}</span>

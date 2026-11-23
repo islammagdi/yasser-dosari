@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { formatDuration } from "@/lib/format";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
 import { clearProgress, useInProgress } from "@/lib/useProgress";
 import { usePlayer } from "./PlayerProvider";
 import { RecordingCover } from "./RecordingCover";
@@ -9,6 +9,7 @@ import { PauseIcon, PlayIcon } from "./icons";
 
 /** "أكمل الاستماع": التلاوات اللي الزائر بدأها ومكمّلهاش. مش بيظهر خالص لو مفيش */
 export function ContinueListening() {
+  const { t, recTitle, formatDuration } = useL();
   const items = useInProgress(4);
   const { current, isPlaying, playQueue } = usePlayer();
   if (items.length === 0) return null;
@@ -16,10 +17,11 @@ export function ContinueListening() {
   return (
     <section aria-labelledby="continue-title" className="flex flex-col gap-4">
       <h2 id="continue-title" className="px-1 font-display text-2xl font-bold text-gold-soft">
-        أكمل الاستماع
+        
+        {t("أكمل الاستماع")}
       </h2>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map(({ rec, t, d }) => {
+        {items.map(({ rec, t: at, d }) => {
           const playingNow = current?.id === rec.id && isPlaying;
           return (
             <li key={rec.id} className="glass-card relative flex flex-col gap-3 rounded-2xl p-3">
@@ -30,14 +32,14 @@ export function ContinueListening() {
                     href={`/${rec.category}/${rec.id}`}
                     className="line-clamp-2 text-[15px] font-semibold leading-6 after:absolute after:inset-0 after:rounded-2xl hover:text-gold-soft"
                   >
-                    {rec.title}
+                    {recTitle(rec)}
                   </Link>
-                  <span className="text-xs text-muted">متبقٍ {formatDuration(d - t)}</span>
+                  <span className="text-xs text-muted">{t("متبقٍ")} {formatDuration(d - at)}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => playQueue([rec], 0)}
-                  aria-label={`${playingNow ? "إيقاف" : "أكمل"} ${rec.title}`}
+                  aria-label={`${playingNow ? t("إيقاف") : t("أكمل")} ${recTitle(rec)}`}
                   className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors hover:bg-accent-hover"
                 >
                   {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
@@ -45,14 +47,15 @@ export function ContinueListening() {
               </div>
               <div className="flex items-center gap-2">
                 <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-fg/10">
-                  <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round((t / d) * 100)}%` }} />
+                  <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round((at / d) * 100)}%` }} />
                 </span>
                 <button
                   type="button"
                   onClick={() => clearProgress(rec.id)}
                   className="relative z-10 min-h-8 rounded-full px-2 text-xs text-muted transition-colors hover:text-text"
                 >
-                  إخفاء
+                  
+                  {t("إخفاء")}
                 </button>
               </div>
             </li>
