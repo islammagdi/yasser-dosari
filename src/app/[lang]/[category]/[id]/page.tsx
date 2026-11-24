@@ -5,7 +5,7 @@ import { AyahFollow } from "@/components/AyahFollow";
 import { RecordingDetail } from "@/components/RecordingDetail";
 import { surahText, surahTimings, type AyahTiming, type SurahText } from "@/lib/api/quranText";
 import { RecordingList } from "@/components/RecordingList";
-import { recordings } from "@/lib/api";
+import { listRecordings } from "@/lib/cachedData";
 import { getCategory, type CategoryInfo } from "@/lib/categories";
 import { siteUrl } from "@/lib/site";
 import { pageL, pageMeta, type LangParams } from "@/lib/i18n/server";
@@ -26,7 +26,7 @@ export function generateStaticParams() {
 async function load(params: Props["params"]) {
   const category = getCategory(params.category);
   if (!category) return null;
-  const all = await recordings.list({ category: category.slug });
+  const all = await listRecordings({ category: category.slug });
   const id = decodeURIComponent(params.id);
   const recording = all.find((r) => r.id === id);
   return recording ? { category, all, recording } : null;
