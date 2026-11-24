@@ -3,7 +3,7 @@ import Link from "@/lib/i18n/nav";
 import { notFound } from "next/navigation";
 import { RecordingList } from "@/components/RecordingList";
 import { siteUrl } from "@/lib/site";
-import { loadSurahIndex } from "@/lib/surahData";
+import { surahIndex } from "@/lib/cachedData";
 import type { Recording } from "@/types";
 import { pageL, pageMeta, type LangParams } from "@/lib/i18n/server";
 
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!n) return {};
   const l = pageL(params);
   const name = l.surahName(n);
-  const { prayers } = split((await loadSurahIndex()).get(n) ?? []);
+  const { prayers } = split((await surahIndex()).get(n) ?? []);
   const title = l.t("سورة {s} بصوت الشيخ ياسر الدوسري", { s: name });
   const description = prayers.length
     ? l.t("استمع إلى سورة {s} كاملة بصوت الشيخ ياسر الدوسري، و{n} تلاوة منها في صلوات المسجد الحرام.", { s: name, n: l.toArabicDigits(prayers.length) })
@@ -55,7 +55,7 @@ export default async function SurahPage({ params }: Props) {
   if (!n) notFound();
   const { t, surahName, surahTitle, toArabicDigits } = pageL(params);
   const name = surahName(n);
-  const { mushaf, prayers } = split((await loadSurahIndex()).get(n) ?? []);
+  const { mushaf, prayers } = split((await surahIndex()).get(n) ?? []);
 
   return (
     <>

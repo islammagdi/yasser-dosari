@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "@/lib/i18n/nav";
 import { SURAH_NAMES } from "@/lib/quran";
-import { loadSurahIndex } from "@/lib/surahData";
+import { surahIndex } from "@/lib/cachedData";
 import { pageL, pageMeta, type LangParams } from "@/lib/i18n/server";
 
 export const revalidate = 21600;
@@ -16,7 +16,7 @@ export function generateMetadata({ params }: { params: LangParams }): Metadata {
 /** فهرس السور: كل سورة وعدد التلاوات اللي فيها */
 export default async function SurahIndexPage({ params }: { params: LangParams }) {
   const { t, toArabicDigits, surahName, recitationsLabel } = pageL(params);
-  const index = await loadSurahIndex();
+  const index = await surahIndex();
 
   return (
     <>
