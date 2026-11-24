@@ -284,7 +284,7 @@ export async function audioManifest(): Promise<AudioManifest> {
   }
   try {
     // بيتقري كل ساعة، فإضافة ملفات جديدة مش محتاجة deploy
-    const res = await fetch(`${AUDIO_BASE}/manifest.json`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${AUDIO_BASE}/manifest.json`, { next: { revalidate: 86400 } });
     if (!res.ok) return {};
     return (await res.json()) as AudioManifest;
   } catch {
