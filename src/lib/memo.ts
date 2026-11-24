@@ -2,7 +2,7 @@
  * كاش في ذاكرة السيرفر: نفس النتيجة بترجع لكل الطلبات لمدة محددة،
  * بدل ما الكتالوج يتحمّل ويتعالج من الأول مع كل صفحة بتتبني.
  */
-const TTL_MS = 10 * 60 * 1000; // ١٠ دقايق
+const TTL_MS = 2 * 60 * 1000; // ١٠ دقايق
 
 export function memo<A extends unknown[], T>(fn: (...args: A) => Promise<T>, ttl = TTL_MS) {
   const store = new Map<string, { at: number; value: Promise<T> }>();

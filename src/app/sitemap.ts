@@ -4,7 +4,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { siteUrl } from "@/lib/site";
 
 // الخريطة بتتبني من نفس البيانات اللي الموقع بيعرضها، وبتتحدّث كل ساعة
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 /** خريطة الموقع لمحركات البحث: الصفحات الثابتة، والأقسام، وكل تلاوة، وسور المصحف للقراءة */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

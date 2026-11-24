@@ -26,7 +26,7 @@ function parseHijri(raw: string): string | null {
 const isChecked = (v = "") => /^(true|1|✓|✔|نعم|x)$/i.test(v.trim().replace(/^"|"$/g, ""));
 
 export async function fetchImamateSheet(): Promise<ImamateWeek[]> {
-  const res = await fetch(SHEET_URL!, { next: { revalidate: 60 * 5 } }); // كل نص ساعة
+  const res = await fetch(SHEET_URL!, { next: { revalidate: 60 * 60 } }); // كل ساعة
   if (!res.ok) throw new Error(`sheet ${res.status}`);
   const rows = (await res.text()).split(/\r?\n/).map((line) => line.split(","));
 
@@ -58,7 +58,7 @@ export const ramadanSheetEnabled = () => Boolean(RAMADAN_URL);
 const num = (v = "") => Number(v.replace(/"/g, "").trim().replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)));
 
 export async function fetchRamadanSheet(): Promise<RamadanNight[]> {
-  const res = await fetch(RAMADAN_URL!, { next: { revalidate: 60 * 5 } });
+  const res = await fetch(RAMADAN_URL!, { next: { revalidate: 60 * 60 } }); // كل ساعة
   if (!res.ok) throw new Error(`ramadan sheet ${res.status}`);
   const rows = (await res.text()).split(/\r?\n/).map((line) => line.split(","));
 

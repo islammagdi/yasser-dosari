@@ -29,7 +29,7 @@ const url = (key: string) => `${endpoint}/${bucket}/${key.replace(/^\//, "")}`;
 export async function getJson<T>(key: string, tags: string[] = []): Promise<T | null> {
   if (!r2Enabled()) return null;
   const req = await r2().sign(url(key), { method: "GET" });
-  const res = await fetch(req, { next: { tags, revalidate: 3600 } });
+  const res = await fetch(req, { next: { tags, revalidate: 86400 } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`R2 GET ${key}: ${res.status}`);
   return (await res.json()) as T;
