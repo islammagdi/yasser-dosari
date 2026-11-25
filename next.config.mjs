@@ -17,6 +17,25 @@ const nextConfig = {
       ...(audioHost ? [{ protocol: "https", hostname: audioHost }] : []),
     ],
   },
+    // اللغة: التحويل بيحصل في طبقة الـ routing بتاعة Vercel من غير ما أي function تشتغل
+  async redirects() {
+    return [
+      { source: "/ar", destination: "/", permanent: true },
+      // صور المشاركة المولّدة بتفضل على /ar/... لإن Next بيكتب رابطها بالمسار الداخلي
+      { source: "/ar/:path((?!.*opengraph-image$).*)", destination: "/:path", permanent: true },
+    ];
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/", destination: "/ar" },
+        {
+          source: "/:path((?!en(?:/|$)|ar(?:/|$)|api(?:/|$)|admin(?:/|$)|_next/|.*\\..*).+)",
+          destination: "/ar/:path",
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;

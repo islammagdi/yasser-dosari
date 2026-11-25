@@ -5,6 +5,12 @@ import { hijriDateLabel } from "@/lib/labels";
 import { normalizeArabic } from "@/lib/format";
 import { SURAH_NAMES, surahName } from "@/lib/quran";
 import { catalogRecordings, loadCatalog } from "@/lib/admin/catalog";
+import { cache } from "react";
+
+// الكتالوج وملف الصوت بيتقروا مرة واحدة لكل طلب، حتى لو الصفحة طلبت كل الأقسام
+// (فهرس السور بيطلب ١٠، والرئيسية حوالي ٢٢). الكاش ده بيتمسح بعد كل طلب.
+const siteCatalog = cache(loadCatalog);
+const siteManifest = cache(() => audioManifest());
 
 /**
  * الفروض والتراويح والخطب من قناة يوتيوب (YouTube Data API v3).
@@ -218,7 +224,7 @@ function toRecording(item: YtItem, playlistTitle: string, cls: { category: Categ
  * في الحالتين، اللي ليه ملف صوت على R2 بيتشغّل صوت.
  */
 export async function fetchYoutube(category: Category): Promise<Recording[]> {
-  const [catalog, manifest] = await Promise.all([loadCatalog(), audioManifest()]);
+  const [catalog, manifest] = await Promise.all([siteCatalog(), siteManifest()]);
   const list = catalog ? catalogRecordings(catalog, category) : await fetchFromPlaylists(category);
   return list.map((r) => withAudio(r, manifest));
 }
@@ -311,13 +317,15 @@ function withAudio(r: Recording, manifest: AudioManifest): Recording {
 // ---------- المصحف المرتل (فيديو) ----------
 
 /** أسماء السور مرتبة من الأطول للأقصر، عشان "سورة ق" متتلخبطش مع "سورة قريش" */
-const SURAH_PATTERNS = SURAH_NAMES.map((name, i) => ({ n: i + 1, key: normalizeArabic(name) })).sort(
-  (a, b) => b.key.length - a.key.length,
-);
+// الـ regex بيتبني مرة واحدة لكل سورة، مش مع كل فيديو
+const SURAH_PATTERNS = SURAH_NAMES.map((name, i) => {
+  const key = normalizeArabic(name);
+  return { n: i + 1, key, re: new RegExp(`سوره\\s*${key}(?![\\u0600-\\u06FF])`) };
+}).sort((a, b) => b.key.length - a.key.length);
 
 function surahFrom(title: string): number | undefined {
   const t = normalizeArabic(title);
-  return SURAH_PATTERNS.find(({ key }) => new RegExp(`سوره\\s*${key}(?![\\u0600-\\u06FF])`).test(t))?.n;
+  return SURAH_PATTERNS.find(({ re }) => re.test(t))?.n;
 }
 
 export async function fetchYoutubeMushaf(): Promise<Recording[]> {
@@ -346,6 +354,6 @@ export async function fetchYoutubeMushaf(): Promise<Recording[]> {
     });
   }
   // اللي اتحوّل لصوت على R2 بيتشغّل صوت، زي الفروض والتراويح
-  const manifest = await audioManifest();
+  const manifest = await siteManifest();
   return out.sort((a, b) => (a.surah ?? 0) - (b.surah ?? 0)).map((r) => withAudio(r, manifest));
 }
