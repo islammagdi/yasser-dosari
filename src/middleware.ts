@@ -8,21 +8,9 @@ import { ADMIN_COOKIE, cookieOptions, makeToken, readToken } from "@/lib/admin/s
  *    - /ar/... بيتحوّل للرابط من غير /ar، عشان كل صفحة ليها رابط واحد.
  * ٢) اللوحة: لو الجلسة انتهت بنحوّل لصفحة الدخول، ولو لسه شغالة بنمدّها ساعة كمان (طالما ما عدّتش ١٢ ساعة من الدخول).
  */
+/** اللغة اتنقلت لـ next.config.mjs (من غير CPU)، والـ middleware بقى للوحة التحكم بس */
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/admin")) return admin(req);
-
-  if (pathname === "/en" || pathname.startsWith("/en/")) return NextResponse.next();
-  // صور المشاركة المولّدة: Next بيكتب رابطها بالمسار الداخلي (/ar/...)، فبتعدّي زي ما هي
-  if (pathname.startsWith("/ar/") && pathname.endsWith("/opengraph-image")) return NextResponse.next();
-  if (pathname === "/ar" || pathname.startsWith("/ar/")) {
-    const url = req.nextUrl.clone();
-    url.pathname = pathname.slice(3) || "/";
-    return NextResponse.redirect(url, 308);
-  }
-  const url = req.nextUrl.clone();
-  url.pathname = `/ar${pathname === "/" ? "" : pathname}`;
-  return NextResponse.rewrite(url);
+  return admin(req);
 }
 
 async function admin(req: NextRequest) {
@@ -46,5 +34,5 @@ async function admin(req: NextRequest) {
  * والتقويم (imamate.ics).
  */
 export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
+  matcher: ["/admin/:path*"],
 };

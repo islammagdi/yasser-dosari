@@ -23,7 +23,24 @@ function nameAt(text: string): { n: number; len: number } | null {
   return null;
 }
 
+/**
+ * نتيجة البحث عن السور بتتخزن في الذاكرة بمفتاح النص نفسه: نفس العنوان ← نفس النتيجة.
+ * لو العنوان أو الوصف اتغيّر المفتاح بيتغيّر، فعمره ما يرجّع نتيجة قديمة.
+ * (متعدّلش في الـ array اللي راجعة، لإنها مشتركة)
+ */
+const surahCache = new Map<string, number[]>();
+
 export function surahsMentioned(r: Recording): number[] {
+  const key = `${r.category}|${r.surah ?? ""}|${r.surahs?.join(",") ?? ""}|${r.title}|${r.subtitle ?? ""}|${r.searchText ?? ""}`;
+  const hit = surahCache.get(key);
+  if (hit) return hit;
+  const found = findSurahs(r);
+  if (surahCache.size > 20000) surahCache.clear();
+  surahCache.set(key, found);
+  return found;
+}
+
+function findSurahs(r: Recording): number[] {
   const found = new Set<number>();
   if (r.category === "mushaf" && r.surah) found.add(r.surah);
   // الأدمن كتب السور بإيده: ناخدها زي ما هي من غير تخمين من الوصف
