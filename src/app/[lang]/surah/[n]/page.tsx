@@ -7,12 +7,15 @@ import { surahIndex } from "@/lib/cachedData";
 import type { Recording } from "@/types";
 import { pageL, pageMeta, type LangParams } from "@/lib/i18n/server";
 
-export const revalidate = 21600;
+export const revalidate = 86400;
 
-// صفحات بتتبني أول ما حد يفتحها، وبعدين بتتخزن جاهزة (بدل ما تتبني من الأول مع كل زيارة)
+// الـ ١١٤ سورة بتتبني وقت الـ build (وقت الـ build مش بيتحسب من CPU الـ functions)
 export function generateStaticParams() {
-  return [];
+  return Array.from({ length: 114 }, (_, i) => ({ n: String(i + 1) }));
 }
+
+// أي رقم غير ١–١١٤ بيرجع 404 جاهزة من غير ما function تشتغل
+export const dynamicParams = false;
 
 interface Props {
   params: { n: string } & LangParams;
