@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import type { Recording } from "@/types";
 import { AyahFollow } from "@/components/AyahFollow";
 import { RecordingDetail } from "@/components/RecordingDetail";
@@ -16,18 +17,22 @@ interface Props {
   params: { category: string; id: string } & LangParams;
 }
 
-/** الصفحة بتتبني أول ما حد يفتحها، وبتتخزن ٦ ساعات */
-export const revalidate = 21600;
+/**
+ * الصفحة بتتبني أول ما حد يفتحها، وبتتخزن يوم كامل.
+ * أي تعديل من الأدمن بيمسح الكاش فورًا (revalidatePath/Tag)، فالمدة دي مجرد حد أقصى.
+ */
+export const revalidate = 86400;
 
 // صفحات بتتبني أول ما حد يفتحها، وبعدين بتتخزن جاهزة (بدل ما تتبني من الأول مع كل زيارة)
 export function generateStaticParams() {
   return [];
 }
 
-async function load(params: Props["params"]) {
-  const category = getCategory(params.category);
+/** نفس الطلب بيستدعيها مرتين (generateMetadata والصفحة): cache بيخليها تشتغل مرة واحدة بس */
+const loadOnce = cache(async (slug: string, rawId: string) => {
+  const category = getCategory(slug);
   if (!category) return null;
-  const id = decodeURIComponent(params.id);
+  const id = decodeURIComponent(rawId);
   let all = await listRecordings({ category: category.slug });
   let recording = all.find((r) => r.id === id);
   // تسجيل لسه متضاف: الكاش اللي في الذاكرة ممكن يكون أقدم منه، فنجيب من غير كاش قبل ما نقول مش موجود
@@ -36,6 +41,10 @@ async function load(params: Props["params"]) {
     recording = all.find((r) => r.id === id);
   }
   return recording ? { category, all, recording } : null;
+});
+
+function load(params: Props["params"]) {
+  return loadOnce(params.category, params.id);
 }
 
 /** تلاوات قريبة: نفس الشهر في الفروض، نفس السنة في التراويح، السور اللي حواليها في المصحف */
