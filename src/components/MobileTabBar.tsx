@@ -8,6 +8,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { lockScroll } from "@/lib/scrollLock";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 import { useFavorites } from "@/lib/useFavorites";
+import { useSeason } from "@/lib/useSeason";
 import { CategoryIcon, HeartIcon } from "./icons";
 
 /**
@@ -23,6 +24,7 @@ export function MobileTabBar() {
   const { t, href } = useL();
   const pathname = usePathname();
   const [sheet, setSheet] = useState<Sheet>(null);
+  const ramadan = useSeason() === "ramadan";
   const onClips = pathname === "/clips";
 
   // اللوحة بتتقفل لما تروح صفحة تانية
@@ -42,20 +44,30 @@ export function MobileTabBar() {
   const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`));
   const onMore = MORE_PATHS.some(under);
 
-  const tabs: { key: string; label: string; icon: React.ReactNode; href?: string; sheet?: Sheet; active: boolean }[] = [
-    { key: "home", label: "الرئيسية", icon: <HomeIcon />, href: "/", active: pathname === "/" && !sheet },
-    { key: "rec", label: "التلاوات", icon: <HeadphonesIcon />, sheet: "recitations", active: sheet === "recitations" || (onCategory && !sheet) },
-    { key: "clips", label: "مقتطفات", icon: <ReelIcon />, href: "/clips", active: onClips && !sheet },
-    { key: "quran", label: "المصحف", icon: <BookIcon />, href: "/quran", active: under("/quran") && !sheet },
-    { key: "more", label: "المزيد", icon: <MoreIcon />, sheet: "more", active: sheet === "more" || (onMore && !sheet) },
-  ];
+  type Tab = { key: string; label: string; icon: React.ReactNode; href?: string; sheet?: Sheet; active: boolean };
+  const tabs: Tab[] = ramadan
+    ? [
+        // رمضان: الليالي (الرئيسية بوضع رمضان)، المقاطع، ختمتي، المصحف، والمزيد فيه الأقسام كلها
+        { key: "nights", label: "الليالي", icon: <MoonIcon />, href: "/", active: pathname === "/" && !sheet },
+        { key: "clips", label: "المقاطع", icon: <ReelIcon />, href: "/clips", active: onClips && !sheet },
+        { key: "khatma", label: "ختمتي", icon: <KhatmaIcon />, href: "/#khatma", active: false },
+        { key: "quran", label: "المصحف", icon: <BookIcon />, href: "/quran", active: under("/quran") && !sheet },
+        { key: "more", label: "المزيد", icon: <MoreIcon />, sheet: "more", active: sheet === "more" || ((onMore || onCategory) && !sheet) },
+      ]
+    : [
+        { key: "home", label: "الرئيسية", icon: <HomeIcon />, href: "/", active: pathname === "/" && !sheet },
+        { key: "rec", label: "التلاوات", icon: <HeadphonesIcon />, sheet: "recitations", active: sheet === "recitations" || (onCategory && !sheet) },
+        { key: "clips", label: "مقتطفات", icon: <ReelIcon />, href: "/clips", active: onClips && !sheet },
+        { key: "quran", label: "المصحف", icon: <BookIcon />, href: "/quran", active: under("/quran") && !sheet },
+        { key: "more", label: "المزيد", icon: <MoreIcon />, sheet: "more", active: sheet === "more" || (onMore && !sheet) },
+      ];
 
   // فوق الفيديو في المقتطفات: غامق وشفاف زي ريلز
   const barTone = onClips && !sheet ? "bg-black/55 text-white/75 backdrop-blur-md border-white/10" : "glass text-muted border-fg/10";
 
   return (
     <>
-      {sheet && <TabSheet kind={sheet} onClose={() => setSheet(null)} />}
+      {sheet && <TabSheet kind={sheet} ramadan={ramadan} onClose={() => setSheet(null)} />}
       <nav
         aria-label={t("التنقل الرئيسي")}
         className={`fixed inset-x-0 bottom-0 z-[48] border-t pb-[env(safe-area-inset-bottom)] xl:hidden ${barTone}`}
@@ -101,7 +113,7 @@ export function MobileTabBar() {
   );
 }
 
-function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: () => void }) {
+function TabSheet({ kind, ramadan, onClose }: { kind: "recitations" | "more"; ramadan: boolean; onClose: () => void }) {
   const { t, toArabicDigits } = useL();
   const pathname = usePathname();
   const { ids } = useFavorites();
@@ -109,6 +121,25 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   const row = (active: boolean) =>
     `flex min-h-14 items-center gap-3 rounded-2xl px-4 title-3 transition-colors duration-300 ease-out ${active ? "bg-accent/10 font-semibold text-text" : "text-text hover:bg-fg/5"}`;
+
+  // الأقسام الخمسة: لوحة «التلاوات»، وفي رمضان بتبقى أول حاجة في «المزيد»
+  const categories = (
+    <ul className="mx-auto flex max-w-xl flex-col gap-1">
+      {CATEGORIES.map((c) => {
+        const active = under(`/${c.slug}`);
+        return (
+          <li key={c.slug}>
+            <Link href={`/${c.slug}`} aria-current={active ? "page" : undefined} onClick={onClose} className={row(active)}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                <CategoryIcon category={c.slug} className="h-5 w-5" />
+              </span>
+              {t(c.title)}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <>
@@ -125,22 +156,15 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
           {kind === "recitations" ? t("التلاوات") : t("المزيد")}
         </h2>
         {kind === "recitations" ? (
-          <ul className="mx-auto flex max-w-xl flex-col gap-1">
-            {CATEGORIES.map((c) => {
-              const active = under(`/${c.slug}`);
-              return (
-                <li key={c.slug}>
-                  <Link href={`/${c.slug}`} aria-current={active ? "page" : undefined} onClick={onClose} className={row(active)}>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                      <CategoryIcon category={c.slug} className="h-5 w-5" />
-                    </span>
-                    {t(c.title)}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          categories
         ) : (
+          <>
+          {ramadan && (
+            <>
+              {categories}
+              <div aria-hidden className="mx-auto my-2 h-px max-w-xl bg-fg/10" />
+            </>
+          )}
           <ul className="mx-auto flex max-w-xl flex-col gap-1">
             <li>
               <Link href="/surah" onClick={onClose} aria-current={under("/surah") ? "page" : undefined} className={row(under("/surah"))}>
@@ -194,6 +218,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
               </a>
             </li>
           </ul>
+          </>
         )}
       </div>
     </>
@@ -202,6 +227,17 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
 
 const ico = { "aria-hidden": true, viewBox: "0 0 24 24", className: "h-[22px] w-[22px]", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
+const MoonIcon = () => (
+  <svg {...ico}>
+    <path d="M19 15.5A8 8 0 0 1 8.5 5a7 7 0 1 0 10.5 10.5z" />
+  </svg>
+);
+const KhatmaIcon = () => (
+  <svg {...ico}>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 4a8 8 0 0 1 8 8h-8z" fill="currentColor" stroke="none" />
+  </svg>
+);
 const HomeIcon = () => (
   <svg {...ico}>
     <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z" />

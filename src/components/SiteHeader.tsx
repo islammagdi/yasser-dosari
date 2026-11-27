@@ -18,7 +18,8 @@ import { CategoryIcon, HeartIcon, SearchIcon } from "./icons";
  * - ديسكتوب (من ١٢٨٠px): شريط عايم في النص، شفاف فوق blur، على قد محتواه.
  *   «التلاوات» بتفتح قايمة صغيرة بالأقسام الخمسة (نفس لوحة التابات في الموبايل).
  * - موبايل وتابلت: اللوجو والبحث واللغة والوضع. التنقل كله في MobileTabBar.
- * - في رمضان: شارة «رمضان ١٤٤٨»، وزرار الفاتح/الغامق بيختفي (الموقع ليلي طول الشهر).
+ * - في رمضان: شارة «رمضان ١٤٤٨»، والروابط بتبقى: الليالي، مقاطع رمضان، ختمتي، جدول التراويح، وباقي الأقسام.
+ *   وزرار الفاتح/الغامق بيختفي (الموقع ليلي طول الشهر).
  */
 export function SiteHeader() {
   const { t, toArabicDigits } = useL();
@@ -32,11 +33,25 @@ export function SiteHeader() {
   const onSearch = pathname === "/search";
   const onFavorites = pathname === "/favorites";
 
+  // النسخة العادية: الرئيسية، والتلاوات (قايمة بالأقسام)، وباقي الصفحات
   const links = [
     { href: "/clips", label: "مقتطفات", active: pathname === "/clips" },
     { href: "/quran", label: "المصحف", active: under("/quran") },
     { href: "/surah", label: "السور", active: under("/surah") },
     { href: "/imamate", label: "جدول الإمامة", active: under("/imamate") },
+  ];
+  // رمضان: الانتباه كله للتراويح والمقاطع، وباقي الموقع في قايمة «باقي الأقسام»
+  const ramadanLinks = [
+    { href: "/", label: "الليالي", active: pathname === "/" },
+    { href: "/clips", label: "مقاطع رمضان", active: pathname === "/clips" },
+    { href: "/#khatma", label: "ختمتي", active: false },
+    { href: "/imamate", label: "جدول التراويح", active: under("/imamate") },
+  ];
+  const categoryItems = CATEGORIES.map((c) => ({ href: `/${c.slug}`, label: c.title, icon: <CategoryIcon category={c.slug} className="h-4 w-4" /> }));
+  const restItems = [
+    ...categoryItems,
+    { href: "/quran", label: "المصحف", icon: null },
+    { href: "/surah", label: "السور", icon: null },
   ];
 
   const pill = (active: boolean) =>
@@ -69,15 +84,28 @@ export function SiteHeader() {
         </Link>
         {ramadanBadge}
         <nav aria-label={t("الأقسام")} className="flex items-center gap-1">
-          <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={pill(pathname === "/")}>
-            {t("الرئيسية")}
-          </Link>
-          <RecitationsMenu active={onCategory} pill={pill} />
-          {links.map((n) => (
-            <Link key={n.href} href={n.href} aria-current={n.active ? "page" : undefined} className={pill(n.active)}>
-              {t(n.label)}
-            </Link>
-          ))}
+          {ramadan ? (
+            <>
+              {ramadanLinks.map((n) => (
+                <Link key={n.href} href={n.href} aria-current={n.active ? "page" : undefined} className={pill(n.active)}>
+                  {t(n.label)}
+                </Link>
+              ))}
+              <NavMenu label="باقي الأقسام" items={restItems} active={onCategory || under("/quran") || under("/surah")} pill={pill} />
+            </>
+          ) : (
+            <>
+              <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={pill(pathname === "/")}>
+                {t("الرئيسية")}
+              </Link>
+              <NavMenu label="التلاوات" items={categoryItems} active={onCategory} pill={pill} />
+              {links.map((n) => (
+                <Link key={n.href} href={n.href} aria-current={n.active ? "page" : undefined} className={pill(n.active)}>
+                  {t(n.label)}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
         <div className="flex shrink-0 items-center gap-1.5">
           <Link href="/search" aria-label={t("البحث")} aria-current={onSearch ? "page" : undefined} className={`${tool} ${onSearch ? "text-gold" : ""}`}>
@@ -122,8 +150,10 @@ export function SiteHeader() {
   );
 }
 
-/** «التلاوات» في الديسكتوب: قايمة صغيرة بالأقسام، بتتقفل بـ Escape أو بالضغط برّاها أو لما الصفحة تتغير */
-function RecitationsMenu({ active, pill }: { active: boolean; pill: (active: boolean) => string }) {
+type MenuItem = { href: string; label: string; icon: React.ReactNode };
+
+/** قايمة صغيرة في الديسكتوب («التلاوات»، أو «باقي الأقسام» في رمضان): بتتقفل بـ Escape أو بالضغط برّاها أو لما الصفحة تتغير */
+function NavMenu({ label, items, active, pill }: { label: string; items: MenuItem[]; active: boolean; pill: (active: boolean) => string }) {
   const { t } = useL();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -145,26 +175,24 @@ function RecitationsMenu({ active, pill }: { active: boolean; pill: (active: boo
   return (
     <div ref={box} className="relative">
       <button type="button" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen((o) => !o)} className={`${pill(active)} gap-1.5`}>
-        {t("التلاوات")}
+        {t(label)}
         <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 transition-transform duration-300 ease-out ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
       {open && (
         <ul className="absolute start-0 top-[calc(100%+12px)] w-64 rounded-3xl border border-line bg-raised p-2 shadow-float">
-          {CATEGORIES.map((c) => {
-            const here = pathname === `/${c.slug}` || pathname.startsWith(`/${c.slug}/`);
+          {items.map((it) => {
+            const here = pathname === it.href || pathname.startsWith(`${it.href}/`);
             return (
-              <li key={c.slug}>
+              <li key={it.href}>
                 <Link
-                  href={`/${c.slug}`}
+                  href={it.href}
                   aria-current={here ? "page" : undefined}
                   className={`flex min-h-11 items-center gap-3 rounded-2xl px-3 body-5 transition-colors duration-300 ease-out ${here ? "bg-accent/10 text-text" : "text-text hover:bg-fg/5"}`}
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                    <CategoryIcon category={c.slug} className="h-4 w-4" />
-                  </span>
-                  {t(c.title)}
+                  {it.icon && <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">{it.icon}</span>}
+                  {t(it.label)}
                 </Link>
               </li>
             );

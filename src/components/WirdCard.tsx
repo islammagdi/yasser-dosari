@@ -187,7 +187,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   if (!w.plan) {
     if (dismissed) return null;
     return (
-      <section aria-labelledby="wird-title" className="glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
+      <section id="khatma" aria-labelledby="wird-title" className="scroll-mt-24 glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
         <div className="flex flex-col gap-1">
           <h2 id="wird-title" className="font-display text-2xl font-bold text-gold-soft">
             
@@ -225,7 +225,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   // ---- الختمة خلصت ----
   if (w.finished) {
     return (
-      <section aria-labelledby="wird-title" className="glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
+      <section id="khatma" aria-labelledby="wird-title" className="scroll-mt-24 glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
         <h2 id="wird-title" className="font-display text-2xl font-bold text-gold-soft">
           
           {t("أتممت الختمة، تقبّل الله منك")}
@@ -279,7 +279,7 @@ export function WirdCard({ items, dismissible = false }: { items: Recording[]; d
   };
 
   return (
-    <section aria-labelledby="wird-title" className="glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
+    <section id="khatma" aria-labelledby="wird-title" className="scroll-mt-24 glass-card flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="wird-title" className="font-display text-2xl font-bold text-gold-soft">
           {w.upcoming ? t("ختمة رمضان") : allDone ? t("أتممت ورد اليوم") : t("وردك اليوم")}

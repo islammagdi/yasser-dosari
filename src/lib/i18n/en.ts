@@ -625,4 +625,11 @@ export const EN: Record<string, string> = {
   "الختمة: {n} من {total} يومًا، {amount}": "Khatma: {n} of {total} days, {amount}",
   "جزء كل ليلة، والخطة بتبدأ لوحدها أول يوم في رمضان (بعد {n} يوم).": "A juz every night. The plan starts on its own on the first day of Ramadan (in {n} days).",
   "جزء كل ليلة، والخطة بتبدأ لوحدها من أول رمضان.": "A juz every night. The plan starts on its own from the beginning of Ramadan.",
+  // الريديزاين: تنقّل رمضان
+  "الليالي": "Nights",
+  "مقاطع رمضان": "Ramadan clips",
+  "ختمتي": "My khatma",
+  "جدول التراويح": "Taraweeh schedule",
+  "باقي الأقسام": "More sections",
+  "المقاطع": "Clips",
 };
