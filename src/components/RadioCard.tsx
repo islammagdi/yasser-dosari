@@ -19,7 +19,7 @@ export function RadioCard() {
   return (
     <section
       aria-labelledby="home-radio-title"
-      className="relative z-10 overflow-hidden rounded-[2rem] border border-gold/30 bg-gradient-to-l from-accent/15 via-accent/5 to-gold/10 p-5 sm:p-7"
+      className="relative z-10 overflow-hidden rounded-[2rem] border border-gold/30 bg-raised/70 shadow-float backdrop-blur-md bg-gradient-to-l from-accent/15 via-accent/5 to-gold/10 p-5 sm:p-7"
     >
       {/* موجات راديو باهتة في الخلفية */}
       <svg

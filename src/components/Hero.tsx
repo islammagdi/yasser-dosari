@@ -35,13 +35,15 @@ interface Props {
   imamate: ImamateSlot[];
   dailyPool: Recording[];
   dailyPinned: Record<string, Recording>;
+  /** إعلان فوق الهيرو (زي بانر الإذاعة): جوه الهيرو نفسه، فالصورة بتفضل طالعة لحد الهيدر وراه */
+  top?: React.ReactNode;
 }
 
 /**
  * الهيرو: مسار قراءة واحد من اليمين — التعريف ← الاسم ← تلاوة اليوم.
  * الصورة على الشمال باهتة وسايحة في الخلفية، وتحت الهيرو شريط المعلومات الثانوية.
  */
-export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
+export function Hero({ recent, imamate, dailyPool, dailyPinned, top }: Props) {
   const { t, formatDuration, recTitle, recSubtitle, en } = useL();
   const { current, isPlaying, currentTime, duration, playQueue, toggle } = usePlayer();
 
@@ -70,6 +72,7 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
 
   return (
     <section aria-labelledby="hero-title" className="full-bleed relative isolate -mt-8 sm:-mt-10">
+      {top && <div className="relative z-10 mx-auto max-w-page px-4 pb-6 pt-8 sm:px-6 sm:pt-10 lg:pb-0">{top}</div>}
       {/* الصورة: فوق بعرض الشاشة على الموبايل، وعلى الشمال من حرف الشاشة في الديسكتوب */}
       <div className="relative -z-10 h-[360px] w-full sm:h-[440px] lg:absolute lg:inset-y-0 lg:end-0 lg:-top-24 lg:h-auto lg:w-[46%] lg:max-w-[700px]">
         <Image
