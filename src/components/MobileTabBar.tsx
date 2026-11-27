@@ -65,16 +65,16 @@ export function MobileTabBar() {
             const inner = (
               <>
                 <span
-                  className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
-                    tab.active ? (onClips && !sheet ? "bg-white/20 text-white" : "bg-accent text-[#fff] dark:text-accent-ink") : ""
+                  className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-300 ease-out ${
+                    tab.active ? (onClips && !sheet ? "bg-white/20 text-white" : "bg-accent text-accent-ink") : ""
                   }`}
                 >
                   {tab.icon}
                 </span>
-                <span className={`text-[11px] leading-4 ${tab.active ? (onClips && !sheet ? "font-semibold text-white" : "font-semibold text-text") : ""}`}>{t(tab.label)}</span>
+                <span className={`caption-5 ${tab.active ? (onClips && !sheet ? "font-semibold text-white" : "font-semibold text-text") : ""}`}>{t(tab.label)}</span>
               </>
             );
-            const cls = "flex h-16 w-full flex-col items-center justify-center gap-0.5 transition-colors";
+            const cls = "flex h-16 w-full flex-col items-center justify-center gap-0.5 transition-colors duration-300 ease-out active:scale-[0.98]";
             return (
               <li key={tab.key}>
                 {tab.href ? (
@@ -108,7 +108,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
   const titleId = useId();
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   const row = (active: boolean) =>
-    `flex min-h-14 items-center gap-3 rounded-2xl px-4 text-[17px] transition-colors ${active ? "bg-accent/10 font-semibold text-text" : "text-text hover:bg-fg/5"}`;
+    `flex min-h-14 items-center gap-3 rounded-2xl px-4 title-3 transition-colors duration-300 ease-out ${active ? "bg-accent/10 font-semibold text-text" : "text-text hover:bg-fg/5"}`;
 
   return (
     <>
@@ -121,7 +121,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
         className="fixed inset-x-0 bottom-[var(--tabbar)] z-[47] max-h-[70dvh] overflow-y-auto overscroll-contain rounded-t-3xl border-t border-fg/10 bg-raised px-3 pb-3 pt-2 text-text shadow-float xl:hidden"
       >
         <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-fg/15" />
-        <h2 id={titleId} className="px-4 pb-2 font-display text-xl font-bold">
+        <h2 id={titleId} className="px-4 pb-2 heading-6">
           {kind === "recitations" ? t("التلاوات") : t("المزيد")}
         </h2>
         {kind === "recitations" ? (
@@ -131,7 +131,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
               return (
                 <li key={c.slug}>
                   <Link href={`/${c.slug}`} aria-current={active ? "page" : undefined} onClick={onClose} className={row(active)}>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent dark:text-gold">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
                       <CategoryIcon category={c.slug} className="h-5 w-5" />
                     </span>
                     {t(c.title)}
@@ -178,7 +178,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
             </li>
             <li aria-hidden className="my-1 h-px bg-fg/10" />
             <li>
-              <Link href="/about" onClick={onClose} className="flex min-h-12 items-center rounded-2xl px-4 text-[15px] text-muted hover:bg-fg/5 hover:text-text">
+              <Link href="/about" onClick={onClose} className="flex min-h-12 items-center rounded-2xl px-4 body-6 text-muted hover:bg-fg/5 hover:text-text">
                 
                 {t("عن الموقع")}
               </Link>
@@ -187,7 +187,7 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
               <a
                 href={feedbackHref}
                 {...(FEEDBACK_URL ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="flex min-h-12 items-center rounded-2xl px-4 text-[15px] font-semibold text-gold-soft hover:bg-fg/5"
+                className="flex min-h-12 items-center rounded-2xl px-4 body-4 text-gold-soft hover:bg-fg/5"
               >
                 
                 {t("اقترح تحسينًا")}

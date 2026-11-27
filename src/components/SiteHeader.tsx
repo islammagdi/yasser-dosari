@@ -1,119 +1,176 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useL } from "@/lib/i18n/client";
 import Link from "@/lib/i18n/nav";
 import { usePathname } from "@/lib/i18n/nav";
 import { CATEGORIES } from "@/lib/categories";
 import { useFavorites } from "@/lib/useFavorites";
+import { useSeason } from "@/lib/useSeason";
+import { hijriOf } from "@/lib/imamate";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { LangSwitch, TranslateIcon } from "./LangSwitch";
-import { HeartIcon, SearchIcon } from "./icons";
+import { CategoryIcon, HeartIcon, SearchIcon } from "./icons";
 
 /**
- * ديسكتوب (من ١٢٨٠px، تصميم Figma «Ind Header»): اللوجو والأقسام على اليمين، والأدوات على الشمال
- * موبايل وتابلت: اللوجو، والبحث، والثيم بس. التنقل كله في شريط التابات اللي تحت (MobileTabBar)
+ * الهيدر الجديد (الريديزاين):
+ * - ديسكتوب (من ١٢٨٠px): شريط عايم في النص، شفاف فوق blur، على قد محتواه.
+ *   «التلاوات» بتفتح قايمة صغيرة بالأقسام الخمسة (نفس لوحة التابات في الموبايل).
+ * - موبايل وتابلت: اللوجو والبحث واللغة والوضع. التنقل كله في MobileTabBar.
+ * - في رمضان: شارة «رمضان ١٤٤٨»، وزرار الفاتح/الغامق بيختفي (الموقع ليلي طول الشهر).
  */
 export function SiteHeader() {
   const { t, toArabicDigits } = useL();
-  
   const pathname = usePathname();
   const { ids } = useFavorites();
-  const onFavorites = pathname === "/favorites";
-  const onQuran = pathname === "/quran" || pathname.startsWith("/quran/");
-  const onClips = pathname === "/clips";
-  const onSurah = pathname === "/surah" || pathname.startsWith("/surah/");
+  const season = useSeason();
+  const ramadan = season === "ramadan";
+
+  const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
+  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`));
   const onSearch = pathname === "/search";
-  const isActive = (slug: string) => pathname === `/${slug}` || pathname.startsWith(`/${slug}/`);
+  const onFavorites = pathname === "/favorites";
 
-  const iconBtn = "glass-card relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors md:h-12 md:w-12";
-
-  // ديسكتوب (Figma: Ind Header): عناصر بارتفاع الهيدر كله (٧٢)، والنشط بخلفية accent وخط تحته
-  const navItems = [
-    { href: "/", label: "الرئيسية", active: pathname === "/" },
-    ...CATEGORIES.map((c) => ({ href: `/${c.slug}`, label: c.label, active: isActive(c.slug) })),
-    { href: "/quran", label: "قراءة", active: onQuran },
-    { href: "/clips", label: "مقتطفات", active: onClips },
-    { href: "/surah", label: "السور", active: onSurah },
+  const links = [
+    { href: "/clips", label: "مقتطفات", active: pathname === "/clips" },
+    { href: "/quran", label: "المصحف", active: under("/quran") },
+    { href: "/surah", label: "السور", active: under("/surah") },
+    { href: "/imamate", label: "جدول الإمامة", active: under("/imamate") },
   ];
-  const deskAction = "relative flex h-[72px] shrink-0 items-center justify-center gap-1 rounded-sm px-2 text-text transition-colors hover:bg-fg/5";
+
+  const pill = (active: boolean) =>
+    `flex h-10 items-center whitespace-nowrap rounded-full px-4 button-sm transition-colors duration-300 ease-out focus-visible:outline-offset-0 ${
+      active ? "bg-accent text-accent-ink" : "font-medium text-text hover:bg-fg/5"
+    }`;
+  const tool =
+    "relative flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-line bg-raised px-2.5 text-text transition-colors duration-300 ease-out hover:border-line-strong active:scale-[0.98]";
 
   const favBadge =
     ids.length > 0 ? (
-      <span className="absolute end-0 top-3 min-w-5 rounded-full bg-accent px-1.5 text-center text-[11px] font-bold leading-5 text-accent-ink xl:end-0.5 xl:top-4">
+      <span className="absolute -end-1 -top-1 min-w-5 rounded-full bg-accent px-1.5 text-center caption-3 leading-5 text-accent-ink">
         {toArabicDigits(ids.length)}
       </span>
     ) : null;
 
-  return (
-    <header className="glass sticky top-0 z-30 border-b border-gold/25">
-      {/* ---------- ديسكتوب ---------- */}
-      <div className="mx-auto hidden h-[72px] max-w-page items-center justify-between gap-4 px-8 xl:flex">
-        <div className="flex min-w-0 items-center gap-4">
-          <Link href="/" className="flex h-[72px] shrink-0 items-center">
-            <Logo label={t("الشيخ ياسر الدوسري")} className="h-11 w-[176px]" />
-          </Link>
-          <nav aria-label={t("الأقسام")} className="flex items-center gap-1">
-            {navItems.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                aria-current={n.active ? "page" : undefined}
-                className={`relative flex h-[72px] items-center justify-center whitespace-nowrap rounded-sm px-3 text-base leading-6 transition-colors 2xl:px-4 ${
-                  // النشط: في الفاتح الأخضر الأساسي والكلمة بيضا، وفي الغامق دهبي زي التصميم
-                  n.active
-                    ? "bg-accent font-semibold text-[#fff] dark:text-accent-ink"
-                    : "font-medium text-text hover:bg-fg/5"
-                }`}
-              >
-                {t(n.label)}
-                {n.active && (
-                  <span aria-hidden className="absolute inset-x-2 bottom-0 h-1.5 rounded-full bg-[#fff]/45 dark:bg-accent-hover" />
-                )}
-              </Link>
-            ))}
-          </nav>
-        </div>
+  const year = ramadan ? hijriOf(new Date(Date.now() + 9 * 3_600_000)).y : null;
+  const ramadanBadge = year ? (
+    <span className="rounded-full bg-gold/15 px-2.5 py-1 caption-3 text-gold-soft">
+      {t("رمضان")} {toArabicDigits(year)}
+    </span>
+  ) : null;
 
-        <div className="flex shrink-0 items-center">
-          <LangSwitch className={`${deskAction} min-w-[72px] px-4 font-medium`}>
-            <TranslateIcon />
-          </LangSwitch>
-          <Link href="/search" aria-label={t("البحث")} aria-current={onSearch ? "page" : undefined} className={`${deskAction} ${onSearch ? "text-gold" : ""}`}>
-            <SearchIcon className="h-6 w-6" />
+  return (
+    <header className="pointer-events-none sticky top-0 z-30 px-3 pt-3 xl:px-6 xl:pt-4">
+      {/* ---------- ديسكتوب: شريط عايم ---------- */}
+      <div className="pointer-events-auto mx-auto hidden w-fit max-w-full items-center gap-4 rounded-full border border-line bg-raised/80 py-2 pe-2 ps-5 shadow-float backdrop-blur-xl xl:flex">
+        <Link href="/" className="flex shrink-0 items-center">
+          <Logo label={t("الشيخ ياسر الدوسري")} className="h-9 w-[144px]" />
+        </Link>
+        {ramadanBadge}
+        <nav aria-label={t("الأقسام")} className="flex items-center gap-1">
+          <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={pill(pathname === "/")}>
+            {t("الرئيسية")}
+          </Link>
+          <RecitationsMenu active={onCategory} pill={pill} />
+          {links.map((n) => (
+            <Link key={n.href} href={n.href} aria-current={n.active ? "page" : undefined} className={pill(n.active)}>
+              {t(n.label)}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link href="/search" aria-label={t("البحث")} aria-current={onSearch ? "page" : undefined} className={`${tool} ${onSearch ? "text-gold" : ""}`}>
+            <SearchIcon className="h-5 w-5" />
           </Link>
           <Link
             href="/favorites"
             aria-label={`${t("المفضلة")}${ids.length ? ` (${toArabicDigits(ids.length)})` : ""}`}
             aria-current={onFavorites ? "page" : undefined}
-            className={`${deskAction} ${onFavorites ? "text-[#E5636B]" : ""}`}
+            className={`${tool} ${onFavorites ? "text-[#E5636B]" : ""}`}
           >
-            <HeartIcon filled={onFavorites} className="h-6 w-6" />
+            <HeartIcon filled={onFavorites} className="h-5 w-5" />
             {favBadge}
           </Link>
-          <ThemeToggle className={deskAction} />
+          <LangSwitch className={`${tool} gap-1 px-3 caption-3`}>
+            <TranslateIcon className="h-5 w-5" />
+          </LangSwitch>
+          {!ramadan && <ThemeToggle className={tool} />}
         </div>
       </div>
 
       {/* ---------- موبايل وتابلت ---------- */}
-      <div className="mx-auto grid max-w-page grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5 sm:px-6 md:py-3 xl:hidden">
-        <Link href="/" className="flex min-h-11 items-center justify-self-start">
-          <Logo label={t("الشيخ ياسر الدوسري")} className="w-[144px] sm:w-[176px]" />
+      <div className="pointer-events-auto mx-auto flex max-w-page items-center justify-between gap-3 rounded-full border border-line bg-raised/80 py-1.5 pe-1.5 ps-4 shadow-soft backdrop-blur-xl xl:hidden">
+        <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2">
+          <Logo label={t("الشيخ ياسر الدوسري")} className="w-[128px] sm:w-[160px]" />
         </Link>
-        <div className="flex items-center gap-2 justify-self-end">
+        <div className="flex items-center gap-1.5">
+          {ramadanBadge}
           <Link
             href="/search"
             aria-label={t("البحث")}
             aria-current={onSearch ? "page" : undefined}
-            className={`${iconBtn} ${onSearch ? "text-gold" : "text-muted hover:text-text"}`}
+            className={`${tool} h-11 min-w-11 ${onSearch ? "text-gold" : ""}`}
           >
             <SearchIcon className="h-5 w-5" />
           </Link>
-          <LangSwitch className={`${iconBtn} w-auto px-3 text-sm font-semibold text-muted hover:text-text md:w-auto`} />
-          <ThemeToggle className={`${iconBtn} text-muted hover:text-text`} />
+          <LangSwitch className={`${tool} h-11 min-w-11 px-3 caption-3`} />
+          {!ramadan && <ThemeToggle className={`${tool} h-11 min-w-11`} />}
         </div>
       </div>
-
     </header>
+  );
+}
+
+/** «التلاوات» في الديسكتوب: قايمة صغيرة بالأقسام، بتتقفل بـ Escape أو بالضغط برّاها أو لما الصفحة تتغير */
+function RecitationsMenu({ active, pill }: { active: boolean; pill: (active: boolean) => string }) {
+  const { t } = useL();
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={box} className="relative">
+      <button type="button" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen((o) => !o)} className={`${pill(active)} gap-1.5`}>
+        {t("التلاوات")}
+        <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 transition-transform duration-300 ease-out ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <ul className="absolute start-0 top-[calc(100%+12px)] w-64 rounded-3xl border border-line bg-raised p-2 shadow-float">
+          {CATEGORIES.map((c) => {
+            const here = pathname === `/${c.slug}` || pathname.startsWith(`/${c.slug}/`);
+            return (
+              <li key={c.slug}>
+                <Link
+                  href={`/${c.slug}`}
+                  aria-current={here ? "page" : undefined}
+                  className={`flex min-h-11 items-center gap-3 rounded-2xl px-3 body-5 transition-colors duration-300 ease-out ${here ? "bg-accent/10 text-text" : "text-text hover:bg-fg/5"}`}
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <CategoryIcon category={c.slug} className="h-4 w-4" />
+                  </span>
+                  {t(c.title)}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
