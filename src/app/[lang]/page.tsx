@@ -92,7 +92,10 @@ export default async function HomePage() {
     <div className="flex flex-col gap-12">
       {/* ميزة جديدة: الإذاعة أول حاجة في الصفحة */}
       <RadioCard />
-      <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
+      {/* الهيرو مصمم إن صورة الشيخ تطلع لفوق لحد الهيدر (lg:-top-24)، فبعد البانر بنسيبله مسافة تعوّض ده */}
+      <div className="lg:pt-24">
+        <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
+      </div>
       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
       <FridayKahf kahf={kahf} />
       <FridayCard slots={imamate} />
