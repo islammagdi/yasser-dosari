@@ -90,8 +90,11 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-12">
-      {/* ميزة جديدة: الإذاعة أول حاجة في الصفحة، راكبة فوق الهيرو */}
+      {/* ميزة جديدة: الإذاعة راكبة فوق الهيرو على الديسكتوب، وعلى الموبايل بعد «أحدث صلوات الحرم» */}
       <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} top={<RadioCard />} />
+      <div className="lg:hidden">
+        <RadioCard />
+      </div>
       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
       <FridayKahf kahf={kahf} />
       <FridayCard slots={imamate} />

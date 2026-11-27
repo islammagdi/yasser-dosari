@@ -72,7 +72,8 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned, top }: Props) {
 
   return (
     <section aria-labelledby="hero-title" className="full-bleed relative isolate -mt-8 sm:-mt-10">
-      {top && <div className="relative z-10 mx-auto max-w-page px-4 pb-6 pt-8 sm:px-6 sm:pt-10 lg:pb-0">{top}</div>}
+      {/* الإعلان فوق الهيرو على الديسكتوب بس؛ على الموبايل والتابلت بيتعرض بعد الهيرو (الصفحة الرئيسية) */}
+      {top && <div className="relative z-10 mx-auto hidden max-w-page px-6 pt-10 lg:block">{top}</div>}
       {/* الصورة: فوق بعرض الشاشة على الموبايل، وعلى الشمال من حرف الشاشة في الديسكتوب */}
       <div className="relative -z-10 h-[360px] w-full sm:h-[440px] lg:absolute lg:inset-y-0 lg:end-0 lg:-top-24 lg:h-auto lg:w-[46%] lg:max-w-[700px]">
         <Image

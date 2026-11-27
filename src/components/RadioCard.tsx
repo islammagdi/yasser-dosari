@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { useL } from "@/lib/i18n/client";
 import Link from "@/lib/i18n/nav";
 import { useRadioSeen } from "@/lib/useRadioSeen";
@@ -15,10 +16,12 @@ export function RadioCard() {
   const p = usePlayer();
   const seen = useRadioSeen();
   const onAir = Boolean(p.radio && p.isPlaying);
+  // الكارت بيتعرض مرتين في الرئيسية (ديسكتوب وموبايل)، فالـ id لازم يختلف
+  const titleId = useId();
 
   return (
     <section
-      aria-labelledby="home-radio-title"
+      aria-labelledby={titleId}
       className="relative z-10 overflow-hidden rounded-[2rem] border border-gold/30 bg-raised/70 shadow-float backdrop-blur-md bg-gradient-to-l from-accent/15 via-accent/5 to-gold/10 p-5 sm:p-7"
     >
       {/* موجات راديو باهتة في الخلفية */}
@@ -48,7 +51,7 @@ export function RadioCard() {
               </span>
             )}
           </div>
-          <h2 id="home-radio-title" className="font-display text-2xl font-bold sm:text-3xl">
+          <h2 id={titleId} className="font-display text-2xl font-bold sm:text-3xl">
             <Link href="/radio" className="hover:text-gold-soft">
               {t("إذاعة الشيخ ياسر الدوسري")}
             </Link>

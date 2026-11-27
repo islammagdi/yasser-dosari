@@ -1,0 +1,65 @@
+diff --git a/src/app/[lang]/page.tsx b/src/app/[lang]/page.tsx
+index eb6168b..ecdd2e7 100644
+--- a/src/app/[lang]/page.tsx
++++ b/src/app/[lang]/page.tsx
+@@ -90,8 +90,11 @@ export default async function HomePage() {
+ 
+   return (
+     <div className="flex flex-col gap-12">
+-      {/* ميزة جديدة: الإذاعة أول حاجة في الصفحة، راكبة فوق الهيرو */}
++      {/* ميزة جديدة: الإذاعة راكبة فوق الهيرو على الديسكتوب، وعلى الموبايل بعد «أحدث صلوات الحرم» */}
+       <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} top={<RadioCard />} />
++      <div className="lg:hidden">
++        <RadioCard />
++      </div>
+       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
+       <FridayKahf kahf={kahf} />
+       <FridayCard slots={imamate} />
+diff --git a/src/components/Hero.tsx b/src/components/Hero.tsx
+index 8c3f357..b8f94f3 100644
+--- a/src/components/Hero.tsx
++++ b/src/components/Hero.tsx
+@@ -72,7 +72,8 @@ export function Hero({ recent, imamate, dailyPool, dailyPinned, top }: Props) {
+ 
+   return (
+     <section aria-labelledby="hero-title" className="full-bleed relative isolate -mt-8 sm:-mt-10">
+-      {top && <div className="relative z-10 mx-auto max-w-page px-4 pb-6 pt-8 sm:px-6 sm:pt-10 lg:pb-0">{top}</div>}
++      {/* الإعلان فوق الهيرو على الديسكتوب بس؛ على الموبايل والتابلت بيتعرض بعد الهيرو (الصفحة الرئيسية) */}
++      {top && <div className="relative z-10 mx-auto hidden max-w-page px-6 pt-10 lg:block">{top}</div>}
+       {/* الصورة: فوق بعرض الشاشة على الموبايل، وعلى الشمال من حرف الشاشة في الديسكتوب */}
+       <div className="relative -z-10 h-[360px] w-full sm:h-[440px] lg:absolute lg:inset-y-0 lg:end-0 lg:-top-24 lg:h-auto lg:w-[46%] lg:max-w-[700px]">
+         <Image
+diff --git a/src/components/RadioCard.tsx b/src/components/RadioCard.tsx
+index 9900dbb..0066251 100644
+--- a/src/components/RadioCard.tsx
++++ b/src/components/RadioCard.tsx
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import { useId } from "react";
+ import { useL } from "@/lib/i18n/client";
+ import Link from "@/lib/i18n/nav";
+ import { useRadioSeen } from "@/lib/useRadioSeen";
+@@ -15,10 +16,12 @@ export function RadioCard() {
+   const p = usePlayer();
+   const seen = useRadioSeen();
+   const onAir = Boolean(p.radio && p.isPlaying);
++  // الكارت بيتعرض مرتين في الرئيسية (ديسكتوب وموبايل)، فالـ id لازم يختلف
++  const titleId = useId();
+ 
+   return (
+     <section
+-      aria-labelledby="home-radio-title"
++      aria-labelledby={titleId}
+       className="relative z-10 overflow-hidden rounded-[2rem] border border-gold/30 bg-raised/70 shadow-float backdrop-blur-md bg-gradient-to-l from-accent/15 via-accent/5 to-gold/10 p-5 sm:p-7"
+     >
+       {/* موجات راديو باهتة في الخلفية */}
+@@ -48,7 +51,7 @@ export function RadioCard() {
+               </span>
+             )}
+           </div>
+-          <h2 id="home-radio-title" className="font-display text-2xl font-bold sm:text-3xl">
++          <h2 id={titleId} className="font-display text-2xl font-bold sm:text-3xl">
+             <Link href="/radio" className="hover:text-gold-soft">
+               {t("إذاعة الشيخ ياسر الدوسري")}
+             </Link>
