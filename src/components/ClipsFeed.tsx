@@ -24,13 +24,41 @@ export interface FeedClip {
 
 const SITE = "yasser-dosari.vercel.app";
 
-/** بيجيب ملف الفيديو كـ File (للمشاركة على الحالة والتنزيل) */
-async function fetchFile(c: FeedClip): Promise<File> {
-  const res = await fetch(c.video);
-  if (!res.ok) throw new Error("fetch failed");
-  const blob = await res.blob();
-  const ext = c.video.split(".").pop()?.split("?")[0] || "mp4";
-  return new File([blob], `مقتطف-${c.id}.${ext}`, { type: blob.type || "video/mp4" });
+/** أقصى وقت لتجهيز ملف الفيديو قبل ما نعتبره فشل (بدل ما الزرار يفضل يلف للأبد) */
+const FETCH_TIMEOUT = 60_000;
+
+/**
+ * بيجيب ملف الفيديو كـ File (للمشاركة على الحالة والتنزيل)، مع نسبة التحميل ووقت أقصى.
+ * onProgress بياخد رقم من 0 لـ 100، أو -1 لو السيرفر مقالش حجم الملف.
+ */
+async function fetchFile(c: FeedClip, onProgress?: (pct: number) => void): Promise<File> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), FETCH_TIMEOUT);
+  try {
+    const res = await fetch(c.video, { signal: ctrl.signal });
+    if (!res.ok) throw new Error("fetch failed");
+    const total = Number(res.headers.get("content-length")) || 0;
+    let blob: Blob;
+    if (res.body && onProgress) {
+      const reader = res.body.getReader();
+      const parts: BlobPart[] = [];
+      let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        parts.push(value);
+        got += value.byteLength;
+        onProgress(total ? Math.min(99, Math.round((got / total) * 100)) : -1);
+      }
+      blob = new Blob(parts, { type: res.headers.get("content-type") || "video/mp4" });
+    } else {
+      blob = await res.blob();
+    }
+    const ext = c.video.split(".").pop()?.split("?")[0] || "mp4";
+    return new File([blob], `مقتطف-${c.id}.${ext}`, { type: blob.type || "video/mp4" });
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
 /**
@@ -64,6 +92,9 @@ export function ClipsFeed({ clips: source, startId }: { clips: FeedClip[]; start
   }, [source]);
   const box = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  // المقطع اللي بعده مبيبدأش يتحمّل غير لما اللي قدامك يبقى جاهز، عشان ميتقاسموش سرعة النت
+  const [activeReady, setActiveReady] = useState(false);
+  useEffect(() => setActiveReady(false), [active]);
   const [muted, setMuted] = useState(true);
   const player = usePlayer();
 
@@ -145,6 +176,8 @@ export function ClipsFeed({ clips: source, startId }: { clips: FeedClip[]; start
             index={i}
             active={i === active}
             near={Math.abs(i - active) <= 1}
+            preload={i === active ? "auto" : i === active + 1 && activeReady ? "auto" : "metadata"}
+            onReady={i === active ? () => setActiveReady(true) : undefined}
             muted={muted}
             onUnmute={() => setMuted(false)}
             onPlaySound={pausePlayer}
@@ -160,6 +193,8 @@ function ClipSlide({
   index,
   active,
   near,
+  preload,
+  onReady,
   muted,
   onUnmute,
   onPlaySound,
@@ -168,6 +203,8 @@ function ClipSlide({
   index: number;
   active: boolean;
   near: boolean;
+  preload: "auto" | "metadata";
+  onReady?: () => void;
   muted: boolean;
   onUnmute: () => void;
   onPlaySound: () => void;
@@ -176,6 +213,17 @@ function ClipSlide({
   const v = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState<"share" | "download" | null>(null);
+  // نسبة تجهيز الملف للمشاركة/التحميل (-1 = شغال بس الحجم مش معروف)
+  const [pct, setPct] = useState<number | null>(null);
+  // المقطع بيحمّل (النت بطيء): نوضّح إنه شغال بدل شاشة واقفة
+  const [buffering, setBuffering] = useState(false);
+  /**
+   * المتصفح مبيسمحش بفتح قايمة المشاركة غير بعد ضغطة "طازة". لو تجهيز الملف خد وقت،
+   * الضغطة الأصلية بتنتهي والمشاركة بتترفض من غير أي رسالة (ده اللي كان بيخلي الزرار ميعملش حاجة).
+   * فبنحتفظ بالملف ونطلب ضغطة تانية: «جاهز، اضغط للمشاركة».
+   */
+  const [ready, setReady] = useState<"file" | "link" | null>(null);
+  const fileRef = useRef<File | null>(null);
   const [note, setNote] = useState("");
   // قلب الضغطتين: بيظهر مكان الصباع، والـ key بيخلّي كل ضغطتين يعملوا قلب جديد
   const [heart, setHeart] = useState<{ x: number; y: number; key: number } | null>(null);
@@ -190,10 +238,14 @@ function ClipSlide({
     if (!el) return;
     if (active) {
       track({ type: "clip_view", id: clip.id, title: clip.title });
+      // لسه مفيش كفاية من الفيديو يشتغل بيه: نبين إنه بيحمّل من الأول
+      setBuffering(el.readyState < 3);
       el.play().then(() => setPaused(false)).catch(() => setPaused(true));
     } else {
       el.pause();
       el.currentTime = 0;
+      setBuffering(false);
+      setReady(null);
     }
     // الإحصائيات مع تغيّر المقطع النشط بس
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,39 +293,103 @@ function ClipSlide({
 
   const pageUrl = () => `${window.location.origin}${en ? "/en" : ""}/clips?c=${clip.id}`;
 
+  const getFile = async () => {
+    if (fileRef.current) return fileRef.current;
+    setPct(0);
+    try {
+      const f = await fetchFile(clip, setPct);
+      fileRef.current = f;
+      return f;
+    } finally {
+      setPct(null);
+    }
+  };
+
+  const shareLink = async () => {
+    const text = `${clip.title}\n${pageUrl()}`;
+    if (navigator.share) {
+      await navigator.share({ title: clip.title, text, url: pageUrl() });
+      track({ type: "clip_share", id: clip.id });
+    } else {
+      await navigator.clipboard.writeText(pageUrl());
+      flash(t("اتنسخ الرابط"));
+    }
+  };
+
+  /** بيفتح قايمة المشاركة بالملف. لازم يتنادى من ضغطة مباشرة (مفيش await قبله) */
+  const shareFile = async (file: File) => {
+    await navigator.share({ files: [file], title: clip.title, text: `${clip.title}\n${pageUrl()}` });
+    track({ type: "clip_share", id: clip.id });
+  };
+
+  const isAbort = (err: unknown) => (err as Error)?.name === "AbortError";
+  const isNotAllowed = (err: unknown) => (err as Error)?.name === "NotAllowedError";
+
   // المشاركة: ملف الفيديو نفسه (عشان يتحط حالة واتساب)، ولو المتصفح مش بيدعم الملفات نشارك الرابط
   const share = async () => {
-    setBusy("share");
-    try {
-      const text = `${clip.title}\n${pageUrl()}`;
+    setReady(null);
+    const canFiles = typeof navigator.canShare === "function";
+    // الملف متجهّز قبل كده: نفتح المشاركة على طول وإحنا لسه في نفس الضغطة
+    if (fileRef.current && navigator.canShare?.({ files: [fileRef.current] })) {
       try {
-        const file = await fetchFile(clip);
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: clip.title, text });
-          track({ type: "clip_share", id: clip.id });
-          return;
-        }
+        await shareFile(fileRef.current);
       } catch (err) {
-        if ((err as Error)?.name === "AbortError") return;
+        if (!isAbort(err)) flash(t("تعذّرت المشاركة، جرّب تاني"));
       }
-      if (navigator.share) {
-        await navigator.share({ title: clip.title, text, url: pageUrl() });
-        track({ type: "clip_share", id: clip.id });
-      } else {
-        await navigator.clipboard.writeText(pageUrl());
-        flash(t("اتنسخ الرابط"));
+      return;
+    }
+    if (!canFiles) {
+      try {
+        await shareLink();
+      } catch {
+        /* المستخدم قفل المشاركة */
       }
-    } catch {
-      /* المستخدم قفل المشاركة */
+      return;
+    }
+    setBusy("share");
+    const startedAt = Date.now();
+    try {
+      const file = await getFile();
+      if (!navigator.canShare?.({ files: [file] })) {
+        setReady("link");
+        return;
+      }
+      // لو التجهيز كان سريع نجرب نفتح المشاركة على طول، غير كده نطلب ضغطة تانية
+      if (Date.now() - startedAt > 4000) {
+        setReady("file");
+        return;
+      }
+      try {
+        await shareFile(file);
+      } catch (err) {
+        if (isNotAllowed(err)) setReady("file");
+        else if (!isAbort(err)) flash(t("تعذّرت المشاركة، جرّب تاني"));
+      }
+    } catch (err) {
+      // النت فصل أو الملف خد وقت أكتر من اللازم: نعرض مشاركة الرابط بدل ما الزرار يفضل يلف
+      flash(isAbort(err) ? t("النت بطيء، الفيديو مخلصش تحميل") : t("تعذّر تجهيز الفيديو"));
+      setReady("link");
     } finally {
       setBusy(null);
+    }
+  };
+
+  /** الضغطة التانية بعد ما الملف يجهز */
+  const shareReady = async () => {
+    const kind = ready;
+    setReady(null);
+    try {
+      if (kind === "file" && fileRef.current) await shareFile(fileRef.current);
+      else await shareLink();
+    } catch (err) {
+      if (!isAbort(err)) flash(t("تعذّرت المشاركة، جرّب تاني"));
     }
   };
 
   const download = async () => {
     setBusy("download");
     try {
-      const file = await fetchFile(clip);
+      const file = await getFile();
       const url = URL.createObjectURL(file);
       const a = document.createElement("a");
       a.href = url;
@@ -282,8 +398,8 @@ function ClipSlide({
       track({ type: "clip_download", id: clip.id });
       window.setTimeout(() => URL.revokeObjectURL(url), 5000);
       flash(t("اتحمّل على جهازك"));
-    } catch {
-      flash(t("تعذّر التحميل دلوقتي"));
+    } catch (err) {
+      flash((err as Error)?.name === "AbortError" ? t("النت بطيء، الفيديو مخلصش تحميل") : t("تعذّر التحميل دلوقتي"));
     } finally {
       setBusy(null);
     }
@@ -301,7 +417,13 @@ function ClipSlide({
         muted={muted}
         loop
         playsInline
-        preload={near ? "auto" : "none"}
+        preload={near ? preload : "none"}
+        onWaiting={() => active && setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlayThrough={() => {
+          setBuffering(false);
+          onReady?.();
+        }}
         onClick={onTap}
         className="h-full w-full touch-manipulation select-none object-contain"
       />
@@ -313,6 +435,18 @@ function ClipSlide({
           className="absolute left-1/2 top-1/2 z-10 touch-manipulation -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/45 px-5 py-3 text-sm font-semibold backdrop-blur"
         >
           {muted ? t("اضغط لتشغيل الصوت 🔊") : t("▶ تشغيل")}
+        </button>
+      )}
+      {active && buffering && !paused && (
+        <span aria-label={t("جاري التحميل")} role="status" className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-12 w-12 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-[3px] border-white/30 border-t-white" />
+      )}
+      {ready && (
+        <button
+          type="button"
+          onClick={shareReady}
+          className="absolute inset-x-6 top-1/2 z-30 mx-auto max-w-xs -translate-y-1/2 rounded-2xl bg-[#CDAA62] px-5 py-4 text-center text-base font-bold text-[#1A1408] shadow-xl"
+        >
+          {ready === "file" ? t("الفيديو جاهز، اضغط للمشاركة على الحالة") : t("اضغط لمشاركة رابط المقطع")}
         </button>
       )}
       {heart && (
@@ -332,7 +466,11 @@ function ClipSlide({
         <button type="button" onClick={share} disabled={!!busy} aria-label={t("مشاركة")} className={act}>
           <span className={actIcon}>
             {busy === "share" ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              pct !== null && pct >= 0 ? (
+                <span className="text-xs font-bold tabular-nums">{pct}%</span>
+              ) : (
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              )
             ) : (
               <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 5l7 7-7 7M21 12H9a6 6 0 0 0-6 6" />
@@ -345,7 +483,11 @@ function ClipSlide({
         <button type="button" onClick={download} disabled={!!busy} aria-label={t("تحميل")} className={act}>
           <span className={actIcon}>
             {busy === "download" ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              pct !== null && pct >= 0 ? (
+                <span className="text-xs font-bold tabular-nums">{pct}%</span>
+              ) : (
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              )
             ) : (
               <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" />
