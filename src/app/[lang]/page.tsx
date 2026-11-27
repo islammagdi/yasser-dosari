@@ -14,6 +14,7 @@ import { homeCollections, surahStats } from "@/lib/homeCollections";
 import { buildSurahIndex } from "@/lib/surahIndex";
 import { InstallCard } from "@/components/InstallCard";
 import { RamadanCard } from "@/components/RamadanCard";
+import { RamadanHome } from "@/components/RamadanHome";
 import { HomeBrowser, type HomeSection } from "@/components/HomeBrowser";
 import { recordings } from "@/lib/api";
 import { CATEGORIES } from "@/lib/categories";
@@ -88,12 +89,28 @@ export default async function HomePage() {
   // مقتطف اليوم: من آخر ٣٠ مقطع، والاختيار بيحصل في المتصفح بتاريخ مكة
   const clipCards = (await loadClips()).slice(0, 30).map((c) => ({ id: c.id, title: c.title, poster: clipFileUrl(c.posterKey) }));
 
+  const restStats = sections.filter((s) => s.total > 0 && s.slug !== "rare").map((s) => ({ slug: s.slug, title: s.title, total: s.total }));
+
   return (
-    <div className="flex flex-col gap-12">
+    <>
+    {/*
+      رئيسيتين في نفس الصفحة، وواحدة بس بتظهر حسب data-season (globals.css):
+      رمضان الأول عشان رابط «ختمتي» (/#khatma) يلاقي كارت الختمة اللي في رمضان.
+    */}
+    <div className="season-ramadan">
+      <RamadanHome
+        taraweeh={taraweeh}
+        imamate={imamate}
+        clips={clipCards}
+        stats={restStats}
+        khatma={<WirdCard items={wirdItems} />}
+      />
+    </div>
+    <div className="season-regular flex flex-col gap-12">
       <Hero
         latest={sections.find((s) => s.slug === "fard")?.latest[0] ?? recent[0] ?? null}
         imamate={imamate}
-        stats={sections.filter((s) => s.total > 0 && s.slug !== "rare").map((s) => ({ slug: s.slug, title: s.title, total: s.total }))}
+        stats={restStats}
       />
       <TodayStrip dailyPool={dailyPool} dailyPinned={dailyPinned} />
       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
@@ -110,5 +127,6 @@ export default async function HomePage() {
       <HomeBrowser sections={sections.filter((s) => s.total > 0)} />
       <InstallCard />
     </div>
+    </>
   );
 }

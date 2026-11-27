@@ -1,0 +1,393 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useL } from "@/lib/i18n/client";
+import Link from "@/lib/i18n/nav";
+import type { ImamateSlot, Recording } from "@/types";
+import { hijriOf, NIGHT_PART_LABELS } from "@/lib/imamate";
+import { isPlayable } from "@/lib/labels";
+import { usePlayer } from "./PlayerProvider";
+import { PauseIcon, PlayIcon } from "./icons";
+
+export interface RamadanClip {
+  id: string;
+  title: string;
+  poster?: string;
+}
+export interface RamadanStat {
+  slug: string;
+  title: string;
+  total: number;
+}
+
+interface Props {
+  taraweeh: Recording[];
+  imamate: ImamateSlot[];
+  clips: RamadanClip[];
+  stats: RamadanStat[];
+  /** كارت الختمة (WirdCard): بيتبعت من السيرفر عشان نفس منطق الورد الحالي */
+  khatma: React.ReactNode;
+}
+
+/** رمضان «الحالي»: لو احنا فعلًا في رمضان (بتوقيت مكة، والليلة بتبدأ من المغرب) */
+function liveRamadan(now: Date): { year: number; night: number } | null {
+  const h = hijriOf(new Date(now.getTime() + 9 * 3_600_000));
+  return h.m === 9 ? { year: h.y, night: h.d } : null;
+}
+
+/**
+ * رئيسية رمضان: بتظهر بدل الرئيسية العادية طول الشهر (data-season="ramadan").
+ * الترتيب: الليلة ← ليالي رمضان ← المقاطع ← ختمة رمضان ورمضانات سابقة ← باقي الموقع.
+ *
+ * برّا رمضان (معاينة بـ ?season=ramadan): بنعرض آخر رمضان عندنا تسجيلاته، كإننا في نصه،
+ * عشان الشكل يتراجع بداتا حقيقية.
+ */
+export function RamadanHome({ taraweeh, imamate, clips, stats, khatma }: Props) {
+  const { t, toArabicDigits } = useL();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // الليالي اللي ليها تسجيلات، لكل سنة: سنة ← ليلة ← تسجيلات
+  const byYear = useMemo(() => {
+    const m = new Map<number, Map<number, Recording[]>>();
+    for (const r of taraweeh) {
+      if (!r.hijriYear || !r.night) continue;
+      const y = m.get(r.hijriYear) ?? new Map<number, Recording[]>();
+      y.set(r.night, [...(y.get(r.night) ?? []), r]);
+      m.set(r.hijriYear, y);
+    }
+    return m;
+  }, [taraweeh]);
+
+  const live = now ? liveRamadan(now) : null;
+  const lastYear = Math.max(0, ...byYear.keys());
+  const preview = !!now && !live;
+  const year = live?.year ?? lastYear;
+  const nights = byYear.get(year) ?? new Map<number, Recording[]>();
+  const tonight = live?.night ?? Math.min(30, Math.max(0, ...nights.keys()) + 1);
+
+  // آخر ليلة نزلت في رمضان ده، ولو مفيش: أحدث تراويح عندنا
+  const before = [...nights.keys()].filter((n) => n < tonight);
+  const lastNight = before.length ? Math.max(...before) : Math.max(0, ...nights.keys());
+  const latest = nights.get(lastNight)?.[0] ?? taraweeh[0] ?? null;
+
+  const pastYears = [...byYear.entries()].filter(([y]) => y !== year).sort((a, b) => b[0] - a[0]).slice(0, 3);
+
+  return (
+    <div className="flex flex-col gap-16 sm:gap-24">
+      <RamadanHero year={year} tonight={tonight} preview={preview} latest={latest} imamate={imamate} now={now} />
+
+      {/* ---------- ليالي رمضان ---------- */}
+      <section aria-labelledby="nights-title" className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <h2 id="nights-title" className="heading-4 sm:heading-3">
+              {t("ليالي رمضان")}
+            </h2>
+            <p className="body-3 text-muted">{t("دوس على أي ليلة تسمع التراويح والتهجد بتوعها.")}</p>
+          </div>
+          <ul className="flex gap-4 caption-5 text-muted">
+            <li className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-3 rounded bg-emerald" />{t("نزلت")}</li>
+            <li className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-3 rounded border-2 border-gold-soft" />{t("الليلة")}</li>
+            <li className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-3 rounded border border-line bg-surface" />{t("لسه")}</li>
+          </ul>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-6">
+          <ol className="grid grid-cols-5 gap-2 rounded-3xl border border-line bg-surface p-3 sm:gap-2.5 sm:p-6">
+            {Array.from({ length: 20 }, (_, i) => (
+              <NightCell key={i} n={i + 1} recs={nights.get(i + 1)} tonight={tonight} />
+            ))}
+          </ol>
+          <div className="flex flex-col gap-3 rounded-3xl border border-gold/45 bg-night p-3 sm:p-6">
+            <div className="flex items-center justify-between">
+              <span className="font-ruqaa text-2xl font-bold text-gold-soft sm:text-3xl">{t("العشر الأواخر")}</span>
+              <span className="caption-5 text-muted">{t("تراويح وتهجد")}</span>
+            </div>
+            <ol className="grid grid-cols-5 gap-2">
+              {Array.from({ length: 10 }, (_, i) => (
+                <NightCell key={i} n={i + 21} recs={nights.get(i + 21)} tonight={tonight} compact />
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- المقاطع ---------- */}
+      {clips.length > 0 && (
+        <section aria-labelledby="ramadan-clips-title" className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <h2 id="ramadan-clips-title" className="heading-4 sm:heading-3">
+                {t("أحدث المقاطع")}
+              </h2>
+              <p className="body-3 text-muted">{t("لحظات قصيرة من صلوات الشيخ، جاهزة لحالة واتساب.")}</p>
+            </div>
+            <Link href="/clips" className="rounded-full border border-line px-4 py-2 button-sm hover:border-line-strong">
+              {t("كل المقاطع")}
+            </Link>
+          </div>
+          <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:gap-4 sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+            {clips.slice(0, 5).map((c) => (
+              <li key={c.id} className="w-36 shrink-0 snap-start sm:w-auto">
+                <Link href={`/clips?c=${c.id}`} className="group flex flex-col gap-2">
+                  <span className="relative block aspect-[9/16] overflow-hidden rounded-2xl border border-line bg-raised">
+                    {c.poster && (
+                      // eslint-disable-next-line @next/next/no-img-element -- البوستر من R2 مباشرة
+                      <img src={c.poster} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />
+                    )}
+                    <span className="absolute bottom-3 start-3 flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-ink">
+                      <PlayIcon className="h-4 w-4" />
+                    </span>
+                  </span>
+                  <span className="line-clamp-2 body-5">{c.title}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ---------- ختمة رمضان + رمضانات سابقة ---------- */}
+      <section className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+        <div className="min-w-0">{khatma}</div>
+        {pastYears.length > 0 && (
+          <div className="flex flex-col gap-3 self-start rounded-3xl border border-line bg-surface p-5 sm:p-8">
+            <h2 className="caption-3 text-gold">{t("رمضانات سابقة")}</h2>
+            {pastYears.map(([y, ns]) => (
+              <Link key={y} href="/taraweeh" className="flex items-center justify-between rounded-2xl bg-night px-4 py-3.5 transition-colors duration-300 ease-out hover:bg-fg/5">
+                <span className="body-1">
+                  {t("رمضان")} {toArabicDigits(y)} {t("هـ")}
+                </span>
+                <span className="caption-2 text-muted">{t("{n} ليلة", { n: toArabicDigits(ns.size) })} ›</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ---------- جملة كبيرة ---------- */}
+      <section className="py-6 text-center sm:py-12">
+        <p className="mx-auto max-w-[880px] heading-4 sm:heading-2 sm:leading-[1.4]">
+          {t("ثلاثون ليلة من المسجد الحرام،")}
+          <br />
+          <span className="text-fg/30">{t("كل ليلة محفوظة لتعود إليها بعد رمضان.")}</span>
+        </p>
+      </section>
+
+      {/* ---------- باقي الموقع ---------- */}
+      {stats.length > 0 && (
+        <section aria-labelledby="rest-title" className="flex flex-col gap-4">
+          <h2 id="rest-title" className="caption-3 text-gold">
+            {t("وباقي الموقع زي ما هو")}
+          </h2>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {stats.map((s) => (
+              <li key={s.slug}>
+                <Link href={`/${s.slug}`} className="flex items-center justify-between rounded-2xl border border-line bg-surface px-4 py-4 transition-colors duration-300 ease-out hover:border-line-strong sm:px-5">
+                  <span className="title-3">{t(s.title)}</span>
+                  <span className="caption-2 tabular-nums text-muted">{toArabicDigits(s.total)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/** خانة ليلة: نزلت (لينك لأول تسجيل)، أو الليلة، أو لسه */
+function NightCell({ n, recs, tonight, compact = false }: { n: number; recs?: Recording[]; tonight: number; compact?: boolean }) {
+  const { t, toArabicDigits } = useL();
+  const base = `flex flex-col items-center justify-center gap-0.5 rounded-2xl ${compact ? "py-2.5" : "py-3 sm:py-4"}`;
+  const label = (
+    <>
+      <span className={compact ? "title-2 font-semibold" : "heading-6"}>{toArabicDigits(n)}</span>
+      {!compact && <span className="hidden caption-5 opacity-75 sm:block">{n === tonight ? t("الليلة") : recs ? t("نزلت") : " "}</span>}
+    </>
+  );
+  if (recs?.length) {
+    return (
+      <li>
+        <Link
+          href={`/${recs[0].category}/${recs[0].id}`}
+          aria-label={t("ليلة {n} رمضان", { n: toArabicDigits(n) })}
+          className={`${base} ${n === tonight ? "border-2 border-gold-soft text-gold-soft" : "bg-emerald text-[#F1EEE6]"} transition-transform duration-300 ease-out hover:scale-[1.03] active:scale-[0.98]`}
+        >
+          {label}
+        </Link>
+      </li>
+    );
+  }
+  return (
+    <li className={`${base} ${n === tonight ? "border-2 border-gold-soft text-gold-soft" : "border border-line bg-ink text-muted/60"}`} aria-current={n === tonight ? "date" : undefined}>
+      {label}
+    </li>
+  );
+}
+
+/** الهيرو: لوحة سما بالليل (هلال وفوانيس ونجوم وأقواس)، والاسم «ليلة N رمضان»، وكارت الليلة الشفاف */
+function RamadanHero({
+  year,
+  tonight,
+  preview,
+  latest,
+  imamate,
+  now,
+}: {
+  year: number;
+  tonight: number;
+  preview: boolean;
+  latest: Recording | null;
+  imamate: ImamateSlot[];
+  now: Date | null;
+}) {
+  const { t, toArabicDigits, recTitle, formatDuration, prayerTitle } = useL();
+  const { current, isPlaying, playQueue, toggle } = usePlayer();
+
+  // جدول الليلة: صلوات الشيخ في ليلة رمضان دي (تراويح أو تهجد)
+  const tonightSlots = imamate.filter((s) => s.ramadanYear === year && s.ramadanNight === tonight);
+  const scheduleOut = imamate.some((s) => s.ramadanYear === year);
+  const first = tonightSlots.find((s) => s.start);
+  const at = first?.start ? Date.parse(`${first.date}T${first.start}:00+03:00`) : null;
+  const left = now && at ? at - now.getTime() : null;
+  const parts =
+    left !== null && left > 0 && left < 24 * 3600_000
+      ? [Math.floor(left / 3600_000), Math.floor((left % 3600_000) / 60_000), Math.floor((left % 60_000) / 1000)]
+      : null;
+
+  const isCurrent = !!latest && current?.id === latest.id;
+  const playingNow = isCurrent && isPlaying;
+  const glass = "rounded-3xl border border-gold-soft/20 bg-surface/40 backdrop-blur-xl";
+
+  return (
+    <section aria-labelledby="ramadan-hero-title" className="relative isolate overflow-hidden rounded-[40px] border border-line bg-night px-5 pb-8 pt-16 sm:px-10 sm:pb-12 sm:pt-24 lg:px-14">
+      <RamadanSky />
+
+      <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
+        <div className="flex flex-col gap-5">
+          <p className="flex items-center gap-3 caption-3 text-gold">
+            <span aria-hidden className="h-px w-6 bg-gold/60" />
+            {t("صلاة التراويح من المسجد الحرام")}
+          </p>
+          <h1 id="ramadan-hero-title" className="font-ruqaa text-6xl font-bold leading-[1.25] text-gold-soft sm:text-8xl">
+            {tonight > 0 ? t("ليلة {n} رمضان", { n: toArabicDigits(tonight) }) : `${t("رمضان")} ${toArabicDigits(year)}`}
+          </h1>
+          <p className="max-w-[520px] text-lg leading-8 text-muted sm:text-xl">
+            {t("كل ليلة يؤمّ فيها الشيخ تنزل هنا بعد الصلاة، ومعها مقاطعها القصيرة لتشاركها.")}
+          </p>
+          {preview && (
+            <p className="caption-5 text-muted">{t("معاينة بداتا رمضان {y} هـ", { y: toArabicDigits(year) })}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* الليلة: جدول الشيخ والعدّاد */}
+          <div className={`${glass} flex flex-col gap-4 p-5 sm:p-6`} aria-live="polite">
+            <div className="flex items-center justify-between">
+              <span className="caption-3 text-gold">{t("الليلة")}</span>
+              {tonightSlots.length > 0 && (
+                <span className="flex items-center gap-1.5 caption-4 text-gold-soft">
+                  <span aria-hidden className="h-2 w-2 rounded-full bg-gold-soft" />
+                  {t("الشيخ في الجدول")}
+                </span>
+              )}
+            </div>
+            <p className="heading-6">
+              {tonightSlots.length > 0
+                ? tonightSlots.map((s) => `${prayerTitle(s.prayer)}${s.part ? `: ${t(NIGHT_PART_LABELS[s.part])}` : ""}`).join(t("، "))
+                : scheduleOut
+                  ? t("الشيخ مش في جدول الليلة")
+                  : t("جدول رمضان لسه متعلنش")}
+            </p>
+            {parts && (
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {parts.map((v, i) => (
+                  <div key={i} className="rounded-2xl border border-gold-soft/10 bg-ink/45 py-3">
+                    <div className="heading-4 tabular-nums text-gold-soft">{toArabicDigits(v).padStart(2, t("٠"))}</div>
+                    <div className="caption-5 text-muted">{[t("ساعة"), t("دقيقة"), t("ثانية")][i]}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Link href="/imamate" className="self-start button-sm text-gold hover:text-gold-soft">
+              {t("جدول التراويح كامل")} ›
+            </Link>
+          </div>
+
+          {/* آخر ليلة نزلت */}
+          {latest && (
+            <div className={`${glass} flex items-center gap-4 p-4`}>
+              <button
+                type="button"
+                onClick={() => (isCurrent ? toggle() : playQueue([latest], 0))}
+                disabled={!isPlayable(latest)}
+                aria-label={`${playingNow ? t("إيقاف") : t("تشغيل")} ${recTitle(latest)}`}
+                className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors duration-300 ease-out hover:bg-accent-hover active:scale-[0.98] disabled:opacity-40"
+              >
+                {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+              </button>
+              <div className="flex min-w-0 flex-col">
+                <span className="caption-3 text-gold">{t("آخر ليلة نزلت")}</span>
+                <Link href={`/${latest.category}/${latest.id}`} className="truncate title-3 hover:text-gold-soft">
+                  {recTitle(latest)}
+                </Link>
+                {latest.durationSec ? <span className="caption-5 text-muted">{formatDuration(latest.durationSec)}</span> : null}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** زينة الهيرو: كلها aria-hidden. هلال بإضاءة خفيفة، ٥ فوانيس متعلقة، نجوم، وصف أقواس زي أروقة الحرم */
+function RamadanSky() {
+  const lanterns: [number, number, number][] = [
+    [70, 120, 1.1],
+    [170, 60, 0.8],
+    [300, 170, 1.3],
+    [420, 90, 0.9],
+    [540, 140, 1],
+  ];
+  const stars: [number, number][] = [
+    [40, 40], [120, 200], [230, 30], [360, 60], [480, 30], [600, 80], [250, 250], [560, 260], [30, 300], [640, 200], [400, 320], [150, 340],
+  ];
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+      <span className="pattern-stars absolute inset-0 opacity-[0.06]" />
+      <span className="absolute left-[8%] top-[22%] h-80 w-80 rounded-full bg-gold-soft/10 blur-3xl" />
+      <svg viewBox="0 0 680 560" fill="none" stroke="currentColor" strokeWidth="1.3" className="absolute left-0 top-0 h-full max-h-[560px] w-auto text-gold opacity-80 max-lg:opacity-40">
+        <path d={lanterns.map(([x, y]) => `M${x} 0v${y}`).join("")} opacity=".6" />
+        {stars.map(([x, y], i) => (
+          <path key={i} d={`M${x} ${y - 5}l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z`} fill="currentColor" stroke="none" opacity={0.35 + 0.1 * (i % 4)} className="text-gold-soft" />
+        ))}
+        <g transform="translate(330 300)">
+          <path d="M70 60a95 95 0 1 1-25-120 78 78 0 1 0 25 120z" className="fill-gold-soft/15 text-gold-soft" stroke="currentColor" strokeWidth="1.6" />
+        </g>
+        {lanterns.map(([x, y, k], i) => (
+          <g key={i} transform={`translate(${x} ${y}) scale(${k})`}>
+            <path d="M-6 0h12l4 8h-20z" />
+            <path d="M-14 8h28l-4 46h-20z" />
+            <path d="M-10 8l10 46M10 8 0 54" />
+            <path d="M-10 54h20l-4 8h-12z" />
+            <path d="M0 62v8" />
+            <circle cx="0" cy="31" r="7" className="fill-gold-soft/25" stroke="none" />
+            <circle cx="0" cy="31" r="3" className="fill-gold-soft" stroke="none" />
+          </g>
+        ))}
+        <g opacity=".35">
+          {Array.from({ length: 10 }, (_, i) => (
+            <path key={i} d={`M${i * 68} 560v-40a30 30 0 0 1 60 0v40`} />
+          ))}
+          <path d="M0 560h680" />
+        </g>
+      </svg>
+    </div>
+  );
+}

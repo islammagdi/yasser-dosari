@@ -70,7 +70,7 @@ export function SiteHeader() {
 
   const year = ramadan ? hijriOf(new Date(Date.now() + 9 * 3_600_000)).y : null;
   const ramadanBadge = year ? (
-    <span className="rounded-full bg-gold/15 px-2.5 py-1 caption-3 text-gold-soft">
+    <span className="whitespace-nowrap rounded-full bg-gold/15 px-2.5 py-1 caption-3 text-gold-soft">
       {t("رمضان")} {toArabicDigits(year)}
     </span>
   ) : null;
