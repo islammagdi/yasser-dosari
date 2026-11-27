@@ -1,0 +1,13 @@
+diff --git a/vercel.json b/vercel.json
+index 4802ac8..13238c2 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -1,7 +1,7 @@
+ {
+   "git": {
+     "deploymentEnabled": {
+-      "redesign": false
++      "ui-redesign": false
+     }
+   }
+ }

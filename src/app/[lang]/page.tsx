@@ -4,6 +4,7 @@ import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
 import { ClipOfDay } from "@/components/ClipOfDay";
+import { RadioCard } from "@/components/RadioCard";
 import { HomeCollections } from "@/components/HomeCollections";
 import { clipFileUrl, loadClips } from "@/lib/clips";
 import { HomePlaylists } from "@/components/HomePlaylists";
@@ -93,6 +94,7 @@ export default async function HomePage() {
       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
       <FridayKahf kahf={kahf} />
       <FridayCard slots={imamate} />
+      <RadioCard />
       <ClipOfDay clips={clipCards} />
       <WirdCard items={wirdItems} dismissible />
       <SurahMap stats={stats} />

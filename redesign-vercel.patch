@@ -1,0 +1,13 @@
+diff --git a/vercel.json b/vercel.json
+new file mode 100644
+index 0000000..4802ac8
+--- /dev/null
++++ b/vercel.json
+@@ -0,0 +1,7 @@
++{
++  "git": {
++    "deploymentEnabled": {
++      "redesign": false
++    }
++  }
++}

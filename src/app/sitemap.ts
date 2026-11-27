@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/about`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${siteUrl}/imamate`, changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/clips`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${siteUrl}/radio`, changeFrequency: "weekly", priority: 0.7 },
   ];
 
   // لو مصدر من المصادر وقع، الخريطة تطلع بالباقي بدل ما تفشل كلها

@@ -1,0 +1,534 @@
+diff --git a/src/app/[lang]/page.tsx b/src/app/[lang]/page.tsx
+index 0464de3..1a244bd 100644
+--- a/src/app/[lang]/page.tsx
++++ b/src/app/[lang]/page.tsx
+@@ -4,6 +4,7 @@ import { WirdCard } from "@/components/WirdCard";
+ import { FridayKahf } from "@/components/FridayKahf";
+ import { Hero } from "@/components/Hero";
+ import { ClipOfDay } from "@/components/ClipOfDay";
++import { RadioCard } from "@/components/RadioCard";
+ import { HomeCollections } from "@/components/HomeCollections";
+ import { clipFileUrl, loadClips } from "@/lib/clips";
+ import { HomePlaylists } from "@/components/HomePlaylists";
+@@ -93,6 +94,7 @@ export default async function HomePage() {
+       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
+       <FridayKahf kahf={kahf} />
+       <FridayCard slots={imamate} />
++      <RadioCard />
+       <ClipOfDay clips={clipCards} />
+       <WirdCard items={wirdItems} dismissible />
+       <SurahMap stats={stats} />
+diff --git a/src/app/[lang]/radio/page.tsx b/src/app/[lang]/radio/page.tsx
+new file mode 100644
+index 0000000..6894840
+--- /dev/null
++++ b/src/app/[lang]/radio/page.tsx
+@@ -0,0 +1,33 @@
++import type { Metadata } from "next";
++import { pageMeta, type LangParams } from "@/lib/i18n/server";
++import { RadioView } from "@/components/RadioView";
++import { recordings } from "@/lib/api";
++import type { Category, Recording } from "@/types";
++
++const DESC = "إذاعة الشيخ ياسر الدوسري: تلاوات مختارة عشوائيًا تشتغل ورا بعض من غير توقف.";
++
++export function generateMetadata({ params }: { params: LangParams }): Metadata {
++  return pageMeta(params, "/radio", { title: "الإذاعة", description: DESC });
++}
++
++// نفس تحديث باقي الصفحات: التلاوات الجديدة بتدخل الإذاعة تلقائيًا
++export const revalidate = 3600;
++
++/** الأقسام اللي بتدخل الإذاعة: التلاوات بس (من غير الخطب والدروس) */
++const RADIO_CATEGORIES: Category[] = ["fard", "taraweeh", "rare", "mushaf"];
++
++export default async function RadioPage() {
++  const lists = await Promise.all(RADIO_CATEGORIES.map((c) => recordings.list({ category: c }).catch(() => [] as Recording[])));
++  // الإذاعة صوت بس: تسجيلات يوتيوب محتاجة لوحة فيديو ظاهرة فمينفعش تشتغل في الخلفية
++  const pool = lists
++    .flat()
++    .filter((r) => r.audioUrl && !r.youtubeId)
++    .map(({ searchText: _s, ...r }) => r);
++
++  return (
++    <>
++      <div aria-hidden className="pattern-stars page-pattern" />
++      <RadioView pool={pool} />
++    </>
++  );
++}
+diff --git a/src/app/sitemap.ts b/src/app/sitemap.ts
+index a33de2f..d5cef20 100644
+--- a/src/app/sitemap.ts
++++ b/src/app/sitemap.ts
+@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+     { url: `${siteUrl}/about`, changeFrequency: "yearly", priority: 0.3 },
+     { url: `${siteUrl}/imamate`, changeFrequency: "daily", priority: 0.8 },
+     { url: `${siteUrl}/clips`, changeFrequency: "daily", priority: 0.8 },
++    { url: `${siteUrl}/radio`, changeFrequency: "weekly", priority: 0.7 },
+   ];
+ 
+   // لو مصدر من المصادر وقع، الخريطة تطلع بالباقي بدل ما تفشل كلها
+diff --git a/src/components/MobileTabBar.tsx b/src/components/MobileTabBar.tsx
+index 34b05bc..8926c4a 100644
+--- a/src/components/MobileTabBar.tsx
++++ b/src/components/MobileTabBar.tsx
+@@ -39,7 +39,7 @@ export function MobileTabBar() {
+   }, [sheet]);
+ 
+   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
+-  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`));
++  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`)) || under("/radio");
+   const onMore = MORE_PATHS.some(under);
+ 
+   const tabs: { key: string; label: string; icon: React.ReactNode; href?: string; sheet?: Sheet; active: boolean }[] = [
+@@ -126,6 +126,15 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
+         </h2>
+         {kind === "recitations" ? (
+           <ul className="mx-auto flex max-w-xl flex-col gap-1">
++            <li>
++              <Link href="/radio" aria-current={under("/radio") ? "page" : undefined} onClick={onClose} className={row(under("/radio"))}>
++                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-[#fff] dark:text-accent-ink">
++                  <RadioIcon />
++                </span>
++                {t("الإذاعة")}
++                <span className="ms-auto text-xs font-normal text-muted">{t("تلاوات من غير توقف")}</span>
++              </Link>
++            </li>
+             {CATEGORIES.map((c) => {
+               const active = under(`/${c.slug}`);
+               return (
+@@ -214,6 +223,12 @@ const HeadphonesIcon = () => (
+     <rect x="16.5" y="14" width="4" height="6" rx="1.5" />
+   </svg>
+ );
++const RadioIcon = () => (
++  <svg {...ico} className="h-5 w-5">
++    <circle cx="12" cy="12" r="2" />
++    <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
++  </svg>
++);
+ const ReelIcon = () => (
+   <svg {...ico}>
+     <rect x="5" y="3" width="14" height="18" rx="3" />
+diff --git a/src/components/PlayerBar.tsx b/src/components/PlayerBar.tsx
+index 7c58f9c..08b1ec8 100644
+--- a/src/components/PlayerBar.tsx
++++ b/src/components/PlayerBar.tsx
+@@ -103,7 +103,7 @@ export function PlayerBar() {
+             ) : (
+               <span className="truncate text-[15px] font-semibold">{recTitle(p.current)}</span>
+             )}
+-            <span className={`truncate text-xs ${p.error || act.note ? "text-gold-soft" : "text-muted"}`}>{p.error ?? (act.note || section)}</span>
++            <span className={`truncate text-xs ${p.error || act.note ? "text-gold-soft" : "text-muted"}`}>{p.error ?? (act.note || (p.radio ? `${t("الإذاعة")} · ${section}` : section))}</span>
+           </span>
+           <button
+             type="button"
+diff --git a/src/components/PlayerProvider.tsx b/src/components/PlayerProvider.tsx
+index 342e503..eca09a7 100644
+--- a/src/components/PlayerProvider.tsx
++++ b/src/components/PlayerProvider.tsx
+@@ -47,6 +47,27 @@ interface PlayerContextValue {
+   toggleMute: () => void;
+   sleep: SleepTimer;
+   setSleepTimer: (value: number | "end" | null) => void;
++  /** الإذاعة: اسم القناة الشغّالة، أو null لو التشغيل عادي */
++  radio: string | null;
++  /** تشغيل الإذاعة: تلاوات عشوائية من المجموعة دي ورا بعض من غير توقف */
++  startRadio: (pool: Recording[], channel: string) => void;
++}
++
++/** خلط عشوائي (Fisher–Yates) */
++function shuffled<T>(list: T[]): T[] {
++  const a = [...list];
++  for (let i = a.length - 1; i > 0; i--) {
++    const j = Math.floor(Math.random() * (i + 1));
++    [a[i], a[j]] = [a[j], a[i]];
++  }
++  return a;
++}
++
++/** دفعة تلاوات جديدة للإذاعة، من غير ما تتكرر تلاوة اتسمعت قريب */
++function radioBatch(pool: Recording[], recent: Recording[], size = 12): Recording[] {
++  const avoid = new Set(recent.slice(-Math.min(recent.length, Math.floor(pool.length / 2))).map((r) => r.id));
++  const fresh = shuffled(pool.filter((r) => !avoid.has(r.id)));
++  return (fresh.length ? fresh : shuffled(pool)).slice(0, size);
+ }
+ 
+ /** تايمر الإيقاف: بعد عدد دقايق، أو مع نهاية التلاوة الحالية */
+@@ -158,12 +179,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
+   const [volume, setVolumeState] = useState(1);
+   const [muted, setMuted] = useState(false);
+   const [sleep, setSleep] = useState<SleepTimer>(null);
++  const [radio, setRadio] = useState<string | null>(null);
++  const radioPool = useRef<Recording[]>([]);
++  const radioRef = useRef<string | null>(null);
++  radioRef.current = radio;
++  /** مكان البداية: الإذاعة بتبدأ كل تلاوة من أولها، والتشغيل العادي بيكمّل من آخر مكان */
++  const startOf = (r: Recording) => (r.clip ? r.clip.start : radioRef.current ? 0 : getProgressTime(r.id));
+   const resumeAt = useRef<number | null>(null);
+   const autoplay = useRef(false);
+   /** محاولات إعادة التحميل لو الاتصال قطع في نص التلاوة */
+   const retriesRef = useRef(0);
+ 
+   const current = index >= 0 ? queue[index] ?? null : null;
++  const currentIdRef = useRef<string | undefined>(undefined);
++  currentIdRef.current = current?.id;
+ 
+   // الإحصائيات: تشغيل واحد لكل تسجيل في الزيارة (الإيقاف والاستكمال مش بيتحسبوا تاني)
+   const playedRef = useRef(new Set<string>());
+@@ -232,22 +261,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
+         const data: Saved = { queue, index, time: currentTime, rate };
+         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+         // مكان كل تلاوة لوحدها، عشان "أكمل الاستماع"
+-        saveProgress(current, currentTime, duration);
++        if (!radio) saveProgress(current, currentTime, duration);
+       } catch {
+         /* تجاهل */
+       }
+     }, 800);
+     return () => window.clearTimeout(t);
+-  }, [queue, index, currentTime, duration, rate, current]);
++  }, [queue, index, currentTime, duration, rate, current, radio]);
+ 
+   // نهاية التسجيل (مشتركة بين الصوت ويوتيوب). في ref عشان يوتيوب يشوف آخر نسخة منها
+   const next = useCallback(() => {
+     if (index + 1 >= queue.length) return;
+     autoplay.current = true;
+-    const nx = queue[index + 1];
+-    resumeAt.current = nx.clip ? nx.clip.start : getProgressTime(nx.id);
++    resumeAt.current = startOf(queue[index + 1]);
+     setIndex(index + 1);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [index, queue]);
++
++  // الإذاعة: قبل ما القايمة تخلص بنزوّد دفعة تلاوات جديدة، فالتشغيل مبيقفش أبدًا
++  useEffect(() => {
++    if (!radio || !radioPool.current.length || index < queue.length - 3) return;
++    setQueue((q) => [...q, ...radioBatch(radioPool.current, q)]);
++  }, [radio, index, queue.length]);
+   const handleEnded = () => {
+     // مقطع من الورد خلص: الكارت بيسمع الحدث ده ويعلّم الورد
+     if (current?.clip?.tag) window.dispatchEvent(new CustomEvent("yd-clip-ended", { detail: current.clip.tag }));
+@@ -399,6 +434,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
+   const playQueue = useCallback((items: Recording[], startIndex: number, startAt?: number) => {
+     const target = items[startIndex];
+     if (!target) return;
++    // أي تشغيل عادي بيقفل الإذاعة
++    radioRef.current = null;
++    setRadio(null);
+     // نفس التسجيل؟ يبقى toggle
+     const m = media();
+     const sameClip = (target.clip?.tag ?? "") === (current?.clip?.tag ?? "");
+@@ -424,10 +462,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
+   const playFromQueue = useCallback((i: number) => {
+     if (i === index || !queue[i]) return;
+     autoplay.current = true;
+-    resumeAt.current = queue[i].clip ? queue[i].clip!.start : getProgressTime(queue[i].id);
++    resumeAt.current = startOf(queue[i]);
+     setIndex(i);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [index, queue]);
+ 
++  const startRadio = useCallback((pool: Recording[], channel: string) => {
++    const playable = pool.filter((r) => r.audioUrl && !r.youtubeId && !r.clip);
++    if (!playable.length) return;
++    radioPool.current = playable;
++    radioRef.current = channel;
++    setRadio(channel);
++    autoplay.current = true;
++    resumeAt.current = 0;
++    const batch = radioBatch(playable, []);
++    // أول تلاوة لازم تختلف عن الشغّالة دلوقتي، وإلا مش هتتحمّل من جديد
++    if (batch.length > 1 && batch[0].id === currentIdRef.current) batch.push(batch.shift()!);
++    setQueue(batch);
++    setIndex(0);
++  }, []);
++
+   const moveInQueue = useCallback((from: number, to: number) => {
+     // اللي فات والحالية ثابتين: الترتيب بيتغيّر في الجاي بس، فمكان الحالية مبيتغيّرش
+     if (from === to || from <= index || to <= index) return;
+@@ -463,8 +517,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
+     }
+     if (index <= 0) return;
+     autoplay.current = true;
+-    resumeAt.current = getProgressTime(queue[index - 1].id);
++    resumeAt.current = startOf(queue[index - 1]);
+     setIndex(index - 1);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [media, index, queue]);
+ 
+   const seek = useCallback((sec: number) => {
+@@ -540,8 +595,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
+   const value = useMemo<PlayerContextValue>(() => ({
+     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
+     playQueue, queueIndex: index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
+-    volume, muted, setVolume, toggleMute, sleep, setSleepTimer,
+-  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
++    volume, muted, setVolume, toggleMute, sleep, setSleepTimer, radio, startRadio,
++  }), [radio, startRadio, current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
+ 
+   return (
+     <PlayerContext.Provider value={value}>
+diff --git a/src/components/RadioCard.tsx b/src/components/RadioCard.tsx
+new file mode 100644
+index 0000000..2eae13d
+--- /dev/null
++++ b/src/components/RadioCard.tsx
+@@ -0,0 +1,39 @@
++"use client";
++
++import { useL } from "@/lib/i18n/client";
++import Link from "@/lib/i18n/nav";
++import { usePlayer } from "./PlayerProvider";
++
++/** كارت الإذاعة في الرئيسية: بيودّي لصفحة /radio، وبيبيّن لو الإذاعة شغّالة */
++export function RadioCard() {
++  const { t } = useL();
++  const p = usePlayer();
++  const onAir = Boolean(p.radio && p.isPlaying);
++
++  return (
++    <Link
++      href="/radio"
++      className="glass-card group flex items-center gap-4 rounded-3xl p-5 transition-colors hover:bg-fg/5 sm:p-6"
++    >
++      <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent text-[#fff] dark:text-accent-ink">
++        {onAir && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-accent/30 motion-reduce:animate-none" />}
++        <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
++          <circle cx="12" cy="12" r="2" />
++          <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
++        </svg>
++      </span>
++      <span className="flex min-w-0 flex-1 flex-col gap-1">
++        <span className="flex items-center gap-2">
++          <span className="font-display text-xl font-bold sm:text-2xl">{t("إذاعة الشيخ ياسر الدوسري")}</span>
++          {onAir && (
++            <span className="rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white">{t("على الهواء")}</span>
++          )}
++        </span>
++        <span className="text-sm text-muted">{t("تلاوات مختارة عشوائيًا تشتغل ورا بعض من غير توقف.")}</span>
++      </span>
++      <span className="hidden shrink-0 rounded-full border border-line-strong px-5 py-2.5 text-sm font-semibold transition-colors group-hover:border-gold/60 group-hover:text-gold-soft sm:block">
++        {t("اسمع الإذاعة")}
++      </span>
++    </Link>
++  );
++}
+diff --git a/src/components/RadioView.tsx b/src/components/RadioView.tsx
+new file mode 100644
+index 0000000..2ea439a
+--- /dev/null
++++ b/src/components/RadioView.tsx
+@@ -0,0 +1,168 @@
++"use client";
++
++import { useMemo } from "react";
++import { useL } from "@/lib/i18n/client";
++import { getCategory } from "@/lib/categories";
++import type { Category, Recording } from "@/types";
++import { usePlayer } from "./PlayerProvider";
++
++interface Channel {
++  key: string;
++  label: string;
++  hint: string;
++  categories: Category[];
++}
++
++/** قنوات الإذاعة: كل التلاوات، أو قسم واحد */
++const CHANNELS: Channel[] = [
++  { key: "all", label: "كل التلاوات", hint: "فروض وتراويح ومصحف", categories: ["fard", "taraweeh", "rare", "mushaf"] },
++  { key: "fard", label: "الفروض", hint: "من صلوات المسجد الحرام", categories: ["fard"] },
++  { key: "taraweeh", label: "التراويح", hint: "ليالي رمضان", categories: ["taraweeh"] },
++  { key: "mushaf", label: "المصحف المسجل", hint: "سور كاملة", categories: ["mushaf"] },
++];
++
++/**
++ * الإذاعة: زرار تشغيل واحد، والتلاوات بتشتغل عشوائيًا ورا بعض من غير توقف.
++ * التشغيل نفسه في PlayerProvider (startRadio)، فالإذاعة بتكمّل وانت بتتنقّل في الموقع.
++ */
++export function RadioView({ pool }: { pool: Recording[] }) {
++  const { t, recTitle } = useL();
++  const p = usePlayer();
++
++  const channels = useMemo(
++    () =>
++      CHANNELS.map((c) => ({ ...c, items: pool.filter((r) => c.categories.includes(r.category)) })).filter((c) => c.items.length > 0),
++    [pool],
++  );
++
++  const active = p.radio ? channels.find((c) => c.key === p.radio) : undefined;
++  const onAir = Boolean(active && p.isPlaying);
++  const upNext = p.radio ? p.queue[p.queueIndex + 1] : undefined;
++
++  const play = (c: (typeof channels)[number]) => {
++    if (p.radio === c.key) p.toggle();
++    else p.startRadio(c.items, c.key);
++  };
++  const main = active ?? channels[0];
++
++  if (!channels.length) {
++    return <p className="py-20 text-center text-muted">{t("الإذاعة هتشتغل قريب إن شاء الله.")}</p>;
++  }
++
++  return (
++    <div className="mx-auto flex max-w-2xl flex-col gap-8 py-4">
++      <section className="glass-card relative flex flex-col items-center gap-6 overflow-hidden rounded-[2rem] px-6 py-10 text-center sm:px-10">
++        <span
++          className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${
++            onAir ? "bg-[#E5484D] text-white" : "bg-fg/10 text-muted"
++          }`}
++        >
++          <span className="relative flex h-2 w-2">
++            {onAir && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/80 motion-reduce:animate-none" />}
++            <span className={`relative inline-flex h-2 w-2 rounded-full ${onAir ? "bg-white" : "bg-muted"}`} />
++          </span>
++          {onAir ? t("على الهواء") : t("الإذاعة")}
++        </span>
++
++        <div className="flex flex-col gap-2">
++          <h1 className="font-display text-3xl font-bold sm:text-4xl">{t("إذاعة الشيخ ياسر الدوسري")}</h1>
++          <p className="text-muted">{t("تلاوات مختارة عشوائيًا تشتغل ورا بعض من غير توقف.")}</p>
++        </div>
++
++        <button
++          type="button"
++          onClick={() => play(main)}
++          aria-label={onAir ? t("إيقاف الإذاعة") : t("تشغيل الإذاعة")}
++          className="relative flex h-24 w-24 items-center justify-center rounded-full bg-accent text-[#fff] shadow-float transition-transform hover:scale-105 active:scale-95 dark:text-accent-ink"
++        >
++          {onAir && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-accent/30 motion-reduce:animate-none" />}
++          {active && p.isLoading ? (
++            <span aria-hidden className="h-8 w-8 animate-spin rounded-full border-[3px] border-current border-t-transparent" />
++          ) : onAir ? (
++            <svg aria-hidden viewBox="0 0 24 24" className="h-10 w-10" fill="currentColor">
++              <rect x="6" y="5" width="4" height="14" rx="1.2" />
++              <rect x="14" y="5" width="4" height="14" rx="1.2" />
++            </svg>
++          ) : (
++            <svg aria-hidden viewBox="0 0 24 24" className="h-10 w-10" fill="currentColor">
++              <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
++            </svg>
++          )}
++        </button>
++
++        {active && p.current ? (
++          <div className="flex w-full flex-col items-center gap-1" aria-live="polite">
++            <span className="text-xs text-muted">{t("يُتلى الآن")}</span>
++            <p className="line-clamp-2 text-lg font-semibold">{recTitle(p.current)}</p>
++            <p className="text-sm text-muted">{t(getCategory(p.current.category)?.title ?? "")}</p>
++            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
++              <button
++                type="button"
++                onClick={p.next}
++                className="flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-semibold transition-colors hover:border-gold/60 hover:text-gold-soft"
++              >
++                {t("تلاوة أخرى")}
++                <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 rtl:-scale-x-100" fill="currentColor">
++                  <path d="M5 6.2v11.6a1 1 0 0 0 1.5.86L15 13.5V17a1 1 0 0 0 2 0V7a1 1 0 0 0-2 0v3.5L6.5 5.34A1 1 0 0 0 5 6.2Z" />
++                </svg>
++              </button>
++            </div>
++            {upNext && (
++              <p className="mt-2 max-w-full truncate text-xs text-muted">
++                {t("التالية:")} {recTitle(upNext)}
++              </p>
++            )}
++          </div>
++        ) : (
++          <p className="text-sm text-muted">{t("اضغط تشغيل، والتلاوات هتكمّل لوحدها حتى وانت بتتنقّل في الموقع.")}</p>
++        )}
++      </section>
++
++      <section aria-labelledby="radio-channels" className="flex flex-col gap-3">
++        <h2 id="radio-channels" className="font-display text-2xl font-bold">
++          {t("القنوات")}
++        </h2>
++        <ul className="grid gap-3 sm:grid-cols-2">
++          {channels.map((c) => {
++            const on = p.radio === c.key;
++            const playing = on && p.isPlaying;
++            return (
++              <li key={c.key}>
++                <button
++                  type="button"
++                  onClick={() => play(c)}
++                  aria-pressed={on}
++                  className={`glass-card flex w-full items-center gap-4 rounded-2xl p-4 text-start transition-colors ${
++                    on ? "ring-2 ring-accent" : "hover:bg-fg/5"
++                  }`}
++                >
++                  <span
++                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
++                      on ? "bg-accent text-[#fff] dark:text-accent-ink" : "bg-accent/10 text-accent dark:text-gold"
++                    }`}
++                  >
++                    {playing ? (
++                      <span aria-hidden className="flex h-5 items-end gap-[3px]">
++                        <span className="eq-bar h-full w-[3px] rounded-full bg-current" />
++                        <span className="eq-bar h-full w-[3px] rounded-full bg-current" />
++                        <span className="eq-bar h-full w-[3px] rounded-full bg-current" />
++                      </span>
++                    ) : (
++                      <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
++                        <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
++                      </svg>
++                    )}
++                  </span>
++                  <span className="flex min-w-0 flex-col">
++                    <span className="font-semibold">{t(c.label)}</span>
++                    <span className="text-sm text-muted">{t(c.hint)}</span>
++                  </span>
++                </button>
++              </li>
++            );
++          })}
++        </ul>
++      </section>
++    </div>
++  );
++}
+diff --git a/src/components/SiteHeader.tsx b/src/components/SiteHeader.tsx
+index 98ebc5a..26aa9be 100644
+--- a/src/components/SiteHeader.tsx
++++ b/src/components/SiteHeader.tsx
+@@ -33,6 +33,7 @@ export function SiteHeader() {
+     { href: "/", label: "الرئيسية", active: pathname === "/" },
+     ...CATEGORIES.map((c) => ({ href: `/${c.slug}`, label: c.label, active: isActive(c.slug) })),
+     { href: "/quran", label: "قراءة", active: onQuran },
++    { href: "/radio", label: "الإذاعة", active: pathname === "/radio" },
+     { href: "/clips", label: "مقتطفات", active: onClips },
+     { href: "/surah", label: "السور", active: onSurah },
+   ];
+diff --git a/src/lib/i18n/en.ts b/src/lib/i18n/en.ts
+index c7a2fe2..9f09f12 100644
+--- a/src/lib/i18n/en.ts
++++ b/src/lib/i18n/en.ts
+@@ -13,6 +13,26 @@ export const EN: Record<string, string> = {
+   "تعذّر إرسال إشعار التجربة.": "Couldn’t send the test notification.",
+   "✓ الإشعارات اتفعّلت.": "✓ Notifications are on.",
+   "مقتطفات": "Clips",
++  "الإذاعة": "Radio",
++  "إذاعة الشيخ ياسر الدوسري": "Sheikh Yasser Al-Dosari Radio",
++  "إذاعة الشيخ ياسر الدوسري: تلاوات مختارة عشوائيًا تشتغل ورا بعض من غير توقف.": "Sheikh Yasser Al-Dosari Radio: randomly chosen recitations playing back to back, non-stop.",
++  "تلاوات مختارة عشوائيًا تشتغل ورا بعض من غير توقف.": "Randomly chosen recitations playing back to back, non-stop.",
++  "تلاوات من غير توقف": "Non-stop recitations",
++  "على الهواء": "On air",
++  "تشغيل الإذاعة": "Play radio",
++  "إيقاف الإذاعة": "Pause radio",
++  "يُتلى الآن": "Now reciting",
++  "تلاوة أخرى": "Another recitation",
++  "التالية:": "Up next:",
++  "القنوات": "Channels",
++  "كل التلاوات": "All recitations",
++  "فروض وتراويح ومصحف": "Prayers, Taraweeh and Mushaf",
++  "من صلوات المسجد الحرام": "From prayers at Masjid al-Haram",
++  "ليالي رمضان": "Ramadan nights",
++  "سور كاملة": "Complete surahs",
++  "اضغط تشغيل، والتلاوات هتكمّل لوحدها حتى وانت بتتنقّل في الموقع.": "Press play and recitations keep going on their own, even as you browse the site.",
++  "الإذاعة هتشتغل قريب إن شاء الله.": "The radio is coming soon, God willing.",
++  "اسمع الإذاعة": "Listen to the radio",
+   "المقاطع القصيرة جاية قريب إن شاء الله.": "Short clips are coming soon, God willing.",
+   "الرئيسية": "Home",
+   "رجوع للرئيسية": "Back to home",

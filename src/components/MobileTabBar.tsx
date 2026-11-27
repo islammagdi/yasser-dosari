@@ -39,7 +39,7 @@ export function MobileTabBar() {
   }, [sheet]);
 
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
-  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`));
+  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`)) || under("/radio");
   const onMore = MORE_PATHS.some(under);
 
   const tabs: { key: string; label: string; icon: React.ReactNode; href?: string; sheet?: Sheet; active: boolean }[] = [
@@ -126,6 +126,15 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
         </h2>
         {kind === "recitations" ? (
           <ul className="mx-auto flex max-w-xl flex-col gap-1">
+            <li>
+              <Link href="/radio" aria-current={under("/radio") ? "page" : undefined} onClick={onClose} className={row(under("/radio"))}>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-[#fff] dark:text-accent-ink">
+                  <RadioIcon />
+                </span>
+                {t("الإذاعة")}
+                <span className="ms-auto text-xs font-normal text-muted">{t("تلاوات من غير توقف")}</span>
+              </Link>
+            </li>
             {CATEGORIES.map((c) => {
               const active = under(`/${c.slug}`);
               return (
@@ -212,6 +221,12 @@ const HeadphonesIcon = () => (
     <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
     <rect x="3.5" y="14" width="4" height="6" rx="1.5" />
     <rect x="16.5" y="14" width="4" height="6" rx="1.5" />
+  </svg>
+);
+const RadioIcon = () => (
+  <svg {...ico} className="h-5 w-5">
+    <circle cx="12" cy="12" r="2" />
+    <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
   </svg>
 );
 const ReelIcon = () => (

@@ -47,6 +47,27 @@ interface PlayerContextValue {
   toggleMute: () => void;
   sleep: SleepTimer;
   setSleepTimer: (value: number | "end" | null) => void;
+  /** الإذاعة: اسم القناة الشغّالة، أو null لو التشغيل عادي */
+  radio: string | null;
+  /** تشغيل الإذاعة: تلاوات عشوائية من المجموعة دي ورا بعض من غير توقف */
+  startRadio: (pool: Recording[], channel: string) => void;
+}
+
+/** خلط عشوائي (Fisher–Yates) */
+function shuffled<T>(list: T[]): T[] {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** دفعة تلاوات جديدة للإذاعة، من غير ما تتكرر تلاوة اتسمعت قريب */
+function radioBatch(pool: Recording[], recent: Recording[], size = 12): Recording[] {
+  const avoid = new Set(recent.slice(-Math.min(recent.length, Math.floor(pool.length / 2))).map((r) => r.id));
+  const fresh = shuffled(pool.filter((r) => !avoid.has(r.id)));
+  return (fresh.length ? fresh : shuffled(pool)).slice(0, size);
 }
 
 /** تايمر الإيقاف: بعد عدد دقايق، أو مع نهاية التلاوة الحالية */
@@ -158,12 +179,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolumeState] = useState(1);
   const [muted, setMuted] = useState(false);
   const [sleep, setSleep] = useState<SleepTimer>(null);
+  const [radio, setRadio] = useState<string | null>(null);
+  const radioPool = useRef<Recording[]>([]);
+  const radioRef = useRef<string | null>(null);
+  radioRef.current = radio;
+  /** مكان البداية: الإذاعة بتبدأ كل تلاوة من أولها، والتشغيل العادي بيكمّل من آخر مكان */
+  const startOf = (r: Recording) => (r.clip ? r.clip.start : radioRef.current ? 0 : getProgressTime(r.id));
   const resumeAt = useRef<number | null>(null);
   const autoplay = useRef(false);
   /** محاولات إعادة التحميل لو الاتصال قطع في نص التلاوة */
   const retriesRef = useRef(0);
 
   const current = index >= 0 ? queue[index] ?? null : null;
+  const currentIdRef = useRef<string | undefined>(undefined);
+  currentIdRef.current = current?.id;
 
   // الإحصائيات: تشغيل واحد لكل تسجيل في الزيارة (الإيقاف والاستكمال مش بيتحسبوا تاني)
   const playedRef = useRef(new Set<string>());
@@ -232,22 +261,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const data: Saved = { queue, index, time: currentTime, rate };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         // مكان كل تلاوة لوحدها، عشان "أكمل الاستماع"
-        saveProgress(current, currentTime, duration);
+        if (!radio) saveProgress(current, currentTime, duration);
       } catch {
         /* تجاهل */
       }
     }, 800);
     return () => window.clearTimeout(t);
-  }, [queue, index, currentTime, duration, rate, current]);
+  }, [queue, index, currentTime, duration, rate, current, radio]);
 
   // نهاية التسجيل (مشتركة بين الصوت ويوتيوب). في ref عشان يوتيوب يشوف آخر نسخة منها
   const next = useCallback(() => {
     if (index + 1 >= queue.length) return;
     autoplay.current = true;
-    const nx = queue[index + 1];
-    resumeAt.current = nx.clip ? nx.clip.start : getProgressTime(nx.id);
+    resumeAt.current = startOf(queue[index + 1]);
     setIndex(index + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, queue]);
+
+  // الإذاعة: قبل ما القايمة تخلص بنزوّد دفعة تلاوات جديدة، فالتشغيل مبيقفش أبدًا
+  useEffect(() => {
+    if (!radio || !radioPool.current.length || index < queue.length - 3) return;
+    setQueue((q) => [...q, ...radioBatch(radioPool.current, q)]);
+  }, [radio, index, queue.length]);
   const handleEnded = () => {
     // مقطع من الورد خلص: الكارت بيسمع الحدث ده ويعلّم الورد
     if (current?.clip?.tag) window.dispatchEvent(new CustomEvent("yd-clip-ended", { detail: current.clip.tag }));
@@ -399,6 +434,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const playQueue = useCallback((items: Recording[], startIndex: number, startAt?: number) => {
     const target = items[startIndex];
     if (!target) return;
+    // أي تشغيل عادي بيقفل الإذاعة
+    radioRef.current = null;
+    setRadio(null);
     // نفس التسجيل؟ يبقى toggle
     const m = media();
     const sameClip = (target.clip?.tag ?? "") === (current?.clip?.tag ?? "");
@@ -424,9 +462,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const playFromQueue = useCallback((i: number) => {
     if (i === index || !queue[i]) return;
     autoplay.current = true;
-    resumeAt.current = queue[i].clip ? queue[i].clip!.start : getProgressTime(queue[i].id);
+    resumeAt.current = startOf(queue[i]);
     setIndex(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, queue]);
+
+  const startRadio = useCallback((pool: Recording[], channel: string) => {
+    const playable = pool.filter((r) => r.audioUrl && !r.youtubeId && !r.clip);
+    if (!playable.length) return;
+    radioPool.current = playable;
+    radioRef.current = channel;
+    setRadio(channel);
+    autoplay.current = true;
+    resumeAt.current = 0;
+    const batch = radioBatch(playable, []);
+    // أول تلاوة لازم تختلف عن الشغّالة دلوقتي، وإلا مش هتتحمّل من جديد
+    if (batch.length > 1 && batch[0].id === currentIdRef.current) batch.push(batch.shift()!);
+    setQueue(batch);
+    setIndex(0);
+  }, []);
 
   const moveInQueue = useCallback((from: number, to: number) => {
     // اللي فات والحالية ثابتين: الترتيب بيتغيّر في الجاي بس، فمكان الحالية مبيتغيّرش
@@ -463,8 +517,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     if (index <= 0) return;
     autoplay.current = true;
-    resumeAt.current = getProgressTime(queue[index - 1].id);
+    resumeAt.current = startOf(queue[index - 1]);
     setIndex(index - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [media, index, queue]);
 
   const seek = useCallback((sec: number) => {
@@ -540,8 +595,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<PlayerContextValue>(() => ({
     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
     playQueue, queueIndex: index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat,
-    volume, muted, setVolume, toggleMute, sleep, setSleepTimer,
-  }), [current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
+    volume, muted, setVolume, toggleMute, sleep, setSleepTimer, radio, startRadio,
+  }), [radio, startRadio, current, queue, isPlaying, isLoading, currentTime, duration, rate, error, playQueue, index, playFromQueue, moveInQueue, removeFromQueue, toggle, next, prev, seek, skip, setRate, repeat, repeatLeft, setRepeat, volume, muted, setVolume, toggleMute, sleep, setSleepTimer]);
 
   return (
     <PlayerContext.Provider value={value}>

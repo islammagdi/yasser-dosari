@@ -33,6 +33,7 @@ export function SiteHeader() {
     { href: "/", label: "الرئيسية", active: pathname === "/" },
     ...CATEGORIES.map((c) => ({ href: `/${c.slug}`, label: c.label, active: isActive(c.slug) })),
     { href: "/quran", label: "قراءة", active: onQuran },
+    { href: "/radio", label: "الإذاعة", active: pathname === "/radio" },
     { href: "/clips", label: "مقتطفات", active: onClips },
     { href: "/surah", label: "السور", active: onSurah },
   ];

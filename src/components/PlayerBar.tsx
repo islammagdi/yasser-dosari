@@ -103,7 +103,7 @@ export function PlayerBar() {
             ) : (
               <span className="truncate text-[15px] font-semibold">{recTitle(p.current)}</span>
             )}
-            <span className={`truncate text-xs ${p.error || act.note ? "text-gold-soft" : "text-muted"}`}>{p.error ?? (act.note || section)}</span>
+            <span className={`truncate text-xs ${p.error || act.note ? "text-gold-soft" : "text-muted"}`}>{p.error ?? (act.note || (p.radio ? `${t("الإذاعة")} · ${section}` : section))}</span>
           </span>
           <button
             type="button"
