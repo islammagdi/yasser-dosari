@@ -10,6 +10,8 @@ import { playbackUrl } from "@/lib/offline";
 import { track } from "@/lib/stats/track";
 import { markRadioSeen } from "@/lib/useRadioSeen";
 const STORAGE_KEY = "yd-player-v1";
+/** مواعيد إعادة المحاولة لو التحميل وقع (بالملّي ثانية): حوالي دقيقتين في المجموع */
+const RETRY_DELAYS = [1500, 3000, 6000, 10_000, 20_000, 30_000, 45_000];
 /** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 
@@ -62,6 +64,18 @@ function shuffled<T>(list: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/** أقصى عدد تلاوات بنحتفظ بيها في «اللي اتسمع» قبل الحالية */
+const HISTORY_MAX = 40;
+
+/**
+ * قايمة جديدة من غير ما نمسح اللي اتسمع: التلاوات اللي قبل الحالية (والحالية نفسها)
+ * بتفضل في أول القايمة، والجديد بييجي بعدها. فـ«السابق» وقايمة الاستماع بيرجعوا لها.
+ */
+function withHistory(queue: Recording[], index: number, items: Recording[], startIndex: number) {
+  const played = index >= 0 ? queue.slice(Math.max(0, index + 1 - HISTORY_MAX), index + 1) : [];
+  return { queue: [...played, ...items], index: played.length + startIndex };
 }
 
 /** دفعة تلاوات جديدة للإذاعة، من غير ما تتكرر تلاوة اتسمعت قريب */
@@ -192,6 +206,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const retriesRef = useRef(0);
 
   const current = index >= 0 ? queue[index] ?? null : null;
+  const queueRef = useRef(queue);
+  queueRef.current = queue;
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  /** المستمع عايز الصوت يشتغل؟ (بيتلغي لما هو يوقّف بنفسه أو التايمر يوقّف) — للمراقبة تحت */
+  const wantPlayRef = useRef(false);
   const currentIdRef = useRef<string | undefined>(undefined);
   currentIdRef.current = current?.id;
 
@@ -254,21 +274,46 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // حفظ التقدّم كل شوية
-  useEffect(() => {
+  // حفظ التقدّم: كل ٥ ثواني وهو شغّال، وعلطول لما الصفحة تستخبى أو تتقفل.
+  // (قبل كده الحفظ كان بيستنى الوقت يثبت، فوهو شغّال مكانش بيتحفظ خالص، ولو المتصفح قفل الصفحة الوقت كان بيضيع)
+  const saveRef = useRef<() => void>(() => {});
+  saveRef.current = () => {
     if (!current) return;
-    const t = window.setTimeout(() => {
-      try {
-        const data: Saved = { queue, index, time: currentTime, rate };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        // مكان كل تلاوة لوحدها، عشان "أكمل الاستماع"
-        if (!radio) saveProgress(current, currentTime, duration);
-      } catch {
-        /* تجاهل */
-      }
-    }, 800);
+    const a = audioRef.current;
+    const time = !current.youtubeId && a && a.currentSrc ? a.currentTime : currentTime;
+    const dur = !current.youtubeId && a && Number.isFinite(a.duration) ? a.duration : duration;
+    try {
+      const data: Saved = { queue, index, time, rate };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      // مكان كل تلاوة لوحدها، عشان "أكمل الاستماع"
+      if (!radio) saveProgress(current, time, dur);
+    } catch {
+      /* تجاهل */
+    }
+  };
+  useEffect(() => {
+    const t = window.setTimeout(() => saveRef.current(), 800);
     return () => window.clearTimeout(t);
-  }, [queue, index, currentTime, duration, rate, current, radio]);
+  }, [queue, index, rate, current?.id, radio, isPlaying]);
+  useEffect(() => {
+    if (!isPlaying) return;
+    const t = window.setInterval(() => saveRef.current(), 5000);
+    return () => window.clearInterval(t);
+  }, [isPlaying]);
+  useEffect(() => {
+    const save = () => saveRef.current();
+    const onVis = () => {
+      if (document.visibilityState === "hidden") save();
+      // رجعنا للصفحة: الوقت اللي على الشاشة يلحق الصوت (كان متوقف عن التحديث وهي مستخبية)
+      else if (audioRef.current?.currentSrc) setCurrentTime(audioRef.current.currentTime);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", save);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", save);
+    };
+  }, []);
 
   // نهاية التسجيل (مشتركة بين الصوت ويوتيوب). في ref عشان يوتيوب يشوف آخر نسخة منها
   const next = useCallback(() => {
@@ -289,6 +334,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (current?.clip?.tag) window.dispatchEvent(new CustomEvent("yd-clip-ended", { detail: current.clip.tag }));
     // تايمر "نهاية التلاوة": نقف هنا ومنكمّلش على اللي بعدها
     if (sleep?.kind === "end") {
+      wantPlayRef.current = false;
       setSleep(null);
       setIsPlaying(false);
     } else if (repeatLeftRef.current > 0) {
@@ -391,12 +437,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
-   // متابعة الختمة: السورة بتتحسب لما المستمع يوصل لـ ٩٠٪ منها
+  // متابعة الختمة: السورة بتتحسب لما المستمع يوصل لـ ٩٠٪ منها.
+  // يوتيوب من هنا؛ الصوت من onTimeUpdate تحت (عشان يشتغل حتى والشاشة مقفولة)
   useEffect(() => {
-    if (current?.category === "mushaf" && current.surah && duration > 0 && currentTime / duration >= 0.9) {
+    if (isYouTube && current?.category === "mushaf" && current.surah && duration > 0 && currentTime / duration >= 0.9) {
       markSurahListened(current.surah);
     }
-  }, [current, currentTime, duration]);
+  }, [isYouTube, current, currentTime, duration]);
 
   // يوتيوب مش بيبعت تحديث للوقت فبنسأله كل نص ثانية وهو شغّال
   useEffect(() => {
@@ -444,20 +491,26 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (current && target.id === current.id && m) {
       if (sameClip) {
         if (m.paused()) m.play();
-        else m.pause();
+        else {
+          wantPlayRef.current = false;
+          m.pause();
+        }
         return;
       }
-      // نفس الملف بس مقطع تاني (الورد): مفيش تحميل جديد، فبنقفز للبداية بإيدينا
-      setQueue(items);
-      setIndex(startIndex);
+      // نفس الملف بس مقطع تاني (الورد): مفيش تحميل جديد، فبنقفز للبداية بإيدينا.
+      // هنا الحالية هي نفس اللي هيتشغّل، فبنحتفظ باللي قبلها بس
+      const h = withHistory(queueRef.current, indexRef.current - 1, items, startIndex);
+      setQueue(h.queue);
+      setIndex(h.index);
       m.seek(startAt ?? target.clip?.start ?? 0);
       m.play();
       return;
     }
     autoplay.current = true;
     resumeAt.current = startAt ?? (target.clip ? target.clip.start : getProgressTime(target.id));
-    setQueue(items);
-    setIndex(startIndex);
+    const h = withHistory(queueRef.current, indexRef.current, items, startIndex);
+    setQueue(h.queue);
+    setIndex(h.index);
   }, [current, media]);
 
   const playFromQueue = useCallback((i: number) => {
@@ -480,8 +533,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const batch = radioBatch(playable, []);
     // أول تلاوة لازم تختلف عن الشغّالة دلوقتي، وإلا مش هتتحمّل من جديد
     if (batch.length > 1 && batch[0].id === currentIdRef.current) batch.push(batch.shift()!);
-    setQueue(batch);
-    setIndex(0);
+    const h = withHistory(queueRef.current, indexRef.current, batch, 0);
+    setQueue(h.queue);
+    setIndex(h.index);
   }, []);
 
   const moveInQueue = useCallback((from: number, to: number) => {
@@ -506,7 +560,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!m) return;
     autoplay.current = true;
     if (m.paused()) m.play();
-    else m.pause();
+    else {
+      wantPlayRef.current = false;
+      m.pause();
+    }
   }, [media]);
 
   const prev = useCallback(() => {
@@ -570,6 +627,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (sleep?.kind !== "minutes") return;
     const t = window.setTimeout(() => {
+      wantPlayRef.current = false;
       audioRef.current?.pause();
       ytRef.current?.pauseVideo();
       setSleep(null);
@@ -593,6 +651,56 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ms.setActionHandler("seekbackward", () => skip(-10));
     ms.setActionHandler("seekforward", () => skip(10));
   }, [current, toggle, next, prev, skip, index, queue.length, recTitle, recSubtitle, t]);
+
+  // ---- لو الصوت قطع لوحده ----
+  const lastProgress = useRef({ time: 0, at: 0 });
+  const recoverTimer = useRef<number | undefined>(undefined);
+  /** نحمّل الملف تاني ونكمّل من نفس الثانية */
+  const recover = useCallback((at: number, delay: number) => {
+    const a = audioRef.current;
+    if (!a) return;
+    window.clearTimeout(recoverTimer.current);
+    setIsLoading(true);
+    setError(null);
+    recoverTimer.current = window.setTimeout(() => {
+      if (!a.currentSrc && !a.src) return;
+      resumeAt.current = at || a.currentTime || lastProgress.current.time || resumeAt.current;
+      lastProgress.current = { time: resumeAt.current ?? 0, at: Date.now() };
+      a.load();
+      if (wantPlayRef.current) a.play().catch(() => setIsPlaying(false));
+    }, delay);
+  }, []);
+
+  // النت رجع وإحنا واقفين بسبب انقطاع: نكمّل علطول من غير ما نستنى المحاولة الجاية
+  useEffect(() => {
+    const onOnline = () => {
+      const a = audioRef.current;
+      if (a && wantPlayRef.current && !isYouTube && (a.error || a.readyState < 3)) recover(a.currentTime, 300);
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [isYouTube, recover]);
+
+  // مراقبة: المستمع عايز يسمع والصوت "شغّال" بس الوقت واقف بقاله ٢٠ ثانية من غير أي خطأ
+  // (بيحصل في الموبايل لما النت يقطع ويرجع: المتصفح بيفضل مستني للأبد). نحمّل من نفس المكان
+  useEffect(() => {
+    if (!current?.audioUrl || current.youtubeId) return;
+    const t = window.setInterval(() => {
+      const a = audioRef.current;
+      if (!a || !wantPlayRef.current || a.ended || a.paused) return;
+      const { time, at } = lastProgress.current;
+      if (Math.abs(a.currentTime - time) > 0.5) {
+        lastProgress.current = { time: a.currentTime, at: Date.now() };
+        return;
+      }
+      if (at && Date.now() - at > 20_000) {
+        lastProgress.current = { time: a.currentTime, at: Date.now() };
+        recover(a.currentTime, 0);
+      }
+    }, 5000);
+    lastProgress.current = { time: 0, at: Date.now() };
+    return () => window.clearInterval(t);
+  }, [current?.audioUrl, current?.youtubeId, current?.id, recover]);
 
   const value = useMemo<PlayerContextValue>(() => ({
     current, queue, isPlaying, isLoading, currentTime, duration, rate, error,
@@ -646,12 +754,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       <audio
         ref={audioRef}
         preload="metadata"
-        onPlay={() => setIsPlaying(true)}
+        onPlay={() => {
+          wantPlayRef.current = true;
+          setIsPlaying(true);
+        }}
         onPause={() => setIsPlaying(false)}
         onWaiting={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
         onPlaying={() => {
           retriesRef.current = 0;
+          setIsLoading(false);
         }}
         onLoadedMetadata={(e) => {
           const a = e.currentTarget;
@@ -662,8 +774,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
         }}
         onTimeUpdate={(e) => {
-          const t = e.currentTarget.currentTime;
-          setCurrentTime(t);
+          const a = e.currentTarget;
+          const t = a.currentTime;
+          lastProgress.current = { time: t, at: Date.now() };
+          // الصفحة مستخبية (الشاشة مقفولة أو تطبيق تاني): مفيش داعي نرسم الموقع كله ٤ مرات في الثانية.
+          // ده كان بيصرف بطارية ومعالج، وأندرويد ممكن يقفل الصفحة بسببه فالصوت يقف
+          if (document.visibilityState === "visible") setCurrentTime(t);
+          if (current?.category === "mushaf" && current.surah && a.duration > 0 && t / a.duration >= 0.9) {
+            markSurahListened(current.surah);
+          }
           // نهاية المقطع (الورد بالأجزاء): بنعتبره خلص زي نهاية الملف
           const end = current?.clip?.end;
           if (end && t >= end && !clipEndedRef.current) {
@@ -674,16 +793,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         onEnded={() => endedRef.current()}
         onError={(e) => {
           const a = e.currentTarget;
-          // النت قطع أو السيرفر وقف في نص التلاوة: بنحمّل تاني ونكمّل من نفس الثانية (مرتين بالكتير)
-          if (current?.audioUrl && a.currentTime > 0 && retriesRef.current < 2) {
-            retriesRef.current++;
-            resumeAt.current = a.currentTime;
-            const wasPlaying = !a.paused || isPlaying;
-            setIsLoading(true);
-            window.setTimeout(() => {
-              a.load();
-              if (wasPlaying) a.play().catch(() => setIsPlaying(false));
-            }, 1500 * retriesRef.current);
+          // النت قطع أو السيرفر وقف في نص التلاوة: بنحمّل تاني ونكمّل من نفس الثانية.
+          // بنحاول لحد ~دقيقتين (النت في الموبايل بيقطع ثواني كتير وانت ماشي)، ولو النت رجع بنحاول علطول
+          // لو الملف موقعش وهو في أوله (ممكن يكون مش موجود أصلًا) بنحاول مرتين بس، عشان منسيبش الزائر مستني
+          const maxRetries = a.currentTime > 0 ? RETRY_DELAYS.length : 2;
+          if (current?.audioUrl && (a.currentTime > 0 || wantPlayRef.current) && retriesRef.current < maxRetries) {
+            recover(a.currentTime, RETRY_DELAYS[retriesRef.current++]);
             return;
           }
           if (current?.audioUrl) {

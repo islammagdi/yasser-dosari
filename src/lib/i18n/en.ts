@@ -33,6 +33,8 @@ export const EN: Record<string, string> = {
   "اضغط تشغيل، والتلاوات هتكمّل لوحدها حتى وانت بتتنقّل في الموقع.": "Press play and recitations keep going on their own, even as you browse the site.",
   "الإذاعة هتشتغل قريب إن شاء الله.": "The radio is coming soon, God willing.",
   "اسمع الإذاعة": "Listen to the radio",
+  "اللي اتسمع": "Played",
+  "شغّل {x} تاني": "Play {x} again",
   "المقاطع القصيرة جاية قريب إن شاء الله.": "Short clips are coming soon, God willing.",
   "الرئيسية": "Home",
   "رجوع للرئيسية": "Back to home",

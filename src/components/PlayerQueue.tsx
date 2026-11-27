@@ -72,6 +72,13 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
   const start = p.queueIndex + 1;
   const upcoming = p.queue.slice(start);
+  // اللي اتسمع قبل الحالية: بيفضل في القايمة عشان المستمع يرجعله
+  const played = p.queue.slice(0, Math.max(0, p.queueIndex));
+  const nowRef = useRef<HTMLElement>(null);
+  // القايمة بتفتح على «يُشغَّل الآن»، واللي اتسمع فوقه لو حب يطلع
+  useEffect(() => {
+    nowRef.current?.scrollIntoView({ block: "start" });
+  }, []);
 
   // السحب: رقم الصف اللي بيتسحب (جوه «التالي»)، والمسافة اللي اتحركها
   const [drag, setDrag] = useState<{ from: number; dy: number } | null>(null);
@@ -194,7 +201,35 @@ function QueueSheet({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <section className="flex flex-col gap-2">
+          {played.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h3 className="px-1 text-xs font-semibold text-muted">{t("اللي اتسمع")}</h3>
+              <ol className="flex flex-col">
+                {played.map((r, i) => (
+                  <li key={`${r.id}-${r.clip?.tag ?? ""}-${i}`} style={{ height: ROW }} className="flex items-center px-1">
+                    <button
+                      type="button"
+                      onClick={() => p.playFromQueue(i)}
+                      aria-label={t("شغّل {x} تاني", { x: recTitle(r) })}
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-1 text-start opacity-70 transition-opacity hover:bg-fg/5 hover:opacity-100"
+                    >
+                      <RecordingCover recording={r} sizes="48px" className="h-12 w-12 shrink-0 rounded-lg" />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate text-[15px] font-medium">{recTitle(r)}</span>
+                        {recSubtitle(r) && <span className="truncate text-xs text-muted">{recSubtitle(r)}</span>}
+                      </span>
+                      <svg aria-hidden viewBox="0 0 24 24" className="me-2 h-4 w-4 shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
+          <section ref={nowRef} className="flex scroll-mt-2 flex-col gap-2">
             <h3 className="px-1 text-xs font-semibold text-gold">{t("يُشغَّل الآن")}</h3>
             <div className="flex items-center gap-3 rounded-2xl bg-fg/5 p-2">
               <RecordingCover recording={c} sizes="48px" className="h-12 w-12 shrink-0 rounded-lg" />
