@@ -3,6 +3,7 @@
 import { useL } from "@/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import { disablePush, enablePush, pushState, type PushState } from "@/lib/push/client";
+import { PushPopupHint } from "./PushPopupHint";
 
 /** زرار الإشعارات: تفعيل وإيقاف (الإشعارات عامة: كل جديد في الموقع) */
 /** label: نص جنب الأيقونة (للكارت في الرئيسية)؛ من غيره زرار أيقونة بس زي الهيدر */
@@ -104,6 +105,7 @@ export function NotificationsButton({
           {state === "on" && (
             <>
               <p className="leading-6">{t("✓ الإشعارات مفعّلة على هذا الجهاز.")}</p>
+              <PushPopupHint />
               <button type="button" disabled={busy} onClick={() => run(disablePush)} className="min-h-11 rounded-full border border-line-strong text-muted hover:text-text disabled:opacity-50">
                 {busy ? t("جارٍ الإيقاف…") : t("إيقاف الإشعارات")}
               </button>

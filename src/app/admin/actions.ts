@@ -1,5 +1,5 @@
 "use server";
-import { CLIPS_KEY, CLIPS_TAG, type Clip } from "@/lib/clips";
+import { CLIPS_KEY, CLIPS_TAG, clipFileUrl, type Clip } from "@/lib/clips";
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
@@ -622,7 +622,13 @@ export async function saveClip(input: ClipInput & { id: string; videoKey: string
     await putJson(CLIPS_KEY, [...list.filter((c) => c.id !== clip.id), clip]);
     refreshClips();
     if (input.notify) {
-      const r = await broadcast("recitations", { title: "مقتطف جديد للشيخ ياسر الدوسري", body: clip.title, url: `/clips?c=${clip.id}` });
+      const r = await broadcast("recitations", {
+        title: "مقتطف جديد للشيخ ياسر الدوسري",
+        body: clip.title,
+        url: `/clips?c=${clip.id}`,
+        // غلاف المقطع كصورة كبيرة في الإشعار
+        image: clipFileUrl(clip.posterKey),
+      });
       return { ok: true, message: `اتضاف، واتبعت الإشعار لـ ${r.sent} مشترك` };
     }
     return { ok: true, message: "اتضاف للمقتطفات" };

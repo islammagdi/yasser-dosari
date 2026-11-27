@@ -3,6 +3,15 @@
  * لو ضفت نص جديد في الموقع: ضيفه هنا بنفس الشكل، وإلا هيظهر بالعربي في النسخة الإنجليزي.
  */
 export const EN: Record<string, string> = {
+  "تجربة إشعار": "Test notification",
+  "اضغط على الإشعار ده ضغطة طويلة، وفعّل «الظهور على الشاشة».": "Long-press this notification and turn on “Pop on screen”.",
+  "عشان الإشعار يظهر على الشاشة": "To make notifications pop up on screen",
+  "اضغط ضغطة طويلة على أي إشعار من الموقع، ثم الإعدادات، وفعّل «الظهور على الشاشة» (Pop on screen) وخلّي الصوت شغال.": "Long-press any notification from the site, open its settings, and turn on “Pop on screen” with sound on.",
+  "من إعدادات الآيفون: الإشعارات ← الموقع ← نوع اللافتة، واختار «دائم».": "In iPhone Settings: Notifications → the site → Banner Style, and choose “Persistent”.",
+  "اتبعت، شوف الإشعارات فوق": "Sent, check your notifications",
+  "ابعت إشعار تجربة": "Send a test notification",
+  "تعذّر إرسال إشعار التجربة.": "Couldn’t send the test notification.",
+  "✓ الإشعارات اتفعّلت.": "✓ Notifications are on.",
   "مقتطفات": "Clips",
   "المقاطع القصيرة جاية قريب إن شاء الله.": "Short clips are coming soon, God willing.",
   "الرئيسية": "Home",

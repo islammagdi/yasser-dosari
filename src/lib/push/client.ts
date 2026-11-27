@@ -93,6 +93,32 @@ export async function enablePush(): Promise<PushState> {
   return "on";
 }
 
+/** نوع الجهاز، عشان نوضّح خطوات إظهار الإشعار كـ popup */
+export function pushPlatform(): "android" | "ios" | "other" {
+  if (/Android/i.test(navigator.userAgent)) return "android";
+  if (isIOS()) return "ios";
+  return "other";
+}
+
+/**
+ * إشعار تجربة من الجهاز نفسه (من غير سيرفر): عشان الزائر يشوف شكله،
+ * ويضغط عليه ضغطة طويلة ويفعّل «الظهور على الشاشة» من إعداداته على طول.
+ */
+export async function testNotification(title: string, body: string): Promise<void> {
+  const reg = await navigator.serviceWorker.ready;
+  await reg.showNotification(title, {
+    body,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/badge-96.png",
+    image: "/og.jpg",
+    vibrate: [200, 100, 200],
+    dir: "rtl",
+    lang: "ar",
+    tag: "yd-test",
+    data: { url: "/" },
+  } as NotificationOptions);
+}
+
 export async function disablePush(): Promise<PushState> {
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
