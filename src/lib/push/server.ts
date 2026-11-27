@@ -22,7 +22,12 @@ export interface PushMessage {
   title: string;
   body: string;
   url?: string;
+  /** صورة كبيرة بتظهر لما الإشعار يتفتح (أندرويد وويندوز). من غيرها: صورة الموقع */
+  image?: string;
 }
+
+/** صورة الإشعار الافتراضية: صورة الشيخ واسمه (نفس صورة مشاركة الموقع) */
+const DEFAULT_IMAGE = "/og.jpg";
 
 const keyFor = (endpoint: string) => `${PREFIX}${createHash("sha256").update(endpoint).digest("hex").slice(0, 40)}.json`;
 
@@ -64,7 +69,7 @@ function configure() {
 export async function broadcast(topic: keyof StoredSub["topics"], msg: PushMessage): Promise<{ sent: number; removed: number; failed: number }> {
   configure();
   const keys = await listKeys(PREFIX);
-  const payload = JSON.stringify(msg);
+  const payload = JSON.stringify({ ...msg, image: msg.image || DEFAULT_IMAGE });
   let sent = 0;
   let removed = 0;
   let failed = 0;
@@ -78,7 +83,8 @@ export async function broadcast(topic: keyof StoredSub["topics"], msg: PushMessa
         void topic;
         if (!s?.subscription) return;
         try {
-          await webpush.sendNotification(s.subscription, payload, { TTL: 60 * 60 * 24, urgency: "normal" });
+          // high: بيوصل على طول حتى لو الموبايل في وضع توفير البطارية (Doze)، بدل ما يستنى لحد ما يصحى
+          await webpush.sendNotification(s.subscription, payload, { TTL: 60 * 60 * 24, urgency: "high" });
           sent++;
         } catch (err) {
           const code = (err as { statusCode?: number }).statusCode;
@@ -157,7 +163,7 @@ export async function sendDueWirdReminders(now = new Date()): Promise<{ checked:
         const due = h * 60 + m;
         if (!local || r.lastSent === local.date || local.minutes < due || local.minutes - due > 60) return;
         try {
-          await webpush.sendNotification(r.subscription, payload, { TTL: 60 * 60 * 3, urgency: "normal" });
+          await webpush.sendNotification(r.subscription, payload, { TTL: 60 * 60 * 3, urgency: "high" });
           await putJson(key, { ...r, lastSent: local.date });
           sent++;
         } catch (err) {

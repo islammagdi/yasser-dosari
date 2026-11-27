@@ -154,6 +154,12 @@ self.addEventListener("push", (event) => {
       icon: "/icons/icon-192.png",
       // أندرويد بيعرض الأيقونة دي بلون واحد في شريط الحالة: لازم شكل أبيض على خلفية شفافة
       badge: "/icons/badge-96.png",
+      // صورة كبيرة لما الإشعار يتفتح (بتلفت النظر أكتر من الأيقونة لوحدها)
+      ...(msg.image && { image: msg.image }),
+      // هزّة قصيرة مرتين: الأندرويد بيعتبر الإشعار أهم، وبيلفت الانتباه حتى لو الموبايل صامت
+      vibrate: [200, 100, 200],
+      silent: false,
+      timestamp: Date.now(),
       dir: "rtl",
       lang: "ar",
       data: { url: msg.url || "/" },

@@ -4,6 +4,7 @@ import { useL } from "@/lib/i18n/client";
 import { usePathname } from "@/lib/i18n/nav";
 import { useEffect, useState } from "react";
 import { enablePush, pushState, type PushState } from "@/lib/push/client";
+import { PushPopupHint } from "./PushPopupHint";
 
 const DISMISS_KEY = "yd-push-banner-dismissed";
 /** لو الزائر قفل البانر، بيرجع يظهر بعد أسبوعين */
@@ -32,7 +33,7 @@ export function NotificationsBanner() {
     pushState().then(setState).catch(() => setState("unsupported"));
   }, []);
 
-  if (pathname.startsWith("/admin") || hidden || (state !== "off" && state !== "needs-install") || msg === "done") return null;
+  if (pathname.startsWith("/admin") || hidden || (state !== "off" && state !== "needs-install" && msg !== "done")) return null;
 
   const dismiss = () => {
     setHidden(true);
@@ -67,8 +68,16 @@ export function NotificationsBanner() {
       <p className="min-w-[13rem] flex-1 leading-6">
         {state === "needs-install"
           ? t("على الآيفون: ثبّت الموقع على الشاشة الرئيسية الأول (زرار المشاركة ثم «إضافة إلى الشاشة الرئيسية»)، عشان يوصلك كل جديد بإشعار.")
-          : msg || t("فعّل الإشعارات عشان يوصلك كل جديد: التلاوات، وبداية صلاة الشيخ في الحرم.")}
+          : msg === "done"
+            ? t("✓ الإشعارات اتفعّلت.")
+            : msg || t("فعّل الإشعارات عشان يوصلك كل جديد: التلاوات، وبداية صلاة الشيخ في الحرم.")}
       </p>
+      {/* بعد التفعيل: البانر بيفضل لحد ما الزائر يقفله، عشان يشوف إزاي يخلي الإشعار يظهر على الشاشة */}
+      {msg === "done" && (
+        <div className="basis-full">
+          <PushPopupHint compact />
+        </div>
+      )}
       {state === "off" && (
         <button
           type="button"
