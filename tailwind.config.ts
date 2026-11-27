@@ -5,8 +5,9 @@ const v = (name: string) => `rgb(var(--c-${name}) / <alpha-value>)`;
 
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
-  // dark: بيشتغل لما <html data-theme="dark">، مش من إعدادات الجهاز
-  darkMode: ["selector", '[data-theme="dark"]'],
+  // dark: بيشتغل لما <html data-theme="dark"> أو في رمضان، مش من إعدادات الجهاز
+  // وضع رمضان (data-season="ramadan") ليلي، فبياخد نفس كلاسات dark: كمان
+  darkMode: ["selector", ':is([data-theme="dark"], [data-season="ramadan"])'],
   theme: {
     extend: {
       colors: {

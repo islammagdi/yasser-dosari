@@ -3,171 +3,208 @@
 import { useL } from "@/lib/i18n/client";
 import Image from "next/image";
 import Link from "@/lib/i18n/nav";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { ImamateSlot, Recording } from "@/types";
-import { getCategory } from "@/lib/categories";
-import { pickForDate } from "@/lib/dailyPick";
-import { makkahToday } from "@/lib/imamate";
+import { isNowLive, nextSlot } from "@/lib/imamate";
 import { isPlayable } from "@/lib/labels";
-import { HomeStrip } from "./HomeStrip";
 import { Logo } from "./Logo";
 import { usePlayer } from "./PlayerProvider";
-import { PauseIcon, PlayIcon } from "./icons";
+import { MosqueIcon, PauseIcon, PlayIcon } from "./icons";
 
 const HERO_IMAGE = "/images/sheikh.jpg";
-const BARS = 56;
-const delay = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
-/** موجة ثابتة لكل تسجيل (من الـ id)، عشان شكلها ميتغيرش مع كل رندر */
-function waveFor(id: string): number[] {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return Array.from({ length: BARS }, (_, i) => {
-    h = (h * 1103515245 + 12345) >>> 0;
-    const base = Math.abs(Math.sin(i * 0.55) * Math.cos(i * 0.21));
-    return 0.3 + base * 0.55 + ((h >>> 16) % 100) / 700;
-  });
+export interface HeroStat {
+  slug: string;
+  title: string;
+  total: number;
 }
 
 interface Props {
-  recent: Recording[];
+  /** أحدث صلاة من الحرم (أول فرض في الترتيب، أو أحدث تسجيل لو مفيش فروض) */
+  latest: Recording | null;
   imamate: ImamateSlot[];
-  dailyPool: Recording[];
-  dailyPinned: Record<string, Recording>;
+  /** عدد التسجيلات في كل قسم: إثبات حجم الأرشيف من أول نظرة */
+  stats: HeroStat[];
 }
 
 /**
- * الهيرو: مسار قراءة واحد من اليمين — التعريف ← الاسم ← تلاوة اليوم.
- * الصورة على الشمال باهتة وسايحة في الخلفية، وتحت الهيرو شريط المعلومات الثانوية.
+ * الهيرو الجديد (الريديزاين):
+ * يمين: التعريف ← الاسم ← سطر يشرح الموقع ← زرارين ← أرقام الأرشيف.
+ * شمال: كارت غامق فيه صورة الشيخ، وتحتها «أحدث صلاة من الحرم» والإمامة القادمة.
  */
-export function Hero({ recent, imamate, dailyPool, dailyPinned }: Props) {
-  const { t, formatDuration, recTitle, recSubtitle, en } = useL();
-  const { current, isPlaying, currentTime, duration, playQueue, toggle } = usePlayer();
+export function Hero({ latest, imamate, stats }: Props) {
+  const { t, en, formatDuration, recTitle, recSubtitle, toArabicDigits } = useL();
+  const { current, isPlaying, playQueue, toggle } = usePlayer();
 
-  // تلاوة اليوم بتتحسب في المتصفح بتاريخ مكة؛ ولحد ما تتحسب (أو لو مفيش) بنعرض أحدث تلاوة
-  const [today, setToday] = useState<string | null>(null);
-  useEffect(() => setToday(makkahToday(new Date())), []);
-  const daily = today ? dailyPinned[today] ?? pickForDate(today, dailyPool) : undefined;
-  const featured = daily ?? recent[0];
-  const label = daily ? t("تلاوة اليوم") : t("أُضيف حديثًا");
-
-  const isCurrent = !!featured && current?.id === featured.id;
+  const isCurrent = !!latest && current?.id === latest.id;
   const playingNow = isCurrent && isPlaying;
-  const total = isCurrent && duration ? duration : featured?.durationSec ?? 0;
-  const pct = isCurrent && total ? Math.min(1, currentTime / total) : 0;
-  const bars = useMemo(() => (featured ? waveFor(featured.id) : []), [featured]);
-
-  const title = featured ? recTitle(featured) : "";
-  const meta = featured ? recSubtitle(featured) || t(getCategory(featured.category)?.title ?? "") : "";
-
+  const canPlay = !!latest && isPlayable(latest);
   const onPlay = () => {
-    if (!featured) return;
+    if (!latest) return;
     if (isCurrent) toggle();
-    else if (daily) playQueue([featured], 0);
-    else playQueue(recent, 0);
+    else playQueue([latest], 0);
   };
 
   return (
-    <section aria-labelledby="hero-title" className="full-bleed relative isolate -mt-8 sm:-mt-10">
-      {/* الصورة: فوق بعرض الشاشة على الموبايل، وعلى الشمال من حرف الشاشة في الديسكتوب */}
-      <div className="relative -z-10 h-[360px] w-full sm:h-[440px] lg:absolute lg:inset-y-0 lg:end-0 lg:-top-24 lg:h-auto lg:w-[46%] lg:max-w-[700px]">
+    <section aria-labelledby="hero-title" className="grid items-center gap-8 pt-2 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12 lg:pt-10">
+      {/* ---------- النص ---------- */}
+      <div className="flex flex-col gap-6">
+        <p className="rise flex items-center gap-3 caption-3 text-gold">
+          <span aria-hidden className="h-px w-6 bg-gold/60" />
+          {t("إمام وخطيب المسجد الحرام")}
+        </p>
+
+        {en ? (
+          <h1 id="hero-title" className="rise heading-2 text-emerald dark:text-[#F6F1E6] lg:heading-1" style={delay(80)}>
+            Sheikh Yasser Al-Dosari
+          </h1>
+        ) : (
+          <h1 id="hero-title" className="rise flex items-end gap-3 sm:gap-4" style={delay(80)}>
+            <span className="shrink-0 pb-[0.14em] font-ruqaa text-4xl font-bold leading-none text-emerald dark:text-[#F6F1E6] sm:text-6xl lg:text-7xl">
+              {t("الشيخ")}
+            </span>
+            <Logo label={t("ياسر الدوسري")} className="w-[240px] min-w-0 sm:w-[360px] lg:w-[440px]" />
+          </h1>
+        )}
+
+        <p className="rise max-w-[520px] text-lg leading-8 text-muted sm:text-xl" style={delay(140)}>
+          {t("كل صلاة أمّها في المسجد الحرام، مرتّبة بالتاريخ الهجري. ومعها المصحف كاملًا، والتراويح، والخطب، في مكان واحد.")}
+        </p>
+
+        <div className="rise flex flex-wrap items-center gap-3" style={delay(200)}>
+          {latest && (
+            <button
+              type="button"
+              onClick={onPlay}
+              disabled={!canPlay}
+              className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 button-md text-accent-ink transition-colors duration-300 ease-out hover:bg-accent-hover active:scale-[0.98] disabled:opacity-40"
+            >
+              {playingNow ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+              {playingNow ? t("إيقاف") : t("اسمع آخر صلاة")}
+            </button>
+          )}
+          <Link
+            href="/fard"
+            className="inline-flex items-center rounded-full border border-line-strong px-5 py-3 button-md text-emerald transition-colors duration-300 ease-out hover:bg-fg/5 active:scale-[0.98] dark:text-gold-soft"
+          >
+            {t("تصفّح الأرشيف")}
+          </Link>
+        </div>
+
+        {stats.length > 0 && (
+          <dl className="rise grid grid-cols-2 gap-x-6 gap-y-3 border-t sm:flex sm:flex-wrap border-line pt-4" style={delay(260)}>
+            {stats.map((s) => (
+              <div key={s.slug} className="flex flex-col">
+                <dd className="heading-5 tabular-nums text-text">{toArabicDigits(s.total)}</dd>
+                <dt className="caption-5 text-muted">{t(s.title)}</dt>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
+
+      {/* ---------- الكارت: الصورة + أحدث صلاة + الإمامة القادمة ---------- */}
+      <div className="rise relative isolate flex min-h-[420px] flex-col justify-end overflow-hidden rounded-[32px] bg-deep p-3 shadow-float sm:min-h-[520px] sm:p-4 lg:min-h-[560px]" style={delay(120)}>
         <Image
           src={HERO_IMAGE}
           alt=""
           fill
           priority
           sizes="(min-width: 1024px) 46vw, 100vw"
-          className="hero-portrait object-cover object-[50%_20%] lg:object-[45%_18%]"
+          className="-z-10 object-cover object-[50%_18%] opacity-90"
         />
-        {/* قوس المحراب: خط خفيف بس، الصورة بتغطيه عند الوش */}
-        <span
-          aria-hidden
-          className="absolute inset-x-[12%] bottom-0 top-[12%] -z-10 hidden rounded-t-full border border-b-0 border-gold/40 [mask-image:linear-gradient(to_bottom,#000_60%,transparent)] lg:block"
-        />
-      </div>
+        {/* تعتيم خفيف تحت عشان الكارت الأبيض يبان */}
+        <span aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-2/3 bg-gradient-to-t from-deep/90 to-transparent" />
 
-      <div className="mx-auto max-w-page px-4 sm:px-6">
-        <div className="-mt-28 flex flex-col gap-5 sm:-mt-32 lg:ms-0 lg:mt-0 lg:min-h-[640px] lg:w-[52%] lg:max-w-[660px] lg:justify-center lg:py-12">
-          <p className="rise flex items-center gap-3.5 text-[15px] font-semibold text-gold sm:text-base">
-            <span aria-hidden className="h-px w-10 shrink-0 bg-gold/60 sm:w-12" />
-            
-            {t("إمام وخطيب المسجد الحرام")}
-          </p>
+        <span className="mb-3 inline-flex items-center gap-2 self-start rounded-full bg-[#F6F1E6]/15 px-3 py-1.5 caption-3 text-[#E7CD94] backdrop-blur-md">
+          <span aria-hidden className="h-2 w-2 rounded-full bg-[#CDAA62]" />
+          {t("أحدث صلاة من الحرم")}
+        </span>
 
-          {en ? (
-            <h1 id="hero-title" className="rise font-display text-[2.7rem] font-bold leading-[1.05] text-emerald dark:text-[#F6F1E6] sm:text-[3.8rem] lg:text-[4.6rem]" style={delay(80)}>
-              Sheikh Yasser
-              <br />
-              Al-Dosari
-            </h1>
-          ) : (
-          <h1 id="hero-title" className="rise flex items-end gap-3 sm:gap-4" style={delay(80)}>
-            <span className="shrink-0 pb-[0.14em] font-ruqaa text-[2.6rem] font-bold leading-none text-emerald dark:text-[#F6F1E6] sm:text-[3.6rem] lg:text-[4.6rem]">
-              
-              {t("الشيخ")}
-            </span>
-            <Logo label={t("ياسر الدوسري")} className="w-[250px] min-w-0 sm:w-[360px] lg:w-[460px]" />
-          </h1>
-          )}
-
-          <p className="rise max-w-[540px] text-base leading-[1.9] text-muted sm:text-lg" style={delay(140)}>
-            
-            {t("تلاواته في صلوات الفروض والتراويح بالمسجد الحرام، والمصحف المسجّل، وخطبه ومحاضراته، في مكان واحد.")}
-          </p>
-
-          {/* تلاوة اليوم: الكارت الوحيد الغامق في الهيرو، وأول حاجة ممكن الزائر يعملها */}
-          {featured && (
-            <div
-              className="rise relative isolate mt-2 overflow-hidden rounded-[28px] bg-deep px-5 pb-5 pt-5 text-[#F1EEE6] shadow-float sm:px-7 sm:pt-6"
-              style={delay(200)}
-            >
-              <span aria-hidden className="pattern-stars absolute inset-0 -z-10 opacity-10" />
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={onPlay}
-                  disabled={!isPlayable(featured)}
-                  aria-label={`${playingNow ? t("إيقاف") : t("تشغيل")} ${title}`}
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#CDAA62] text-[#1A1408] transition-colors hover:bg-[#E7CD94] disabled:opacity-40 sm:h-16 sm:w-16"
-                >
-                  {playingNow ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
-                </button>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[13px] font-semibold text-[#E7CD94]">{playingNow ? t("يعمل الآن") : label}</span>
-                  <Link
-                    href={`/${featured.category}/${featured.id}`}
-                    className="truncate font-display text-2xl font-bold leading-snug hover:text-[#E7CD94] sm:text-[28px]"
-                  >
-                    {title}
-                  </Link>
-                  {meta && <span className="truncate text-sm text-[#A9B7AF]">{meta}</span>}
-                </div>
-                {total > 0 && (
-                  <span className="hidden shrink-0 text-[13px] tabular-nums text-[#A9B7AF] sm:block">
-                    {isCurrent ? t("{a} من {b}", { a: formatDuration(currentTime), b: formatDuration(total) }) : formatDuration(total)}
-                  </span>
-                )}
-              </div>
-
-              {/* الموجة: بتتملى من اليمين مع التشغيل */}
-              <div aria-hidden className="mt-4 flex h-11 items-center gap-[3px]">
-                {bars.map((b, i) => (
-                  <span
-                    key={i}
-                    className={`flex-1 rounded-full transition-colors ${i / BARS < pct ? "bg-[#CDAA62]" : "bg-[#F1EEE6]/20"}`}
-                    style={{ height: `${Math.round(b * 100)}%` }}
-                  />
-                ))}
+        <div className="flex flex-col gap-4 rounded-3xl bg-raised/95 p-4 text-text backdrop-blur-md sm:p-5">
+          {latest ? (
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={onPlay}
+                disabled={!canPlay}
+                aria-label={`${playingNow ? t("إيقاف") : t("تشغيل")} ${recTitle(latest)}`}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors duration-300 ease-out hover:bg-accent-hover active:scale-[0.98] disabled:opacity-40"
+              >
+                {playingNow ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
+              </button>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <Link href={`/${latest.category}/${latest.id}`} className="truncate title-2 hover:text-emerald dark:hover:text-gold-soft">
+                  {recTitle(latest)}
+                </Link>
+                <span className="truncate caption-2 text-muted">
+                  {[recSubtitle(latest), latest.durationSec ? formatDuration(latest.durationSec) : null].filter(Boolean).join(" · ")}
+                </span>
               </div>
             </div>
+          ) : (
+            <p className="body-6 text-muted">{t("لسه مفيش تسجيلات.")}</p>
           )}
-        </div>
-
-        <div className="rise relative z-10 mt-6 lg:mt-2" style={delay(260)}>
-          <HomeStrip slots={imamate} />
+          <ImamateLine slots={imamate} />
         </div>
       </div>
     </section>
+  );
+}
+
+const delay = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+
+/** بداية الصلاة (وقت الأذان) بتوقيت مكة (UTC+3 ثابت) كـ timestamp، لو الجدول فيه الوقت */
+function slotTime(slot: ImamateSlot): number | null {
+  if (!slot.start) return null;
+  const v = Date.parse(`${slot.date}T${slot.start}:00+03:00`);
+  return Number.isFinite(v) ? v : null;
+}
+
+/** سطر الإمامة القادمة جوه كارت الهيرو: الصلاة واليوم، والوقت الباقي لو خلال ٢٤ ساعة */
+function ImamateLine({ slots }: { slots: ImamateSlot[] }) {
+  const { t, toArabicDigits, hijriDayLabel, prayerTitle, relativeDayLabel } = useL();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const slot = now ? nextSlot(slots, now) : null;
+  const live = !!(now && slot && isNowLive(slot, now));
+  const at = slot ? slotTime(slot) : null;
+  const left = now && at ? at - now.getTime() : null;
+  const soon = left !== null && left > 0 && left < 24 * 3600_000;
+  const h = soon ? Math.floor(left / 3600_000) : 0;
+  const m = soon ? Math.floor((left % 3600_000) / 60_000) : 0;
+
+  return (
+    <div className="flex items-center gap-3 border-t border-line pt-4" aria-live="polite">
+      <MosqueIcon className="h-5 w-5 shrink-0 text-gold" />
+      <p className="min-w-0 flex-1 truncate body-6">
+        {now === null ? (
+          <span aria-hidden className="inline-block h-4 w-40 animate-pulse rounded bg-fg/10 align-middle" />
+        ) : slot ? (
+          <>
+            <b className="font-semibold">{live ? t("الآن في المسجد الحرام:") : t("الإمامة القادمة:")}</b>{" "}
+            {prayerTitle(slot.prayer)}
+            {t("،")} {live ? t("بإمامة الشيخ") : relativeDayLabel(slot.nightOf ?? slot.date, now) || hijriDayLabel(slot.date)}
+            {soon && !live && (
+              <span className="text-muted">
+                {" · "}
+                {t("بعد {h} س {m} د", { h: toArabicDigits(h), m: toArabicDigits(m) })}
+              </span>
+            )}
+          </>
+        ) : (
+          t("الجدول بيتعلن أسبوعيًا")
+        )}
+      </p>
+      <Link href="/imamate" className="shrink-0 button-sm text-gold hover:text-gold-soft">
+        {t("ذكّرني")}
+      </Link>
+    </div>
   );
 }

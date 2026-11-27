@@ -3,6 +3,7 @@ import { loadDaily } from "@/lib/admin/daily";
 import { WirdCard } from "@/components/WirdCard";
 import { FridayKahf } from "@/components/FridayKahf";
 import { Hero } from "@/components/Hero";
+import { TodayStrip } from "@/components/TodayStrip";
 import { ClipOfDay } from "@/components/ClipOfDay";
 import { HomeCollections } from "@/components/HomeCollections";
 import { clipFileUrl, loadClips } from "@/lib/clips";
@@ -89,7 +90,12 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-12">
-      <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
+      <Hero
+        latest={sections.find((s) => s.slug === "fard")?.latest[0] ?? recent[0] ?? null}
+        imamate={imamate}
+        stats={sections.filter((s) => s.total > 0 && s.slug !== "rare").map((s) => ({ slug: s.slug, title: s.title, total: s.total }))}
+      />
+      <TodayStrip dailyPool={dailyPool} dailyPinned={dailyPinned} />
       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
       <FridayKahf kahf={kahf} />
       <FridayCard slots={imamate} />

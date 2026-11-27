@@ -632,4 +632,15 @@ export const EN: Record<string, string> = {
   "جدول التراويح": "Taraweeh schedule",
   "باقي الأقسام": "More sections",
   "المقاطع": "Clips",
+  // الريديزاين: الهيرو والنهارده
+  "كل صلاة أمّها في المسجد الحرام، مرتّبة بالتاريخ الهجري. ومعها المصحف كاملًا، والتراويح، والخطب، في مكان واحد.": "Every prayer he led at the Grand Mosque, ordered by Hijri date. Plus the full Mushaf, Taraweeh and sermons, all in one place.",
+  "اسمع آخر صلاة": "Play the latest prayer",
+  "تصفّح الأرشيف": "Browse the archive",
+  "أحدث صلاة من الحرم": "Latest from the Haram",
+  "الآن في المسجد الحرام:": "Now at the Grand Mosque:",
+  "الإمامة القادمة:": "Next imamate:",
+  "بعد {h} س {m} د": "in {h}h {m}m",
+  "ذكّرني": "Remind me",
+  "النهارده": "Today",
+  "لسه مفيش تسجيلات.": "No recordings yet.",
 };

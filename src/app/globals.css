@@ -126,7 +126,8 @@
     border: 1px solid rgb(var(--c-line));
     box-shadow: var(--shadow-soft);
   }
-  :root[data-theme="dark"] .glass-card {
+  :root[data-theme="dark"] .glass-card,
+  :root[data-season="ramadan"] .glass-card {
     background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
     border-color: rgb(255 255 255 / 0.08);
   }
@@ -140,7 +141,8 @@
       radial-gradient(900px 600px at 85% -10%, rgb(var(--c-ornament) / 0.12), transparent 65%),
       radial-gradient(640px 420px at 75% 105%, rgb(var(--c-ornament) / 0.10), transparent 70%);
   }
-  :root[data-theme="dark"] .ambient {
+  :root[data-theme="dark"] .ambient,
+  :root[data-season="ramadan"] .ambient {
     background:
       radial-gradient(900px 600px at 85% -10%, rgb(30 74 60 / 0.6), transparent 65%),
       radial-gradient(700px 520px at 5% 55%, rgb(30 74 60 / 0.4), transparent 70%),
@@ -161,7 +163,8 @@
     mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.75) 40%, transparent 92%);
     transition: background-color 700ms ease;
   }
-  :root[data-theme="dark"] .player-tint {
+  :root[data-theme="dark"] .player-tint,
+  :root[data-season="ramadan"] .player-tint {
     background-color: hsl(var(--tint-h, 158) min(var(--tint-s, 42%), 50%) 22%);
   }
   @media (prefers-reduced-motion: reduce) {
