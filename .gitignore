@@ -6,3 +6,6 @@ next-env.d.ts
 *.tsbuildinfo
 links.txt
 links-done.txt
+
+# ملفات الباتش اللي بنطبقها من الترمينال
+*.patch

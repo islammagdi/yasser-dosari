@@ -33,7 +33,8 @@ const config: Config = {
         ruqaa: ["var(--font-ruqaa)", '"Aref Ruqaa"', "var(--font-amiri)", "serif"],
         sans: ["var(--font-plex)", '"IBM Plex Sans Arabic"', "Tahoma", "system-ui", "sans-serif"],
       },
-      maxWidth: { page: "1400px" },
+      maxWidth: { page: "1400px", content: "1240px" },
+      transitionTimingFunction: { out: "cubic-bezier(0.22, 1, 0.36, 1)" },
       boxShadow: {
         glow: "0 10px 30px -10px rgb(var(--c-gold) / 0.55)",
         float: "var(--shadow-float)",

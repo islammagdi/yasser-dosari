@@ -64,6 +64,34 @@
   --shadow-float: 0 18px 44px -20px rgb(0 0 0 / 0.55);
   color-scheme: dark;
 }
+/*
+ * وضع رمضان (data-season="ramadan" من src/lib/season.ts): ليل دايمًا، والدهبي هو لون الزراير والعناوين.
+ * بييجي بعد الغامق، فبيكسب على أي اختيار للوضع طول رمضان.
+ */
+:root[data-season="ramadan"] {
+  --c-ink: 13 21 18;
+  --c-night: 15 26 22;
+  --c-surface: 21 33 28;
+  --c-raised: 27 42 36;
+  --c-line: 34 50 43;
+  --c-line-strong: 46 64 56;
+  --c-emerald: 44 74 62;
+  --c-deep: 16 36 29;
+  --c-text: 241 238 230;
+  --c-muted: 163 177 169;
+  --c-fg: 255 255 255;
+  --c-gold: 205 170 98;
+  --c-gold-soft: 231 205 148;
+  --c-gold-ink: 26 20 8;
+  --c-accent: 205 170 98;
+  --c-accent-hover: 231 205 148;
+  --c-accent-ink: 26 20 8;
+  --c-ornament: 231 205 148;
+  --logo: rgb(231 205 148);
+  --shadow-soft: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 22px -16px rgb(0 0 0 / 0.45);
+  --shadow-float: 0 18px 44px -20px rgb(0 0 0 / 0.55);
+  color-scheme: dark;
+}
 
 @layer base {
   html { background-color: rgb(var(--c-ink)); color: rgb(var(--c-text)); }
@@ -353,4 +381,56 @@
 html {
   overflow-x: hidden;
   overscroll-behavior-x: none;
+}
+
+/* ================================================================
+ * نظام التصميم الجديد (الريديزاين)
+ * أسماء ثابتة للنصوص بدل ما كل عنصر ياخد حجم ووزن لوحده.
+ * الأحجام كلها من سلم Tailwind، والخط IBM Plex Sans Arabic.
+ * الرقعة (font-ruqaa) لاسم الشيخ والأغلفة بس، و Amiri Quran للآيات بس.
+ * ================================================================ */
+:root {
+  /* منحنى الحركة الأساسي: بيبطّأ وهو بيوصل */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer components {
+  .heading-1 { font-size: 3.75rem; line-height: 1; font-weight: 600; text-wrap: balance; }
+  .heading-2 { font-size: 3rem; line-height: 1; font-weight: 600; text-wrap: balance; }
+  .heading-3 { font-size: 2.25rem; line-height: 2.5rem; font-weight: 600; text-wrap: balance; }
+  .heading-4 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; text-wrap: balance; }
+  .heading-5 { font-size: 1.5rem; line-height: 2rem; font-weight: 600; text-wrap: balance; }
+  .heading-6 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; text-wrap: balance; }
+
+  .title-1 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 500; }
+  .title-2 { font-size: 1.125rem; line-height: 1.75rem; font-weight: 500; }
+  .title-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 500; }
+  .title-4 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+  .title-5 { font-size: 0.75rem; line-height: 1rem; font-weight: 500; }
+
+  .body-1 { font-size: 1rem; line-height: 1.5rem; font-weight: 600; text-wrap: pretty; }
+  .body-2 { font-size: 1rem; line-height: 1.5rem; font-weight: 500; text-wrap: pretty; }
+  .body-3 { font-size: 1rem; line-height: 1.5rem; font-weight: 400; text-wrap: pretty; }
+  .body-4 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; text-wrap: pretty; }
+  .body-5 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; text-wrap: pretty; }
+  .body-6 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; text-wrap: pretty; }
+
+  .button-lg { font-size: 1.125rem; line-height: 1.75rem; font-weight: 600; }
+  .button-md { font-size: 1rem; line-height: 1.5rem; font-weight: 600; }
+  .button-sm { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; }
+  .button-xsm { font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
+
+  .caption-1 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; }
+  .caption-2 { font-size: 0.875rem; line-height: 1.25rem; font-weight: 400; }
+  .caption-3 { font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
+  .caption-4 { font-size: 0.75rem; line-height: 1rem; font-weight: 500; }
+  .caption-5 { font-size: 0.75rem; line-height: 1rem; font-weight: 400; }
+
+  /* ظهور السكاشن مع السكرول: الكلاس is-in بيتحط من IntersectionObserver */
+  .reveal { opacity: 0; transform: translateY(2rem); transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); }
+  .reveal.is-in { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transform: none; transition: opacity 300ms linear; }
 }

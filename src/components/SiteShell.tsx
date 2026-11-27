@@ -8,6 +8,7 @@ import { RegisterSW } from "@/components/RegisterSW";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { themeInitScript } from "@/components/ThemeToggle";
+import { seasonInitScript } from "@/lib/season";
 import { AdminShortcut } from "@/components/AdminShortcut";
 import { Analytics } from "@/components/Analytics";
 import { LangProvider } from "@/lib/i18n/client";
@@ -33,6 +34,8 @@ export function SiteShell({ lang, children }: { lang: Lang; children: React.Reac
       <head>
         {/* لازم يشتغل قبل أول رسم، عشان اللي اختار الغامق ميشوفش وميض فاتح */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* وضع رمضان: بعد سكريبت الوضع، عشان لون شريط المتصفح بتاع رمضان يكسب */}
+        <script dangerouslySetInnerHTML={{ __html: seasonInitScript }} />
       </head>
       <body>
         <LangProvider lang={lang}>
