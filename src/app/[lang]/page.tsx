@@ -90,11 +90,12 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-12">
+      {/* ميزة جديدة: الإذاعة أول حاجة في الصفحة */}
+      <RadioCard />
       <Hero recent={recent} imamate={imamate} dailyPool={dailyPool} dailyPinned={dailyPinned} />
       {/* يوم الجمعة بس (من مغرب الخميس): أول حاجة بعد الهيرو */}
       <FridayKahf kahf={kahf} />
       <FridayCard slots={imamate} />
-      <RadioCard />
       <ClipOfDay clips={clipCards} />
       <WirdCard items={wirdItems} dismissible />
       <SurahMap stats={stats} />

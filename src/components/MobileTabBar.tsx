@@ -8,6 +8,8 @@ import { CATEGORIES } from "@/lib/categories";
 import { lockScroll } from "@/lib/scrollLock";
 import { FEEDBACK_URL, feedbackHref } from "@/lib/site";
 import { useFavorites } from "@/lib/useFavorites";
+import { useRadioSeen } from "@/lib/useRadioSeen";
+import { usePlayer } from "./PlayerProvider";
 import { CategoryIcon, HeartIcon } from "./icons";
 
 /**
@@ -39,12 +41,16 @@ export function MobileTabBar() {
   }, [sheet]);
 
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
-  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`)) || under("/radio");
+  const onCategory = CATEGORIES.some((c) => under(`/${c.slug}`));
+  const player = usePlayer();
+  const radioSeen = useRadioSeen();
+  const radioOnAir = Boolean(player.radio && player.isPlaying);
   const onMore = MORE_PATHS.some(under);
 
   const tabs: { key: string; label: string; icon: React.ReactNode; href?: string; sheet?: Sheet; active: boolean }[] = [
     { key: "home", label: "الرئيسية", icon: <HomeIcon />, href: "/", active: pathname === "/" && !sheet },
     { key: "rec", label: "التلاوات", icon: <HeadphonesIcon />, sheet: "recitations", active: sheet === "recitations" || (onCategory && !sheet) },
+    { key: "radio", label: "الإذاعة", icon: <RadioIcon />, href: "/radio", active: under("/radio") && !sheet },
     { key: "clips", label: "مقتطفات", icon: <ReelIcon />, href: "/clips", active: onClips && !sheet },
     { key: "quran", label: "المصحف", icon: <BookIcon />, href: "/quran", active: under("/quran") && !sheet },
     { key: "more", label: "المزيد", icon: <MoreIcon />, sheet: "more", active: sheet === "more" || (onMore && !sheet) },
@@ -60,16 +66,23 @@ export function MobileTabBar() {
         aria-label={t("التنقل الرئيسي")}
         className={`fixed inset-x-0 bottom-0 z-[48] border-t pb-[env(safe-area-inset-bottom)] xl:hidden ${barTone}`}
       >
-        <ul className="mx-auto grid h-16 max-w-xl grid-cols-5">
+        <ul className="mx-auto grid h-16 max-w-xl grid-cols-6">
           {tabs.map((tab) => {
             const inner = (
               <>
                 <span
-                  className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
+                  className={`relative flex h-8 w-12 items-center justify-center rounded-full transition-colors sm:w-14 ${
                     tab.active ? (onClips && !sheet ? "bg-white/20 text-white" : "bg-accent text-[#fff] dark:text-accent-ink") : ""
                   }`}
                 >
                   {tab.icon}
+                  {/* الإذاعة: نقطة حمرا وهي شغّالة، وعلامة «جديد» لحد أول تشغيل */}
+                  {tab.key === "radio" && radioOnAir && (
+                    <span aria-hidden className="absolute end-1.5 top-0.5 h-2 w-2 animate-pulse rounded-full bg-[#E5484D] ring-2 ring-raised motion-reduce:animate-none" />
+                  )}
+                  {tab.key === "radio" && !radioOnAir && !radioSeen && (
+                    <span className="absolute -end-2 -top-1.5 rounded-full bg-[#CDAA62] px-1.5 text-[9px] font-bold leading-4 text-[#1A1408]">{t("جديد")}</span>
+                  )}
                 </span>
                 <span className={`text-[11px] leading-4 ${tab.active ? (onClips && !sheet ? "font-semibold text-white" : "font-semibold text-text") : ""}`}>{t(tab.label)}</span>
               </>
@@ -126,15 +139,6 @@ function TabSheet({ kind, onClose }: { kind: "recitations" | "more"; onClose: ()
         </h2>
         {kind === "recitations" ? (
           <ul className="mx-auto flex max-w-xl flex-col gap-1">
-            <li>
-              <Link href="/radio" aria-current={under("/radio") ? "page" : undefined} onClick={onClose} className={row(under("/radio"))}>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-[#fff] dark:text-accent-ink">
-                  <RadioIcon />
-                </span>
-                {t("الإذاعة")}
-                <span className="ms-auto text-xs font-normal text-muted">{t("تلاوات من غير توقف")}</span>
-              </Link>
-            </li>
             {CATEGORIES.map((c) => {
               const active = under(`/${c.slug}`);
               return (
@@ -224,7 +228,7 @@ const HeadphonesIcon = () => (
   </svg>
 );
 const RadioIcon = () => (
-  <svg {...ico} className="h-5 w-5">
+  <svg {...ico}>
     <circle cx="12" cy="12" r="2" />
     <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
   </svg>

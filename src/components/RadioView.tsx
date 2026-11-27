@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useL } from "@/lib/i18n/client";
 import { getCategory } from "@/lib/categories";
 import type { Category, Recording } from "@/types";
@@ -44,6 +44,20 @@ export function RadioView({ pool }: { pool: Recording[] }) {
     else p.startRadio(c.items, c.key);
   };
   const main = active ?? channels[0];
+
+  // جاي من زرار «اسمع الإذاعة» في الرئيسية (/radio?play=1): نشغّل علطول.
+  // لو المتصفح منع التشغيل التلقائي، الزرار الكبير موجود والزائر يدوس عليه.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStarted.current || !main) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("play") !== "1") return;
+    autoStarted.current = true;
+    url.searchParams.delete("play");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    if (!p.radio) p.startRadio(main.items, main.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [main]);
 
   if (!channels.length) {
     return <p className="py-20 text-center text-muted">{t("الإذاعة هتشتغل قريب إن شاء الله.")}</p>;

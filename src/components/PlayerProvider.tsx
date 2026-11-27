@@ -8,6 +8,7 @@ import { markSurahListened } from "@/lib/useKhatma";
 import { getProgressTime, saveProgress } from "@/lib/useProgress";
 import { playbackUrl } from "@/lib/offline";
 import { track } from "@/lib/stats/track";
+import { markRadioSeen } from "@/lib/useRadioSeen";
 const STORAGE_KEY = "yd-player-v1";
 /** @deprecated السرعة اتشالت من الواجهة */
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -472,6 +473,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (!playable.length) return;
     radioPool.current = playable;
     radioRef.current = channel;
+    markRadioSeen();
     setRadio(channel);
     autoplay.current = true;
     resumeAt.current = 0;
